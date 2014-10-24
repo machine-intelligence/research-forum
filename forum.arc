@@ -860,8 +860,8 @@ function vote(node) {
 (def listpage-csb (user t1 items comments label title (o url label) (o number t))
   (hook 'listpage user)
   (longpage-csb user t1 nil label title url
-    (display-items user items label title url 0 perpage* number)
-    (display-items user comments label title url 0 perpage* number)))
+    (display-items user comments label title url 0 perpage* number)
+    (display-items user items label title url 0 perpage* number)))
 
 
 (newsop newest () (newestpage user))
