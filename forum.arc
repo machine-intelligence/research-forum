@@ -438,9 +438,11 @@
   (w/uniq (gu gt gi)
     `(with (,gu ,user ,gt ,t1 ,gi ,lid)
        (fulltop ,gu ,gi ,label ,title ,whence
-         (trtd (tab (tr
-           (td ,@body)
-           (td ,comments))))
+         (trtd (tag (table width '100%) (tr
+           (tag (td valign 'top) ,@body)
+           ; TODO (elliott): Eliminate hardcoded color / width
+           (tag (td valign 'top bgcolor (gray 230) width '300px)
+             (para (tag b (pr "Recent Comments"))) ,comments))))
          (trtd (vspace 10)
                (color-stripe (main-color ,gu))
                (br)
