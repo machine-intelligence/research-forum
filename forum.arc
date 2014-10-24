@@ -434,21 +434,21 @@
                  (hook 'longfoot)
                  (admin-bar ,gu (- (msec) ,gt) ,whence)))))))
 
-(mac longpage-csb (user t1 lid label title whence comments . body)
-  (w/uniq (gu gt gi)
-    `(with (,gu ,user ,gt ,t1 ,gi ,lid)
-       (fulltop ,gu ,gi ,label ,title ,whence
-         (trtd (tag (table width '100%) (tr
-           (tag (td valign 'top) ,@body)
-           ; TODO (elliott): Eliminate hardcoded color / width
-           (tag (td valign 'top bgcolor (gray 230) width '300px)
-             (para (tag b (pr "Recent Comments"))) ,comments))))
-         (trtd (vspace 10)
-               (color-stripe (main-color ,gu))
-               (br)
-               (center
-                 (hook 'longfoot)
-                 (admin-bar ,gu (- (msec) ,gt) ,whence)))))))
+(mac add-sidebar (title contents . body)
+  `(tag (table width '100%)
+        (tr (tag (td valign 'top) ,@body)
+            ; TODO (elliott): Eliminate hardcoded color / width
+            (tag (td valign 'top bgcolor (gray 230) width '300px)
+              (para (tag b (pr ,title))) ,contents))))
+
+(mac longpage-csb (user t1 lid label title whence show-comments . body)
+  `(longpage ,user ,t1 ,lid ,label ,title ,whence
+     (if (no ,show-comments) 
+       (do ,@body)
+       (add-sidebar "Recent Comments" 
+                    (display-items user (csb-items user csb-count*) label 
+                                   title url 0 perpage* number)
+         ,@body))))
 
 (def admin-bar (user elapsed whence)
   (when (admin user)
@@ -854,17 +854,12 @@ function vote(node) {
 (def csb-items (user n) (visible user (firstn n comments*)))
 
 (newscache newspage user 90
-  (listpage-csb user (msec) (topstories user maxend*) nil nil "news"))
+  (listpage user (msec) (topstories user maxend*) nil nil "news" nil t))
 
-(def listpage (user t1 items label title (o url label) (o number t))
+(def listpage (user t1 items label title 
+               (o url label) (o number t) (o show-comments))
   (hook 'listpage user)
-  (longpage user t1 nil label title url
-    (display-items user items label title url 0 perpage* number)))
-
-(def listpage-csb (user t1 items label title (o url label) (o number t))
-  (hook 'listpage user)
-  (longpage-csb user t1 nil label title url
-    (display-items user (csb-items user csb-count*) label title url 0 perpage* number)
+  (longpage-csb user t1 nil label title url show-comments
     (display-items user items label title url 0 perpage* number)))
 
 
@@ -874,7 +869,8 @@ function vote(node) {
 ; cached page.  If this were a prob, could make deletion clear caches.
 
 (newscache newestpage user 40
-  (listpage-csb user (msec) (newstories user maxend*) "new" "New Links" "newest"))
+  (listpage user (msec) (newstories user maxend*) "new" "New Links" "newest" 
+            nil t))
 
 (def newstories (user n)
   (retrieve n [cansee user _] stories*))
