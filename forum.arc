@@ -849,18 +849,20 @@ function vote(node) {
 
 ;(newsop index.html () (newspage user))
 
+(def csb-items (user n) (visible user (firstn n comments*)))
+
 (newscache newspage user 90
-  (listpage-csb user (msec) (topstories user maxend*) (visible user (firstn csb-count* comments*)) nil nil "news"))
+  (listpage-csb user (msec) (topstories user maxend*) nil nil "news"))
 
 (def listpage (user t1 items label title (o url label) (o number t))
   (hook 'listpage user)
   (longpage user t1 nil label title url
     (display-items user items label title url 0 perpage* number)))
 
-(def listpage-csb (user t1 items comments label title (o url label) (o number t))
+(def listpage-csb (user t1 items label title (o url label) (o number t))
   (hook 'listpage user)
   (longpage-csb user t1 nil label title url
-    (display-items user comments label title url 0 perpage* number)
+    (display-items user (csb-items user csb-count*) label title url 0 perpage* number)
     (display-items user items label title url 0 perpage* number)))
 
 
@@ -870,7 +872,7 @@ function vote(node) {
 ; cached page.  If this were a prob, could make deletion clear caches.
 
 (newscache newestpage user 40
-  (listpage user (msec) (newstories user maxend*) "new" "New Links" "newest"))
+  (listpage-csb user (msec) (newstories user maxend*) "new" "New Links" "newest"))
 
 (def newstories (user n)
   (retrieve n [cansee user _] stories*))
