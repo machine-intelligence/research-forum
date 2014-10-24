@@ -431,7 +431,7 @@
 (def md-from-form (str (o nolinks))
   (markdown (trim (rem #\return (esc-tags str)) 'end) 60 nolinks))
 
-(def markdown (s (o maxurl) (o nolinks))
+(def markdown (s (o maxurl) (o nolinks) (o latex t))
   (let ital nil
     (tostring
       (forlen i s
@@ -451,6 +451,14 @@
                                     (pos #\* s (+ i 1)))))
                        (do (pr (if ital "</i>" "<i>"))
                            (= ital (no ital)))
+                      (and latex (is (s i) #\$))
+                       (iflet newi (pos #\$ s (+ i 1))
+                              (do (pr "<img src='http://www.codecogs.com/"
+                                      "png.latex?" 
+                                      (urlencode (cut s (+ i 1) newi)) 
+                                      "'>")
+                                  (= i newi))
+                              (pr "$"))
                       (and (no nolinks)
                            (or (litmatch "http://" s i) 
                                (litmatch "https://" s i)))
@@ -541,7 +549,7 @@
                       (nonwhite (s (+ i 2))))))
      (writec (s (++ i))))))
 
-(def unmarkdown (s)
+(def unmarkdown (s (o latex t))
   (tostring
     (forlen i s
       (if (litmatch "<p>" s i)
@@ -560,9 +568,13 @@
                                endurl)))
                  (writec (s i))))
           (litmatch "<pre><code>" s i)
-           (awhen (findsubseq "</code></pre>" s (+ i 12))
+           (awhen (and latex (findsubseq "</code></pre>" s (+ i 12)))
              (pr (cut s (+ i 11) it))
              (= i (+ it 12)))
+          (litmatch "<img src='http://www.codecogs.com/png.latex?" s i)
+            (awhen (findsubseq "'>" s (+ i 45))
+             (pr "$" (urldecode (cut s (+ i 44) it)) "$")
+             (= i (+ it 1)))
           (writec (s i))))))
 
 
