@@ -434,6 +434,20 @@
                  (hook 'longfoot)
                  (admin-bar ,gu (- (msec) ,gt) ,whence)))))))
 
+(mac longpage-csb (user t1 lid label title whence comments . body)
+  (w/uniq (gu gt gi)
+    `(with (,gu ,user ,gt ,t1 ,gi ,lid)
+       (fulltop ,gu ,gi ,label ,title ,whence
+         (trtd (tab (tr
+           (td ,@body)
+           (td ,comments))))
+         (trtd (vspace 10)
+               (color-stripe (main-color ,gu))
+               (br)
+               (center
+                 (hook 'longfoot)
+                 (admin-bar ,gu (- (msec) ,gt) ,whence)))))))
+
 (def admin-bar (user elapsed whence)
   (when (admin user)
     (br2)
@@ -813,7 +827,7 @@ function vote(node) {
 
 ; remember to set caching to 0 when testing non-logged-in 
 
-(= caching* 1 perpage* 30 threads-perpage* 10 maxend* 210)
+(= caching* 1 perpage* 30 threads-perpage* 10 maxend* 210 csb-count* 5)
 
 ; Limiting that newscache can't take any arguments except the user.
 ; To allow other arguments, would have to turn the cache from a single 
@@ -836,12 +850,18 @@ function vote(node) {
 ;(newsop index.html () (newspage user))
 
 (newscache newspage user 90
-  (listpage user (msec) (topstories user maxend*) nil nil "news"))
+  (listpage-csb user (msec) (topstories user maxend*) (visible user (firstn csb-count* comments*)) nil nil "news"))
 
 (def listpage (user t1 items label title (o url label) (o number t))
   (hook 'listpage user)
   (longpage user t1 nil label title url
     (display-items user items label title url 0 perpage* number)))
+
+(def listpage-csb (user t1 items comments label title (o url label) (o number t))
+  (hook 'listpage user)
+  (longpage-csb user t1 nil label title url
+    (display-items user items label title url 0 perpage* number)
+    (display-items user comments label title url 0 perpage* number)))
 
 
 (newsop newest () (newestpage user))
