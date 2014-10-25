@@ -971,6 +971,7 @@ function vote(node) {
     (let n start
       (each i (cut items start end)
         (display-item (and number (++ n)) i user whence t)
+        (display-item-text i user t)
         (spacerow (if (acomment i) 15 5))))
     (when end
       (let newend (+ end perpage*)
@@ -1911,13 +1912,19 @@ function vote(node) {
 (def superparent (i)
   (aif i!parent (superparent:item it) i))
 
-(def display-item-text (s user)
+(def first-para (text)
+  (let index (posmatch "<p>" text)
+    (if (no index) text
+      (cut text 0 index))))
+
+(def display-item-text (s user (o preview-only))
   (when (and (cansee user s) 
              (in s!type 'story 'poll)
              (blank s!url) 
              (~blank s!text))
     (spacerow 2)
-    (row "" s!text)))
+    (if preview-only (row "" (pr (first-para s!text)))
+      (row "" s!text))))
 
 
 ; Edit Item
