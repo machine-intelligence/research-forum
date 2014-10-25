@@ -402,7 +402,6 @@
      (tag head 
        (gen-css-url)
        (prn "<link rel=\"shortcut icon\" href=\"" favicon-url* "\">")
-       (tag script (pr votejs*))
        (tag title (pr ,title)))
      (tag body 
        (center
@@ -570,31 +569,6 @@ pre:hover {overflow:auto} "))
 ;.comment { margin-top:1ex; margin-bottom:1ex; color:black; }
 ;.vote IMG { border:0; margin: 3px 2px 3px 2px; }
 ;.reply { font-size:smaller; text-decoration:underline !important; }
-
-(= votejs* "
-function byId(id) {
-  return document.getElementById(id);
-}
-
-function vote(node) {
-  var v = node.id.split(/_/);   // {'up', '123'}
-  var item = v[1]; 
-
-  // adjust score
-  var score = byId('score_' + item);
-  var newscore = parseInt(score.innerHTML) + (v[0] == 'up' ? 1 : -1);
-  score.innerHTML = newscore + (newscore == 1 ? ' point' : ' points');
-
-  // hide arrows
-  byId('up_'   + item).style.visibility = 'hidden';
-  byId('down_' + item).style.visibility = 'hidden';
-
-  // ping server
-  var ping = new Image();
-  ping.src = node.href;
-
-  return false; // cancel browser nav
-} ")
 
 
 ; Page top
@@ -1014,7 +988,7 @@ function vote(node) {
     (tr (tag (td colspan (if i 2 1)))    
         (tag (td class 'subtext)
           (hook 'itemline s user)
-          (itemline s user)
+          (itemline s user whence)
           (when (in s!type 'story 'poll) (commentlink s user))
           (editlink s user)
           (when (apoll s) (addoptlink s user))
@@ -1089,27 +1063,12 @@ function vote(node) {
 (= downvote-threshold* 200 downvote-time* 1440)
 
 (= votewid* 14)
-      
+
+; TODO: the following function used to be the one generating the voting arrows;
+; this function should be removed instead of existing but
+; only producing whitespace
 (def votelinks (i user whence (o downtoo))
-  (center
-    (if (and (cansee user i)
-             (or (no user)
-                 (no ((votes user) i!id))))
-         (do (votelink i user whence 'up)
-             (if (and downtoo 
-                      (or (admin user)
-                          (< (item-age i) downvote-time*))
-                      (canvote user i 'down))
-                 (do (br)
-                     (votelink i user whence 'down))
-                 ; don't understand why needed, but is, or a new
-                 ; page is generated on voting
-                 (tag (span id (+ "down_" i!id)))))
-        (author user i)
-         (do (fontcolor orange (pr "*"))
-             (br)
-             (hspace votewid*))
-        (hspace votewid*))))
+  (hspace votewid*))
 
 ; could memoize votelink more, esp for non-logged in users,
 ; since only uparrow is shown; could straight memoize
@@ -1118,7 +1077,6 @@ function vote(node) {
 
 (def votelink (i user whence dir)
   (tag (a id      (if user (string dir '_ i!id))
-          onclick (if user "return vote(this)")
           href    (vote-url user i dir whence))
     (if (is dir 'up)
         (out (gentag img src up-url*   border 0 vspace 3 hspace 2))
@@ -1170,7 +1128,9 @@ function vote(node) {
                            whence))
         (canvote user i dir)
          (do (vote-for by i dir)
-             (logvote ip by i))
+             (logvote ip by i)
+             (pr "<meta http-equiv='refresh' content='0; url="
+                 (esc-tags whence) "' />"))
          (pr "Can't make that vote."))))
 
 (mac and-list (render items ifempty . body)
@@ -1184,14 +1144,17 @@ function vote(node) {
                                  (pr " and ")))))
          ,@body))))
 
-(def itemline (i user)
+(def itemline (i user whence)
   (when (cansee user i) 
     (byline i user)
     (and-list [userlink-or-you user _] (likes i user) (pr)
               (pr bar*) (it) (pr " like" (if (or (iso items (list user))
                                                  (cdr items))
                                              "" "s")
-                                 " this"))))
+                                 " this"))
+    (when (canvote user i 'up)
+      (pr bar*)
+      (clink likelink "Like" (vote-url user i 'up whence)))))
 
 (def likes (i user)
   (let ls (map [_ 2] (keep [and (is 'up (_ 3)) (~is i!by (_ 2))] i!votes))
@@ -2166,7 +2129,7 @@ function vote(node) {
     (let parent (and (or (no astree) showpar) (c 'parent))
       (tag (div style "margin-top:2px; margin-bottom:-10px; ")
         (spanclass comhead
-          (itemline c user)
+          (itemline c user whence)
           (permalink c user)
           (when parent
             (when (cansee user c) (pr bar*))
