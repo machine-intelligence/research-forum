@@ -1151,7 +1151,7 @@ function vote(node) {
        (if (no ,gi) ,ifempty
          (with (pl (fn (sing plur) (if (no (cdr ,gi)) sing plur))
                 it (fn () (do (on i ,gi
-                                 (, render i)
+                                 (,render i)
                                  (if (< index (- (len ,gi) 2))
                                       (pr ", ")
                                      (is index (- (len ,gi) 2))
