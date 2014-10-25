@@ -1057,27 +1057,12 @@ pre:hover {overflow:auto} "))
 (= downvote-threshold* 200 downvote-time* 1440)
 
 (= votewid* 14)
-      
+
+; TODO: the following function used to be the one generating the voting arrows;
+; this function should be removed instead of existing but
+; only producing whitespace
 (def votelinks (i user whence (o downtoo))
-  (center
-    (if (and (cansee user i)
-             (or (no user)
-                 (no ((votes user) i!id))))
-         (do (votelink i user whence 'up)
-             (if (and downtoo 
-                      (or (admin user)
-                          (< (item-age i) downvote-time*))
-                      (canvote user i 'down))
-                 (do (br)
-                     (votelink i user whence 'down))
-                 ; don't understand why needed, but is, or a new
-                 ; page is generated on voting
-                 (tag (span id (+ "down_" i!id)))))
-        (author user i)
-         (do (fontcolor orange (pr "*"))
-             (br)
-             (hspace votewid*))
-        (hspace votewid*))))
+  (hspace votewid*))
 
 ; could memoize votelink more, esp for non-logged in users,
 ; since only uparrow is shown; could straight memoize
