@@ -30,7 +30,6 @@
   auth       0
   member     nil
   submitted  nil
-  votes      nil   ; for now just recent, elts each (time id by sitename dir)
   karma      1
   avg        nil
   weight     .5
@@ -1414,12 +1413,8 @@ pre:hover {overflow:auto} "))
       (if (admin user) (pushnew 'nokill i!keys))
       (push vote i!votes)
       (save-item i)
-      (push (list (seconds) i!id i!by (sitename i!url) dir)
-            (uvar user votes))
       (= ((votes* user) i!id) vote)
       (save-votes user)
-      (zap [firstn votewindow* _] (uvar user votes))
-      (save-prof user)
       (push (cons i!id vote) recent-votes*))))
 
 ; redefined later
