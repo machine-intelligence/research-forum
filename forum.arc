@@ -1186,7 +1186,6 @@ function vote(node) {
 
 (def itemline (i user)
   (when (cansee user i) 
-    (when (news-type i) (itemscore i user))
     (byline i user)
     (and-list [userlink-or-you user _] (likes i user) (pr)
               (pr bar*) (it) (pr " like" (if (or (iso items (list user))
