@@ -462,7 +462,7 @@
 (def shortened (text)
   (let utext (unmarkdown text)
     (if (<= (len utext) csb-maxlen*) utext
-      (word-boundary (cut utext 0 (min csb-maxlen* (len utext)))))))
+      (word-boundary (cut utext 0 csb-maxlen*)))))
   
 (def admin-bar (user elapsed whence)
   (when (admin user)
