@@ -445,7 +445,7 @@
        (do ,@body)
        (add-sidebar (link "RECENT COMMENTS" "newcomments")
                     (each c (csb-items ,user csb-count*)
-                      (tag (p) (tag (a href (item-url c!id))
+                      (tag (p) (tag (a href (item-url c!id) class 'csb)
                                  (tag (b) (pr (shortened c!text csb-maxlen*))))
                                (br)
                                (tab (tr (tag (td class 'subtext)
@@ -537,13 +537,16 @@ a:visited { color:#828282; text-decoration:none; }
 
 .userlink, .you { font-weight:bold; }
 
-.comment a:link, .comment a:visited { text-decoration:underline;}
+.comment a:link, .comment a:visited { text-decoration:underline; }
 .dead a:link, .dead a:visited { color:#dddddd; }
 .pagetop a:visited { color:#000000;}
 .topsel a:link, .topsel a:visited { color:#ffffff; }
 
 .subtext a:link, .subtext a:visited { color:#828282; }
 .subtext a:hover { text-decoration:underline; }
+
+.csb a:link, .csb a:visited { color:#828282; }
+.csb a:hover { text-decoration:underline; }
 
 .comhead a:link, .subtext a:visited { color:#828282; }
 .comhead a:hover { text-decoration:underline; }
