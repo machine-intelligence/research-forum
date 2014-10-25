@@ -1145,10 +1145,28 @@ function vote(node) {
              (logvote ip by i))
          (pr "Can't make that vote."))))
 
+(mac and-list (render items ifempty . body)
+  (w/uniq (gi)
+    `(with (,gi ,items)
+       (if (no ,gi) ,ifempty
+         (with (pl (fn (sing plur) (if (no (cdr ,gi)) sing plur))
+                it (fn () (do (on i ,gi
+                                 (, render i)
+                                 (if (< index (- (len ,gi) 2))
+                                      (pr ", ")
+                                     (is index (- (len ,gi) 2))
+                                      (pr " and "))))))
+           ,@body)))))
+
 (def itemline (i user)
   (when (cansee user i) 
     (when (news-type i) (itemscore i user))
-    (byline i user)))
+    (byline i user)
+    (and-list [userlink user _] (likes i) (pr)
+              (pr bar*) (it) (pr " like" (pl "s" "") " this"))))
+
+(def likes (i)
+  (map [_ 2] (retrieve 10 [is 'up (_ 3)] i!votes)))
 
 (def itemscore (i (o user))
   (tag (span id (+ "score_" i!id))
