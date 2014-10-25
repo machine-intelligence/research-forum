@@ -449,7 +449,7 @@
                       (tag (p) (tag (a href (item-url c!id))
                                  (tag (b) (pr (shortened c!text))))
                                (br)
-                               (itemline c user)))
+                               (tab (tr (tag (td class 'subtext) (itemline c user))))))
          ,@body))))
 
 (def reverse (text)
@@ -501,31 +501,31 @@
 
 (defop forum.css req
   (pr "
-body  { font-family:Verdana; font-size:10pt; color:#828282; }
-td    { font-family:Verdana; font-size:10pt; color:#828282; }
+body  { font-family:Verdana; font-size:11pt; color:#828282; }
+td    { font-family:Verdana; font-size:11pt; color:#828282; }
 
 table td.csb { background-color:#e6e6e6; width:300px }
 
-.admin td   { font-family:Verdana; font-size:8.5pt; color:#000000; }
-.subtext td { font-family:Verdana; font-size:  7pt; color:#828282; }
+.admin td   { font-family:Verdana; font-size:9.5pt; color:#000000; }
+.subtext td { font-family:Verdana; font-size:  8pt; color:#828282; }
 
-input    { font-family:Courier; font-size:10pt; color:#000000; }
+input    { font-family:Courier; font-size:11pt; color:#000000; }
 input[type=\"submit\"] { font-family:Verdana; }
-textarea { font-family:Courier; font-size:10pt; color:#000000; }
+textarea { font-family:Courier; font-size:11pt; color:#000000; }
 
 a:link    { color:#000000; text-decoration:none; } 
 a:visited { color:#828282; text-decoration:none; }
 
-.default { font-family:Verdana; font-size: 10pt; color:#828282; }
-.admin   { font-family:Verdana; font-size:8.5pt; color:#000000; }
-.title   { font-family:Verdana; font-size: 10pt; color:#828282; }
-.adtitle { font-family:Verdana; font-size:  9pt; color:#828282; }
-.subtext { font-family:Verdana; font-size:  7pt; color:#828282; }
-.yclinks { font-family:Verdana; font-size:  8pt; color:#828282; }
-.pagetop { font-family:Verdana; font-size: 10pt; color:#222222; }
-.comhead { font-family:Verdana; font-size:  8pt; color:#828282; }
-.comment { font-family:Verdana; font-size:  9pt; }
-.dead    { font-family:Verdana; font-size:  9pt; color:#dddddd; }
+.default { font-family:Verdana; font-size: 11pt; color:#828282; }
+.admin   { font-family:Verdana; font-size:9.5pt; color:#000000; }
+.title   { font-family:Verdana; font-size: 15pt; color:#828282; }
+.adtitle { font-family:Verdana; font-size:  10pt; color:#828282; }
+.subtext { font-family:Verdana; font-size:  8pt; color:#828282; }
+.yclinks { font-family:Verdana; font-size:  9pt; color:#828282; }
+.pagetop { font-family:Verdana; font-size: 11pt; color:#222222; }
+.comhead { font-family:Verdana; font-size:  9pt; color:#828282; }
+.comment { font-family:Verdana; font-size:  10pt; }
+.dead    { font-family:Verdana; font-size:  10pt; color:#dddddd; }
 
 .comment a:link, .comment a:visited { text-decoration:underline;}
 .dead a:link, .dead a:visited { color:#dddddd; }
@@ -845,7 +845,7 @@ function vote(node) {
 
 ; remember to set caching to 0 when testing non-logged-in 
 
-(= caching* 1 perpage* 30 threads-perpage* 10 maxend* 210 
+(= caching* 0 perpage* 30 threads-perpage* 10 maxend* 210 
    csb-count* 5 csb-maxlen* 30)
 
 ; Limiting that newscache can't take any arguments except the user.
