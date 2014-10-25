@@ -355,6 +355,17 @@
                   #\&  "&#38;"
                         c)))))
 
+(def unesc-tags (str)
+  (tostring
+    (forlen i str
+      (if (begins str "&#60;" i)
+           (do (pr #\<) (= i (+ i 4)))
+          (begins str "&#62;" i)
+           (do (pr #\>) (= i (+ i 4)))
+          (begins str "&#38;" i)
+           (do (pr #\&) (= i (+ i 4)))
+          (pr (str i))))))
+
 (def nbsp () (pr "&nbsp;"))
 
 (def link (text (o dest text) (o color))

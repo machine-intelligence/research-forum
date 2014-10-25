@@ -455,7 +455,8 @@
                        (iflet newi (pos #\$ s (+ i 1))
                               (do (pr "<img src='http://www.codecogs.com/"
                                       "png.latex?" 
-                                      (urlencode (cut s (+ i 1) newi)) 
+                                      (urlencode
+                                        (unesc-tags (cut s (+ i 1) newi)))
                                       "'>")
                                   (= i newi))
                               (pr "$"))
