@@ -446,7 +446,7 @@
        (add-sidebar (link "RECENT COMMENTS" "newcomments")
                     (each c (csb-items ,user csb-count*)
                       (tag (p) (tag (a href (item-url c!id))
-                                 (tag (b) (pr (shortened c!text))))
+                                 (tag (b) (pr (shortened c!text csb-maxlen*))))
                                (br)
                                (tab (tr (tag (td class 'subtext)
                                  (pr "by ")
@@ -465,10 +465,10 @@
   (if (is (len (halve text)) 1) text
     (reverse ((halve (reverse text)) 1))))
 
-(def shortened (text)
+(def shortened (text maxlen)
   (let utext (unmarkdown text)
-    (if (<= (len utext) csb-maxlen*) utext
-      (word-boundary (cut utext 0 csb-maxlen*)))))
+    (if (<= (len utext) maxlen) utext
+      (word-boundary (cut utext 0 maxlen)))))
   
 (def admin-bar (user elapsed whence)
   (when (admin user)
@@ -831,7 +831,7 @@ pre:hover {overflow:auto} "))
 ; remember to set caching to 0 when testing non-logged-in 
 
 (= caching* 1 perpage* 30 threads-perpage* 10 maxend* 210 
-   csb-count* 5 csb-maxlen* 30)
+   csb-count* 5 csb-maxlen* 30 preview-maxlen* 1000)
 
 ; Limiting that newscache can't take any arguments except the user.
 ; To allow other arguments, would have to turn the cache from a single 
@@ -1893,13 +1893,17 @@ pre:hover {overflow:auto} "))
     (if (no index) text
       (cut text 0 index))))
 
+(def preview (text)
+  (if (<= (len text) preview-maxlen*) text
+    (first-para text)))
+
 (def display-item-text (s user (o preview-only))
   (when (and (cansee user s) 
              (in s!type 'story 'poll)
              (blank s!url) 
              (~blank s!text))
     (spacerow 2)
-    (if preview-only (row "" (pr (first-para s!text)))
+    (if preview-only (row "" (pr (preview s!text)))
       (row "" s!text))))
 
 
