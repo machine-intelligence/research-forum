@@ -528,7 +528,7 @@ a:visited { color:#828282; text-decoration:none; }
 .comment { font-family:Verdana; font-size:  10pt; }
 .dead    { font-family:Verdana; font-size:  10pt; color:#dddddd; }
 
-.userlink { font-weight:bold; }
+.userlink, .you { font-weight:bold; }
 
 .comment a:link, .comment a:visited { text-decoration:underline;}
 .dead a:link, .dead a:visited { color:#dddddd; }
@@ -1167,27 +1167,30 @@ function vote(node) {
          (pr "Can't make that vote."))))
 
 (mac and-list (render items ifempty . body)
-  (w/uniq (gi)
-    `(with (,gi ,items)
-       (if (no ,gi) ,ifempty
-         (with (pl (fn (sing plur) (if (no (cdr ,gi)) sing plur))
-                it (fn () (do (on i ,gi
-                                 (,render i)
-                                 (if (< index (- (len ,gi) 2))
-                                      (pr ", ")
-                                     (is index (- (len ,gi) 2))
-                                      (pr " and "))))))
-           ,@body)))))
+  `(with (items ,items)
+     (if (no items) ,ifempty
+       (let it (fn () (do (on i items
+                            (,render i)
+                            (if (< index (- (len items) 2))
+                                 (pr ", ")
+                                (is index (- (len items) 2))
+                                 (pr " and ")))))
+         ,@body))))
 
 (def itemline (i user)
   (when (cansee user i) 
     (when (news-type i) (itemscore i user))
     (byline i user)
-    (and-list [userlink user _] (likes i user) (pr)
-              (pr bar*) (it) (pr " like" (pl "s" "") " this"))))
+    (and-list [userlink-or-you user _] (likes i user) (pr)
+              (pr bar*) (it) (pr " like" (if (or (iso items (list user))
+                                                 (cdr items))
+                                             "" "s")
+                                 " this"))))
 
 (def likes (i user)
-  (map [_ 2] (retrieve 10 [and (is 'up (_ 3)) (~is i!by (_ 2))] i!votes)))
+  (let ls (map [_ 2] (keep [and (is 'up (_ 3)) (~is i!by (_ 2))] i!votes))
+    (+ (if (mem user ls) (list user) '())
+       (sort < (rem user ls)))))
 
 (def itemscore (i (o user))
   (tag (span id (+ "score_" i!id))
@@ -1208,6 +1211,9 @@ function vote(node) {
   (clink userlink (user-name user subject) (user-url subject))
   (awhen (and show-avg* (admin user) show-avg (uvar subject avg))
     (pr " (@(num it 1 t t))")))
+
+(def userlink-or-you (user subject)
+  (if (is user subject) (spanclass you (pr "You")) (userlink user subject)))
 
 (= noob-color* (color 60 150 60))
 
