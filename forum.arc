@@ -455,7 +455,8 @@
                                  (pr " on ")
                                  (let s (superparent c) 
                                    (pr (ellipsize s!title 50)))
-                                 (pr bar* (len (likes c user)) " likes"))))))
+                                 (pr bar*)
+                                 (itemscore c))))))
          ,@body))))
 
 (def reverse (text)
@@ -1197,8 +1198,7 @@ function vote(node) {
 
 (def itemscore (i (o user))
   (tag (span id (+ "score_" i!id))
-    (pr (plural (if (is i!type 'pollopt) (realscore i) i!score)
-                "point")))
+    (pr (plural (len (likes i user)) "like")))
   (hook 'itemscore i user))
 
 ; redefined later
