@@ -444,12 +444,19 @@
   `(longpage ,user ,t1 ,lid ,label ,title ,whence
      (if (no ,show-comments) 
        (do ,@body)
-       (add-sidebar (link "Recent Comments" "newcomments")
+       (add-sidebar (link "RECENT COMMENTS" "newcomments")
                     (each c (csb-items ,user csb-count*)
                       (tag (p) (tag (a href (item-url c!id))
                                  (tag (b) (pr (shortened c!text))))
                                (br)
-                               (tab (tr (tag (td class 'subtext) (itemline c user))))))
+                               (tab (tr (tag (td class 'subtext)
+                                 (pr "by ")
+                                 (userlink user c!by)
+                                 (pr " on ")
+                                 (let s (superparent c) 
+                                   (pr (ellipsize s!title 50)))
+                                 (pr bar*)
+                                 (itemscore c))))))
          ,@body))))
 
 (def reverse (text)
@@ -1179,7 +1186,6 @@ function vote(node) {
 
 (def itemline (i user)
   (when (cansee user i) 
-    (when (news-type i) (itemscore i user))
     (byline i user)
     (and-list [userlink-or-you user _] (likes i user) (pr)
               (pr bar*) (it) (pr " like" (if (or (iso items (list user))
@@ -1194,8 +1200,7 @@ function vote(node) {
 
 (def itemscore (i (o user))
   (tag (span id (+ "score_" i!id))
-    (pr (plural (if (is i!type 'pollopt) (realscore i) i!score)
-                "point")))
+    (pr (plural (len (likes i user)) "like")))
   (hook 'itemscore i user))
 
 ; redefined later
