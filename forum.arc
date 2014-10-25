@@ -445,11 +445,25 @@
   `(longpage ,user ,t1 ,lid ,label ,title ,whence
      (if (no ,show-comments) 
        (do ,@body)
-       (add-sidebar "Recent Comments" 
-                    (display-items user (csb-items user csb-count*) label 
-                                   title url 0 perpage* number)
+       (add-sidebar "Recent Comments"
+                    (each c (csb-items ,user csb-count*)
+                      (tag (p) (tag (a href (item-url c!id))
+                                 (tag (b) (pr (shortened c!text))))
+                               (br)
+                               (itemline c user)))
          ,@body))))
 
+(def reverse (text)
+  (coerce (rev (coerce text 'cons)) 'string))
+
+(def word-boundary (text)
+  (if (is (len (halve text)) 1) text
+    (reverse ((halve (reverse text)) 1))))
+
+(def shortened (text)
+  (let utext (unmarkdown text)
+    (word-boundary (cut utext 0 (min csb-maxlen* (len utext))))))
+  
 (def admin-bar (user elapsed whence)
   (when (admin user)
     (br2)
@@ -829,7 +843,8 @@ function vote(node) {
 
 ; remember to set caching to 0 when testing non-logged-in 
 
-(= caching* 1 perpage* 30 threads-perpage* 10 maxend* 210 csb-count* 5)
+(= caching* 1 perpage* 30 threads-perpage* 10 maxend* 210 
+   csb-count* 5 csb-maxlen* 30)
 
 ; Limiting that newscache can't take any arguments except the user.
 ; To allow other arguments, would have to turn the cache from a single 
