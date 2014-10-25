@@ -449,7 +449,11 @@
                       (tag (p) (tag (a href (item-url c!id))
                                  (tag (b) (pr (shortened c!text))))
                                (br)
-                               (tab (tr (tag (td class 'subtext) (itemline c user))))))
+                               (tab (tr (tag (td class 'subtext)
+                                 (itemline c user)
+                                 (pr " | on: ")
+                                 (let s (superparent c)
+                                   (link (ellipsize s!title 50) (item-url s!id))))))))
          ,@body))))
 
 (def reverse (text)
