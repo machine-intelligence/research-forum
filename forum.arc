@@ -498,6 +498,7 @@
 (= (max-age* 'news.css) 86400)   ; cache css in browser for 1 day
 
 ; turn off server caching via (= caching* 0) or won't see changes
+(= caching* 0)
 
 (defop news.css req
   (pr "
@@ -524,6 +525,8 @@ a:visited { color:#828282; text-decoration:none; }
 .comhead { font-family:Verdana; font-size:  8pt; color:#828282; }
 .comment { font-family:Verdana; font-size:  9pt; }
 .dead    { font-family:Verdana; font-size:  9pt; color:#dddddd; }
+
+.userlink { font-weight:bold; }
 
 .comment a:link, .comment a:visited { text-decoration:underline;}
 .dead a:link, .dead a:visited { color:#dddddd; }
@@ -1198,8 +1201,11 @@ function vote(node) {
 
 (= show-avg* nil)
 
+(mac clink (class text href)
+  `(tag (a href ,href class ',class) (pr ,text)))
+
 (def userlink (user subject (o show-avg t))
-  (link (user-name user subject) (user-url subject))
+  (clink userlink (user-name user subject) (user-url subject))
   (awhen (and show-avg* (admin user) show-avg (uvar subject avg))
     (pr " (@(num it 1 t t))")))
 
