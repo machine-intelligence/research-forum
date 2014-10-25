@@ -1182,11 +1182,11 @@ function vote(node) {
   (when (cansee user i) 
     (when (news-type i) (itemscore i user))
     (byline i user)
-    (and-list [userlink user _] (likes i) (pr)
+    (and-list [userlink user _] (likes i user) (pr)
               (pr bar*) (it) (pr " like" (pl "s" "") " this"))))
 
-(def likes (i)
-  (map [_ 2] (retrieve 10 [is 'up (_ 3)] i!votes)))
+(def likes (i user)
+  (map [_ 2] (retrieve 10 [and (is 'up (_ 3)) (~is i!by (_ 2))] i!votes)))
 
 (def itemscore (i (o user))
   (tag (span id (+ "score_" i!id))
