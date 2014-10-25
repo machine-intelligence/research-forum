@@ -365,6 +365,9 @@
 (def underlink (text (o dest text))
   (tag (a href dest) (tag u (pr text))))
 
+(mac clink (class text href)
+  `(tag (a href ,href class ',class) (pr ,text)))
+
 (def striptags (s)
   (let intag nil
     (tostring

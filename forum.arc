@@ -1201,9 +1201,6 @@ function vote(node) {
 
 (= show-avg* nil)
 
-(mac clink (class text href)
-  `(tag (a href ,href class ',class) (pr ,text)))
-
 (def userlink (user subject (o show-avg t))
   (clink userlink (user-name user subject) (user-url subject))
   (awhen (and show-avg* (admin user) show-avg (uvar subject avg))
