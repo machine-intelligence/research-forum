@@ -402,7 +402,6 @@
      (tag head 
        (gen-css-url)
        (prn "<link rel=\"shortcut icon\" href=\"" favicon-url* "\">")
-       (tag script (pr votejs*))
        (tag title (pr ,title)))
      (tag body 
        (center
@@ -563,31 +562,6 @@ pre:hover {overflow:auto} "))
 ;.comment { margin-top:1ex; margin-bottom:1ex; color:black; }
 ;.vote IMG { border:0; margin: 3px 2px 3px 2px; }
 ;.reply { font-size:smaller; text-decoration:underline !important; }
-
-(= votejs* "
-function byId(id) {
-  return document.getElementById(id);
-}
-
-function vote(node) {
-  var v = node.id.split(/_/);   // {'up', '123'}
-  var item = v[1]; 
-
-  // adjust score
-  var score = byId('score_' + item);
-  var newscore = parseInt(score.innerHTML) + (v[0] == 'up' ? 1 : -1);
-  score.innerHTML = newscore + (newscore == 1 ? ' point' : ' points');
-
-  // hide arrows
-  byId('up_'   + item).style.visibility = 'hidden';
-  byId('down_' + item).style.visibility = 'hidden';
-
-  // ping server
-  var ping = new Image();
-  ping.src = node.href;
-
-  return false; // cancel browser nav
-} ")
 
 
 ; Page top
@@ -1111,7 +1085,6 @@ function vote(node) {
 
 (def votelink (i user whence dir)
   (tag (a id      (if user (string dir '_ i!id))
-          onclick (if user "return vote(this)")
           href    (vote-url user i dir whence))
     (if (is dir 'up)
         (out (gentag img src up-url*   border 0 vspace 3 hspace 2))
@@ -1163,7 +1136,9 @@ function vote(node) {
                            whence))
         (canvote user i dir)
          (do (vote-for by i dir)
-             (logvote ip by i))
+             (logvote ip by i)
+             (pr "<meta http-equiv='refresh' content='0; url="
+                 (esc-tags whence) "' />"))
          (pr "Can't make that vote."))))
 
 (mac and-list (render items ifempty . body)
