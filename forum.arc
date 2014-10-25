@@ -449,7 +449,7 @@
                                  (tag (b) (pr (shortened c!text))))
                                (br)
                                (tab (tr (tag (td class 'subtext) 
-                                          (itemline c user whence))))))
+                                          (itemline c user ,whence))))))
          ,@body))))
 
 (def reverse (text)
