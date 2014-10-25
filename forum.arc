@@ -444,7 +444,7 @@
   `(longpage ,user ,t1 ,lid ,label ,title ,whence
      (if (no ,show-comments) 
        (do ,@body)
-       (add-sidebar "Recent Comments"
+       (add-sidebar (link "Recent Comments" "newcomments")
                     (each c (csb-items ,user csb-count*)
                       (tag (p) (tag (a href (item-url c!id))
                                  (tag (b) (pr (shortened c!text))))
