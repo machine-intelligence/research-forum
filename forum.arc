@@ -866,7 +866,7 @@ function vote(node) {
 
 ;(newsop index.html () (newspage user))
 
-(def csb-items (user n) (visible user (firstn n comments*)))
+(def csb-items (user n) (retrieve n [cansee user _] comments*))
 
 (newscache newspage user 90
   (listpage user (msec) (topstories user maxend*) nil nil "news" nil t))
