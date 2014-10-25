@@ -435,7 +435,7 @@
 
 (mac add-sidebar (title contents . body)
   `(tag (table width '100%)
-        (tr (tag (td valign 'top) ,@body)
+        (tr (tag (td valign 'top class 'contents) ,@body)
             (tag (td valign 'top class 'csb)
               (para (tag b (pr ,title))) ,contents))))
 
@@ -511,7 +511,8 @@
 body  { font-family:Verdana; font-size:11pt; color:#828282; }
 td    { font-family:Verdana; font-size:11pt; color:#828282; }
 
-table td.csb { background-color:#e6e6e6; width:300px }
+table td.csb        { background-color:#e6e6e6; width:300px }
+table td.contents   { padding-right:15px }
 
 .admin td   { font-family:Verdana; font-size:9.5pt; color:#000000; }
 .subtext td { font-family:Verdana; font-size:  8pt; color:#828282; }
