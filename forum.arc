@@ -395,7 +395,7 @@
 ; redefined later
 
 (def gen-css-url ()
-  (prn "<link rel=\"stylesheet\" type=\"text/css\" href=\"news.css\">"))
+  (prn "<link rel=\"stylesheet\" type=\"text/css\" href=\"forum.css\">"))
 
 (mac npage (title . body)
   `(tag html 
@@ -437,8 +437,7 @@
 (mac add-sidebar (title contents . body)
   `(tag (table width '100%)
         (tr (tag (td valign 'top) ,@body)
-            ; TODO (elliott): Eliminate hardcoded color / width
-            (tag (td valign 'top bgcolor (gray 230) width '300px)
+            (tag (td valign 'top class 'csb)
               (para (tag b (pr ,title))) ,contents))))
 
 (mac longpage-csb (user t1 lid label title whence show-comments . body)
@@ -481,14 +480,16 @@
                   (pr msg))))
     (br2)))
 
-(= (max-age* 'news.css) 86400)   ; cache css in browser for 1 day
+(= (max-age* 'forum.css) 86400)   ; cache css in browser for 1 day
 
 ; turn off server caching via (= caching* 0) or won't see changes
 
-(defop news.css req
+(defop forum.css req
   (pr "
 body  { font-family:Verdana; font-size:10pt; color:#828282; }
 td    { font-family:Verdana; font-size:10pt; color:#828282; }
+
+table td.csb { background-color:#e6e6e6; width:300px }
 
 .admin td   { font-family:Verdana; font-size:8.5pt; color:#000000; }
 .subtext td { font-family:Verdana; font-size:  7pt; color:#828282; }
