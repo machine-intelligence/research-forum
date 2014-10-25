@@ -954,7 +954,7 @@ pre:hover {overflow:auto} "))
       (each i (cut items start end)
         (display-item (and number (++ n)) i user whence t)
         (display-item-text i user t)
-        (spacerow (if (acomment i) 15 5))))
+        (spacerow (if (acomment i) 15 30))))
     (when end
       (let newend (+ end perpage*)
         (when (and (<= newend maxend*) (< end (len items)))
