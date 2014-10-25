@@ -2386,6 +2386,7 @@ pre:hover {overflow:auto} "))
 
 (= formatdoc* 
 "Blank lines separate paragraphs.
+<p> Text surrounded by dollar signs is rendered as LaTeX.
 <p> Text after a blank line that is indented by two or more spaces is 
 reproduced verbatim.  (This is intended for code.)
 <p> Text surrounded by asterisks is italicized, if the character after the 
