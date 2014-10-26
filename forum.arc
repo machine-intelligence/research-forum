@@ -30,7 +30,6 @@
   auth       0
   member     nil
   submitted  nil
-  votes      nil   ; for now just recent, elts each (time id by sitename dir)
   karma      1
   avg        nil
   weight     .5
@@ -56,7 +55,7 @@
   url        nil
   title      nil
   text       nil
-  votes      nil   ; elts each (time ip user type score)
+  likes      nil   ; list of users, not including item!by
   score      0
   sockvotes  0
   flags      nil
@@ -109,6 +108,8 @@
       (aand (goodname u)
             (file-exists (+ profdir* u))
             (= (profs* u) (temload 'profile it)))))
+
+; User likes a story = (is ((votes u) i) 'like)
 
 (def votes (u)
   (or (votes* u)
@@ -258,13 +259,15 @@
 
 (def newslog args (apply srvlog 'news args))
 
+(def votelog args (apply srvlog 'votes args))
+
 
 ; Ranking
 
 ; Votes divided by the age in hours to the gravityth power.
 ; Would be interesting to scale gravity in a slider.
 
-(= gravity* 1.8 timebase* 120 front-threshold* 1 
+(= gravity* 1.8 timebase* 120 front-threshold* 0
    nourl-factor* .4 lightweight-factor* .3 )
 
 (def frontpage-rank (s (o scorefn realscore) (o gravity gravity*))
@@ -767,6 +770,7 @@ pre:hover {overflow:auto} "))
       (when (some acomment:item (uvar subject submitted))
         (sp)
         (underlink "comments" (threads-url subject)))
+      (pr " " (saved-link user subject))
       (hook 'user user subject))))
 
 (def profile-form (user subject)
@@ -814,13 +818,11 @@ pre:hover {overflow:auto} "))
       (int     delay      ,(p 'delay)                              ,u  ,u))))
 
 (def saved-link (user subject)
-  (when (or (admin user) (is user subject))
-    (let n (if (len> (votes subject) 500) 
-               "many" 
-               (len (voted-stories user subject)))
-      (if (is n 0)
-          ""
-          (tostring (underlink n (saved-url subject)))))))
+  (let n (if (len> (votes subject) 500) 
+             "many" 
+             (len (liked-stories user subject)))
+    (tostring (underlink (+ (string n) " liked " (if (is n 1) "story" "stories"))
+                         (saved-url subject)))))
 
 (def resetpw-link ()
   (tostring (underlink "reset password" "resetpw")))
@@ -937,14 +939,12 @@ pre:hover {overflow:auto} "))
       (pr "No such user.")))
 
 (def savedpage (user subject)
-  (if (or (is user subject) (admin user))
-      (listpage user (msec)
-                (sort (compare < item-age) (voted-stories user subject)) 
-               "saved" "Saved Links" (saved-url subject))
-      (pr "Can't display that.")))
+  (listpage user (msec)
+            (sort (compare < item-age) (liked-stories user subject)) 
+            "likes" "Liked stories" (saved-url subject)))
 
-(def voted-stories (user subject)
-  (keep [and (astory _) (cansee user _)]
+(def liked-stories (user subject)
+  (keep [and (astory _) (cansee user _) (is ((votes subject) _!id) 'like)]
         (map item (keys:votes subject))))
 
 
@@ -1082,7 +1082,7 @@ pre:hover {overflow:auto} "))
 (def votelink (i user whence dir)
   (tag (a id      (if user (string dir '_ i!id))
           href    (vote-url user i dir whence))
-    (if (is dir 'up)
+    (if (is dir 'like)
         (out (gentag img src up-url*   border 0 vspace 3 hspace 2))
         (out (gentag img src down-url* border 0 vspace 3 hspace 2)))))
 
@@ -1100,13 +1100,9 @@ pre:hover {overflow:auto} "))
 (def canvote (user i dir)
   (and user
        (news-type&live i)
-       (isnt dir 'down)
-       (or (is dir 'up) (> i!score lowest-score*))
-       (no ((votes user) i!id))
-       (or (is dir 'up)
-           (and (acomment i)
-                (> (karma user) downvote-threshold*)
-                (no (aand i!parent (author user (item it))))))))
+       (isnt user i!by)
+       (in dir 'like nil)
+       (isnt dir ((votes user) i!id))))
 
 ; Need the by argument or someone could trick logged in users into 
 ; voting something up by clicking on a link.  But a bad guy doesn't 
@@ -1118,8 +1114,10 @@ pre:hover {overflow:auto} "))
          whence (if whence (urldecode whence) "news"))
     (if (no i)
          (pr "No such item.")
-        (no (in dir 'up))
+        (no (in dir 'like nil))
          (pr "Can't make that vote.")
+        (is dir ((votes user) i!id))
+         (pr "Already voted that way.")
         (and by (or (isnt by user) (isnt (sym auth) (user->cookie* user))))
          (pr "User mismatch.")
         (no user)
@@ -1157,14 +1155,16 @@ pre:hover {overflow:auto} "))
                                                  (cdr items))
                                              "" "s")
                                  " this"))
-    (when (canvote user i 'up)
+    (when (canvote user i 'like)
       (pr bar*)
-      (clink likelink "Like" (vote-url user i 'up whence)))))
+      (clink likelink "Like" (vote-url user i 'like whence)))
+    (when (canvote user i nil)
+      (pr bar*)
+      (clink likelink "Unlike" (vote-url user i nil whence)))))
 
 (def likes (i user)
-  (let ls (map [_ 2] (keep [and (is 'up (_ 3)) (~is i!by (_ 2))] i!votes))
-    (+ (if (mem user ls) (list user) '())
-       (sort < (rem user ls)))))
+  (+ (if (mem user i!likes) (list user) '())
+     (sort < (rem user i!likes))))
 
 (def itemscore (i (o user))
   (tag (span id (+ "score_" i!id))
@@ -1262,7 +1262,8 @@ pre:hover {overflow:auto} "))
                  (when (and (~mem 'nokill i!keys)
                             (len> i!flags flag-kill-threshold*)
                             (< (realscore i) 10)
-                            (~find admin:!2 i!vote))
+                            (~admin i!by)
+                            (~find admin i!likes))
                    (kill i 'flags))
                  whence)
       (pr "@(if (mem user i!flags) 'un)flag"))
@@ -1386,8 +1387,9 @@ pre:hover {overflow:auto} "))
 ; Actual votes can't be lost because that field is not editable.  Not a
 ; big enough problem to drag in locking.
 
-(def vote-for (user i (o dir 'up))
-  (unless (or ((votes user) i!id) 
+(def vote-for (user i (o dir 'like))
+  (unless (or (is ((votes user) i!id) dir)
+              (is user i!by)
               (and (~live i) (isnt user i!by)))
     (withs (ip   (logins* user)
             vote (list (seconds) ip user dir i!score))
@@ -1399,31 +1401,25 @@ pre:hover {overflow:auto} "))
                            (> (downvote-ratio user) downvote-ratio-limit*)
                            ; prevention of karma-bombing
                            (just-downvoted user i!by)))
-                  (and (~legit-user user)
-                       (isnt user i!by)
-                       (find [is (cadr _) ip] i!votes))
                   (and (isnt i!type 'pollopt)
                        (biased-voter i vote)))
-        (++ i!score (case dir up 1 down -1))
+        (++ i!score (case dir like 1 nil -1))
         ; canvote protects against sockpuppet downvote of comments 
-        (when (and (is dir 'up) (possible-sockpuppet user))
+        (when (and (is dir 'like) (possible-sockpuppet user))
           (++ i!sockvotes))
         (metastory&adjust-rank i)
         (unless (or (author user i)
                     (and (is ip i!ip) (~editor user))
                     (is i!type 'pollopt))
-          (++ (karma i!by) (case dir up 1 down -1))
+          (++ (karma i!by) (case dir like 1 nil -1))
           (save-prof i!by))
         (wipe (comment-cache* i!id)))
       (if (admin user) (pushnew 'nokill i!keys))
-      (push vote i!votes)
+      (if (is dir 'like) (pushnew user i!likes)
+                         (zap [rem user _] i!likes))
       (save-item i)
-      (push (list (seconds) i!id i!by (sitename i!url) dir)
-            (uvar user votes))
-      (= ((votes* user) i!id) vote)
+      (= ((votes* user) i!id) dir)
       (save-votes user)
-      (zap [firstn votewindow* _] (uvar user votes))
-      (save-prof user)
       (push (cons i!id vote) recent-votes*))))
 
 ; redefined later
@@ -1432,11 +1428,9 @@ pre:hover {overflow:auto} "))
 
 ; ugly to access vote fields by position number
 
+; TODO: remove this rather than just setting to 0
 (def downvote-ratio (user (o sample 20))
-  (ratio [is _.1.3 'down]
-         (keep [let by ((item (car _)) 'by)
-                 (nor (is by user) (ignored by))]
-               (bestn sample (compare > car:cadr) (tablist (votes user))))))
+  0)
 
 (def just-downvoted (user victim (o n 3))
   (let prev (firstn n (recent-votes-by user))
@@ -1521,8 +1515,7 @@ pre:hover {overflow:auto} "))
 
 (def process-story (user url title showtext text ip)
   (aif (and (~blank url) (live-story-w/url url))
-       (do (vote-for user it)
-           (item-url it!id))
+       (item-url it!id)
        (if (no user)
             (flink [submit-login-warning url title showtext text])
            (no (and (or (blank url) (valid-url url)) 
@@ -1546,8 +1539,7 @@ pre:hover {overflow:auto} "))
 
 (def submit-item (user i)
   (push i!id (uvar user submitted))
-  (save-prof user)
-  (vote-for user i))
+  (save-prof user))
 
 (def recent-spam (site)
   (and (caris (banned-sites* site) 'ignore)
@@ -1957,7 +1949,7 @@ pre:hover {overflow:auto} "))
          ,@(standard-item-fields p a e x)))))
 
 (def standard-item-fields (i a e x)
-       `((int     votes     ,(len i!votes) ,a  nil)
+       `((int     likes     ,(len i!likes) ,a  nil)
          (int     score     ,i!score        t ,a)
          (int     sockvotes ,i!sockvotes   ,a ,a)
          (yesno   dead      ,i!dead        ,e ,e)
