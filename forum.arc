@@ -864,7 +864,7 @@ pre:hover {overflow:auto} "))
   (listpage user (msec) (topstories user maxend*) nil nil "news" nil t))
 
 (def listpage (user t1 items label title 
-               (o url label) (o number t) (o show-comments))
+               (o url label) (o number t) (o show-comments t))
   (hook 'listpage user)
   (longpage-csb user t1 nil label title url show-comments
     (display-items user items label title url 0 perpage* number)))
@@ -918,7 +918,7 @@ pre:hover {overflow:auto} "))
 
 
 (newsop lists () 
-  (longpage user (msec) nil "lists" "Lists" "lists"
+  (longpage-csb user (msec) nil "lists" "Lists" "lists" t
     (sptab
       (row (link "best")         "Highest voted recent links.")
       (row (link "active")       "Most active current discussions.")
@@ -979,7 +979,7 @@ pre:hover {overflow:auto} "))
                      (with (url  (url-for it)     ; it bound by afnid
                             user (get-user req))
                        (newslog req!ip user 'more label)
-                       (longpage user (msec) nil label title url
+                       (longpage-csb user (msec) nil label title url t
                          (apply f user items label title url args))))))
           rel 'nofollow)
     (pr "More")))
@@ -1835,7 +1835,7 @@ pre:hover {overflow:auto} "))
   (with (title (and (cansee user i)
                     (or i!title (aand i!text (ellipsize (striptags it)))))
          here (item-url i!id))
-    (longpage user (msec) nil nil title here
+    (longpage-csb user (msec) nil nil title here t
       (tab (display-item nil i user here)
            (display-item-text i user)
            (when (apoll i)
@@ -2212,7 +2212,7 @@ pre:hover {overflow:auto} "))
       (withs (title (+ subject "'s comments")
               label (if (is user subject) "threads" title)
               here  (threads-url subject))
-        (longpage user (msec) nil label title here
+        (longpage-csb user (msec) nil label title here t
           (awhen (keep [and (cansee user _) (~subcomment _)]
                        (comments subject maxend*))
             (display-threads user it label title here))))
@@ -2260,7 +2260,7 @@ pre:hover {overflow:auto} "))
   (if (profile subject)
       (with (label (+ subject "'s submissions")
              here  (submitted-url subject))
-        (longpage user (msec) nil label label here
+        (longpage-csb user (msec) nil label label here t
           (if (or (no (ignored subject))
                   (is user subject)
                   (seesdead user))
@@ -2300,7 +2300,7 @@ pre:hover {overflow:auto} "))
 (= nleaders* 20)
 
 (newscache leaderspage user 1000
-  (longpage user (msec) nil "leaders" "Leaders" "leaders"
+  (longpage-csb user (msec) nil "leaders" "Leaders" "leaders" t
     (sptab
       (let i 0
         (each u (firstn nleaders* (leading-users))
