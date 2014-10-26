@@ -437,7 +437,7 @@
                  (admin-bar ,gu (- (msec) ,gt) ,whence)))))))
 
 (mac add-sidebar (title contents . body)
-  `(tag (table width '100%)
+  `(tag (table style 'border-collapse:collapse width '100%)
         (tr (tag (td valign 'top class 'contents) ,@body)
             (tag (td valign 'top class 'csb)
               (para (tag b (pr ,title))) ,contents))))
@@ -514,8 +514,8 @@
 body  { font-family:Verdana; font-size:12pt; color:#828282; }
 td    { font-family:Verdana; font-size:12pt; color:#828282; }
 
-table td.csb        { background-color:#e6e6e6; width:300px }
-table td.contents   { padding-right:15px }
+table td.csb        { background-color:#e6e6e6; width:300px; }
+table td.contents   { margin:0; padding:0; padding-right:15 }
 
 .admin td   { font-family:Verdana; font-size:9.5pt; color:#000000; }
 .subtext td { font-family:Verdana; font-size:  8pt; color:#828282; }
@@ -955,9 +955,9 @@ pre:hover {overflow:auto} "))
   (zerotable
     (let n start
       (each i (cut items start end)
-        (display-item (and number (++ n)) i user whence t)
-        (display-item-text i user t)
-        (spacerow (if (acomment i) 15 30))))
+        (trtd (tab (display-item (and number (++ n)) i user whence t)
+             (display-item-text i user t)
+             (spacerow (if (acomment i) 15 30))))))
     (when end
       (let newend (+ end perpage*)
         (when (and (<= newend maxend*) (< end (len items)))
