@@ -267,7 +267,7 @@
 ; Votes divided by the age in hours to the gravityth power.
 ; Would be interesting to scale gravity in a slider.
 
-(= gravity* 1.8 timebase* 120 front-threshold* 0
+(= gravity* 1.8 timebase* 120 front-threshold* 1
    nourl-factor* .4 lightweight-factor* .3 )
 
 (def frontpage-rank (s (o scorefn realscore) (o gravity gravity*))
@@ -285,7 +285,7 @@
        (min 1 (expt (/ (realscore s) it) 2))
        1))
 
-(def realscore (i) (- i!score i!sockvotes))
+(def realscore (i) (+ 1 (- i!score i!sockvotes)))
 
 (disktable lightweights* (+ newsdir* "lightweights"))
 
@@ -1515,7 +1515,8 @@ pre:hover {overflow:auto} "))
 
 (def process-story (user url title showtext text ip)
   (aif (and (~blank url) (live-story-w/url url))
-       (item-url it!id)
+       (do (metastory&adjust-rank i)
+           (item-url it!id))
        (if (no user)
             (flink [submit-login-warning url title showtext text])
            (no (and (or (blank url) (valid-url url)) 
@@ -1539,7 +1540,8 @@ pre:hover {overflow:auto} "))
 
 (def submit-item (user i)
   (push i!id (uvar user submitted))
-  (save-prof user))
+  (save-prof user)
+  (metastory&adjust-rank i))
 
 (def recent-spam (site)
   (and (caris (banned-sites* site) 'ignore)
