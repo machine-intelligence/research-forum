@@ -76,12 +76,10 @@
 
 (= votes* (table) profs* (table))
 
-(= initload-users* nil)
-
 (def nsv ((o port 8080))
   (map ensure-dir (list arcdir* newsdir* storydir* votedir* profdir*))
   (unless stories* (load-items))
-  (if (and initload-users* (empty profs*)) (load-users))
+  (if (empty profs*) (load-users))
   (asv port))
 
 (def load-users ()
@@ -614,21 +612,21 @@ pre:hover {overflow:auto} "))
       (tag (img src logo-url* width 18 height 18 
                 style "border:1px #@(hexrep border-color*) solid;")))))
 
-(= toplabels* '(nil "welcome" "new" "threads" "comments" "leaders" "*"))
+(= toplabels* '(nil "new" "comments" "members" 
+                    "my posts" "my comments" "my likes" "*"))
 
 ; redefined later
 
-(= welcome-url* "welcome")
-
 (def toprow (user label)
   (w/bars 
-    (when (noob user)
-      (toplink "welcome" welcome-url* label)) 
     (toplink "new" "newest" label)
-    (when user
-      (toplink "threads" (threads-url user) label))
     (toplink "comments" "newcomments" label)
-    (toplink "leaders"  "leaders"     label)
+    (toplink "members"  "members"     label)
+    (when user
+      (w/bars
+        (toplink "my posts" (submitted-url user) label)
+        (toplink "my comments" (threads-url user) label)
+        (toplink "my likes" (saved-url user) label)))
     (hook 'toprow user label)
     (link "submit")
     (unless (mem label toplabels*)
@@ -767,7 +765,7 @@ pre:hover {overflow:auto} "))
       (profile-form user subject)
       (br2)
       (when (some astory:item (uvar subject submitted))
-        (underlink "submissions" (submitted-url subject)))
+        (underlink "posts" (submitted-url subject)))
       (when (some acomment:item (uvar subject submitted))
         (sp)
         (underlink "comments" (threads-url subject)))
@@ -827,9 +825,6 @@ pre:hover {overflow:auto} "))
 
 (def resetpw-link ()
   (tostring (underlink "reset password" "resetpw")))
-
-(newsop welcome ()
-  (pr "Welcome to " this-site* ", " user "!"))
 
 
 ; Main Operators
@@ -940,9 +935,12 @@ pre:hover {overflow:auto} "))
       (pr "No such user.")))
 
 (def savedpage (user subject)
-  (listpage user (msec)
-            (sort (compare < item-age) (liked-stories user subject)) 
-            "likes" "Liked stories" (saved-url subject)))
+  (withs (title (+ subject "'s likes")
+          label (if (is user subject) "my likes" title)
+          here  (saved-url subject))
+    (listpage user (msec)
+              (sort (compare < item-age) (liked-stories user subject)) 
+              label title here)))
 
 (def liked-stories (user subject)
   (keep [and (astory _) (cansee user _) (is ((votes subject) _!id) 'like)]
@@ -2201,7 +2199,7 @@ pre:hover {overflow:auto} "))
 (def threads-page (user subject)
   (if (profile subject)
       (withs (title (+ subject "'s comments")
-              label (if (is user subject) "threads" title)
+              label (if (is user subject) "my comments" title)
               here  (threads-url subject))
         (longpage-csb user (msec) nil label title here t
           (awhen (keep [and (cansee user _) (~subcomment _)]
@@ -2249,8 +2247,9 @@ pre:hover {overflow:auto} "))
 
 (def submitted-page (user subject)
   (if (profile subject)
-      (with (label (+ subject "'s submissions")
-             here  (submitted-url subject))
+      (withs (title (+ subject "'s posts")
+              label (if (is user subject) "my posts" title)
+              here  (submitted-url subject))
         (longpage-csb user (msec) nil label label here t
           (if (or (no (ignored subject))
                   (is user subject)
@@ -2286,27 +2285,20 @@ pre:hover {overflow:auto} "))
 
 ; User Stats
 
-(newsop leaders () (leaderspage user))
+(newsop members () (memberspage user))
 
-(= nleaders* 20)
-
-(newscache leaderspage user 1000
-  (longpage-csb user (msec) nil "leaders" "Leaders" "leaders" t
+(newscache memberspage user 1000
+  (longpage-csb user (msec) nil "members" "members" "members" t
     (sptab
       (let i 0
-        (each u (firstn nleaders* (leading-users))
+        (each u (sort (compare > [karma _])
+                      (keep [pos [cansee nil _] (submissions _)] (users)))
           (tr (tdr:pr (++ i) ".")
               (td (userlink user u nil))
               (tdr:pr (karma u))
               (when (admin user)
                 (tdr:prt (only.num (uvar u avg) 2 t t))))
           (if (is i 10) (spacerow 30)))))))
-
-(= leader-threshold* 1)  ; redefined later
-
-(def leading-users ()
-  (sort (compare > [karma _])
-        (users [and (> (karma _) leader-threshold*) (~admin _)])))
 
 (adop editors ()
   (tab (each u (users [is (uvar _ auth) 1])
