@@ -514,7 +514,7 @@
 body  { font-family:Verdana; font-size:12pt; color:#828282; }
 td    { font-family:Verdana; font-size:12pt; color:#000000; }
 
-table td.csb        { background-color:#e6e6e6; width:300px; }
+table td.csb        { background-color:#e6e6e6; width:300px; padding:8px }
 table td.contents   { margin:0; padding:0; padding-right:15 }
 
 .admin td   { font-family:Verdana; font-size:9.5pt; color:#000000; }
