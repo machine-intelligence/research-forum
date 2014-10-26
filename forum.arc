@@ -864,10 +864,10 @@ pre:hover {overflow:auto} "))
   (listpage user (msec) (topstories user maxend*) nil nil "news" nil t))
 
 (def listpage (user t1 items label title 
-               (o url label) (o number t) (o show-comments t))
+               (o url label) (o number t) (o show-comments t) (o preview-only t))
   (hook 'listpage user)
   (longpage-csb user t1 nil label title url show-comments
-    (display-items user items label title url 0 perpage* number)))
+    (display-items user items label title url 0 perpage* number preview-only)))
 
 
 (newsop newest () (newestpage user))
@@ -951,12 +951,11 @@ pre:hover {overflow:auto} "))
 ; Story Display
 
 (def display-items (user items label title whence 
-                    (o start 0) (o end perpage*) (o number))
+                    (o start 0) (o end perpage*) (o number) (o preview-only))
   (zerotable
     (let n start
       (each i (cut items start end)
-        (trtd (tab (display-item (and number (++ n)) i user whence t)
-             (display-item-text i user t)
+        (trtd (tab (display-item (and number (++ n)) i user whence t preview-only)
              (spacerow (if (acomment i) 15 30))))))
     (when end
       (let newend (+ end perpage*)
@@ -984,10 +983,10 @@ pre:hover {overflow:auto} "))
           rel 'nofollow)
     (pr "More")))
 
-(def display-story (i s user whence)
+(def display-story (i s user whence preview-only)
   (when (or (cansee user s) (s 'kids))
-    (tr (display-item-number i)
-        (td (votelinks s user whence))
+    (tr (td (votelinks s user whence))
+        (display-item-number i)
         (titleline s s!url user whence))
     (tr (tag (td colspan (if i 2 1)))    
         (tag (td class 'subtext)
@@ -1000,7 +999,10 @@ pre:hover {overflow:auto} "))
           (killlink s user whence)
           (blastlink s user whence)
           (blastlink s user whence t)
-          (deletelink s user whence)))))
+          (deletelink s user whence)))
+    (spacerow 2)
+    (tr (tag (td colspan (if i 2 1)))
+        (td (display-item-text s user preview-only)))))
 
 (def display-item-number (i)
   (when i (tag (td align 'right valign 'top class 'title)
@@ -1839,7 +1841,6 @@ pre:hover {overflow:auto} "))
          here (item-url i!id))
     (longpage-csb user (msec) nil nil title here t
       (tab (display-item nil i user here)
-           (display-item-text i user)
            (when (apoll i)
              (spacerow 10)
              (tr (td)
@@ -1868,19 +1869,19 @@ pre:hover {overflow:auto} "))
 
 (= displayfn* (table))
 
-(= (displayfn* 'story)   (fn (n i user here inlist)
-                           (display-story n i user here)))
+(= (displayfn* 'story)   (fn (n i user here inlist preview-only)
+                           (display-story n i user here preview-only)))
 
-(= (displayfn* 'comment) (fn (n i user here inlist)
+(= (displayfn* 'comment) (fn (n i user here inlist preview-only)
                            (display-comment n i user here nil 0 nil inlist)))
 
 (= (displayfn* 'poll)    (displayfn* 'story))
 
-(= (displayfn* 'pollopt) (fn (n i user here inlist)
+(= (displayfn* 'pollopt) (fn (n i user here inlist preview-only)
                            (display-pollopt n i user here)))
 
-(def display-item (n i user here (o inlist))
-  ((displayfn* (i 'type)) n i user here inlist))
+(def display-item (n i user here (o inlist) (o preview-only))
+  ((displayfn* (i 'type)) n i user here inlist preview-only))
 
 (def superparent (i)
   (aif i!parent (superparent:item it) i))
@@ -1894,14 +1895,13 @@ pre:hover {overflow:auto} "))
   (if (<= (len text) preview-maxlen*) text
     (first-para text)))
 
-(def display-item-text (s user (o preview-only))
+(def display-item-text (s user preview-only)
   (when (and (cansee user s) 
              (in s!type 'story 'poll)
              (blank s!url) 
              (~blank s!text))
-    (spacerow 2)
-    (if preview-only (row "" (pr (preview s!text)))
-      (row "" s!text))))
+    (if preview-only (pr (preview s!text))
+      (pr s!text))))
 
 
 ; Edit Item
@@ -1967,8 +1967,7 @@ pre:hover {overflow:auto} "))
 (def edit-page (user i)
   (let here (edit-url i)
     (shortpage user nil nil "Edit" here
-      (tab (display-item nil i user here)
-           (display-item-text i user))
+      (tab (display-item nil i user here))
       (br2)
       (vars-form user
                  ((fieldfn* i!type) user i)
@@ -2268,7 +2267,7 @@ pre:hover {overflow:auto} "))
                   (seesdead user))
               (aif (keep [and (metastory _) (cansee user _)]
                          (submissions subject))
-                   (display-items user it label label here 0 perpage* t)))))
+                   (display-items user it label label here 0 perpage* t t)))))
       (pr "No such user.")))
 
 
