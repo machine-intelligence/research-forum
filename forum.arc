@@ -515,8 +515,8 @@ body  { font-family:Verdana; font-size:13pt; color:#828282; }
 td    { font-family:Verdana; font-size:13pt; color:#000000; }
 
 table td.csb        { background-color:#e6e6e6; width:300px; padding:8px; }
-table td.contents   { margin:0; padding-right:40; }
-table td.story      { line-height:175%; }
+table td.contents   { margin:0; padding-right:80; }
+table td.story      { line-height:135%; }
 
 .admin td   { font-family:Verdana; font-size:10.5pt; color:#000000; }
 .subtext td { font-family:Verdana; font-size:  10pt; color:#828282; }
