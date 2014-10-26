@@ -438,7 +438,7 @@
   `(tag (table style 'border-collapse:collapse width '100%)
         (tr (tag (td valign 'top class 'contents) ,@body)
             (tag (td valign 'top class 'csb)
-              (para (tag b (pr ,title))) ,contents))))
+              (para (tag (h3) (pr ,title))) ,contents))))
 
 (mac longpage-csb (user t1 lid label title whence show-comments . body)
   `(longpage ,user ,t1 ,lid ,label ,title ,whence
@@ -449,7 +449,7 @@
                       (tag (p) (tag (a href (item-url c!id) class 'csb)
                                  (tag (b) (pr (shortened c!text csb-maxlen*))))
                                (br)
-                               (tab (tr (tag (td class 'subtext)
+                               (tab (tr (tag (td class 'csb-subtext)
                                  (pr "by ")
                                  (userlink user c!by)
                                  (pr " on ")
@@ -514,9 +514,10 @@ td    { font-family:Verdana; font-size:13pt; color:#000000; }
 
 td > h1 { font-family:Verdana; font-size:14pt; color:#000000; font-weight:bold; }
 
-table td.csb        { background-color:#e6e6e6; width:300px; padding:8px; }
-table td.contents   { margin:0; padding-right:80; }
-table td.story      { line-height:135%; }
+table td.csb      { background-color:#e6e6e6; width:300px; padding:8px; font-size:10pt; }
+table td.csb > h3 { font-family:Verdana; font-size:12pt; font-weight:bold; }
+table td.contents { margin:0; padding-right:80; }
+table td.story    { line-height:135%; }
 
 .admin td   { font-family:Verdana; font-size:10.5pt; color:#000000; }
 .subtext td { font-family:Verdana; font-size:  10pt; color:#828282; }
@@ -528,16 +529,17 @@ textarea { font-family:Courier; font-size:13pt; color:#000000; }
 a:link    { color:#000000; text-decoration:none; } 
 a:visited { color:#555555; text-decoration:none; }
 
-.default { font-family:Verdana; font-size:  13pt; color:#828282; }
-.admin   { font-family:Verdana; font-size:10.5pt; color:#000000; }
-.title   { font-family:Verdana; font-size:  16pt; color:#828282; font-weight:bold; }
-.adtitle { font-family:Verdana; font-size:  11pt; color:#828282; }
-.subtext { font-family:Verdana; font-size:  11pt; color:#828282; }
-.yclinks { font-family:Verdana; font-size:  10pt; color:#828282; }
-.pagetop { font-family:Verdana; font-size:  13pt; color:#222222; }
-.comhead { font-family:Verdana; font-size:  10pt; color:#828282; }
-.comment { font-family:Verdana; font-size:  13pt; }
-.dead    { font-family:Verdana; font-size:  11pt; color:#dddddd; }
+.default     { font-family:Verdana; font-size:  13pt; color:#828282; }
+.admin       { font-family:Verdana; font-size:10.5pt; color:#000000; }
+.title       { font-family:Verdana; font-size:  16pt; color:#828282; font-weight:bold; }
+.adtitle     { font-family:Verdana; font-size:  11pt; color:#828282; }
+.subtext     { font-family:Verdana; font-size:  10pt; color:#828282; }
+.csb-subtext { font-family:Verdana; font-size:   8pt; color:#828282; }
+.yclinks     { font-family:Verdana; font-size:  10pt; color:#828282; }
+.pagetop     { font-family:Verdana; font-size:  13pt; color:#222222; }
+.comhead     { font-family:Verdana; font-size:  10pt; color:#828282; }
+.comment     { font-family:Verdana; font-size:  13pt; }
+.dead        { font-family:Verdana; font-size:  11pt; color:#dddddd; }
 
 .userlink, .you { font-weight:bold; }
 
@@ -2640,5 +2642,6 @@ first asterisk isn't whitespace.
     (tab 
       (each c (dedup (map downcase (trues [uvar _ topcolor] (users))))
         (tr (td c) (tdcolor (hex>color c) (hspace 30)))))))
+
 
 
