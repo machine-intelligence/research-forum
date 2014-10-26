@@ -432,7 +432,7 @@
   (markdown (trim (rem #\return (esc-tags str)) 'end) 60 nolinks))
 
 (def markdown (s (o maxurl) (o nolinks) (o latex t))
-  (let ital nil
+  (with (ital nil heading nil)
     (tostring
       (forlen i s
         (iflet (newi spaces) (indented-code s i (if (is i 0) 2 0))
@@ -441,9 +441,15 @@
                    (pr cb)
                    (= i (+ (- newi spaces 1) (len cb))))
                  (pr "</code></pre>"))
-               (iflet newi (parabreak s i (if (is i 0) 1 0))
-                      (do (unless (is i 0) (pr "<p>"))
-                          (= i (- newi 1)))
+               (iflet newi (or (parabreak s i (if (is i 0) 1 0))
+                               (and (is i 0) (is (s 0) #\#) 0))
+                      (do (if heading (do (pr "</h1>") (= heading nil)))
+                          (= i (- newi 1))
+                          (if (and (< newi (len s))
+                                   (is #\# (s newi)))
+                               (do (= heading t) (++ i) (pr "<h1>"))
+                              (isnt i 0)
+                               (pr "<p>")))
                       (and (is (s i) #\*)
                            (or ital 
                                (atend i s) 
@@ -468,7 +474,8 @@
                          (tag (a href url rel 'nofollow)
                            (pr (if (no maxurl) url (ellipsize url maxurl))))
                          (= i (- n 1)))
-                       (writec (s i))))))))
+                       (writec (s i)))))
+      (if heading (pr "</h1>")))))
 
 (def indented-code (s i (o newlines 0) (o spaces 0))
   (let c (s i)
@@ -556,6 +563,12 @@
       (if (litmatch "<p>" s i)
            (do (++ i 2) 
                (unless (is i 2) (pr "\n\n")))
+          (litmatch "<h1>" s i)
+           (do (++ i 3)
+               (unless (is i 3) (pr "\n\n"))
+               (pr "#"))
+          (litmatch "</h1>" s i)
+           (++ i 4)
           (litmatch "<i>" s i)
            (do (++ i 2) (pr #\*))
           (litmatch "</i>" s i)
