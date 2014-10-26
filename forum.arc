@@ -2374,7 +2374,7 @@ pre:hover {overflow:auto} "))
 
 (newscache newcomments-page user 60
   (listpage user (msec) (visible user (firstn maxend* comments*))
-            "comments" "New Comments" "newcomments" nil))
+            "comments" "New Comments" "newcomments" nil nil))
 
 
 ; Doc
