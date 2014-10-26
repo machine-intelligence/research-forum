@@ -611,16 +611,12 @@ pre:hover {overflow:auto} "))
       (tag (img src logo-url* width 18 height 18 
                 style "border:1px #@(hexrep border-color*) solid;")))))
 
-(= toplabels* '(nil "welcome" "new" "threads" "comments" "members" "*"))
+(= toplabels* '(nil "new" "threads" "comments" "members" "*"))
 
 ; redefined later
 
-(= welcome-url* "welcome")
-
 (def toprow (user label)
   (w/bars 
-    (when (noob user)
-      (toplink "welcome" welcome-url* label)) 
     (toplink "new" "newest" label)
     (when user
       (toplink "threads" (threads-url user) label))
@@ -824,9 +820,6 @@ pre:hover {overflow:auto} "))
 
 (def resetpw-link ()
   (tostring (underlink "reset password" "resetpw")))
-
-(newsop welcome ()
-  (pr "Welcome to " this-site* ", " user "!"))
 
 
 ; Main Operators
