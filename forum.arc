@@ -511,8 +511,8 @@
 
 (defop forum.css req
   (pr "
-body  { font-family:Verdana; font-size:11pt; color:#828282; }
-td    { font-family:Verdana; font-size:11pt; color:#828282; }
+body  { font-family:Verdana; font-size:12pt; color:#828282; }
+td    { font-family:Verdana; font-size:12pt; color:#828282; }
 
 table td.csb        { background-color:#e6e6e6; width:300px }
 table td.contents   { padding-right:15px }
@@ -520,20 +520,20 @@ table td.contents   { padding-right:15px }
 .admin td   { font-family:Verdana; font-size:9.5pt; color:#000000; }
 .subtext td { font-family:Verdana; font-size:  8pt; color:#828282; }
 
-input    { font-family:Courier; font-size:11pt; color:#000000; }
+input    { font-family:Courier; font-size:12pt; color:#000000; }
 input[type=\"submit\"] { font-family:Verdana; }
-textarea { font-family:Courier; font-size:11pt; color:#000000; }
+textarea { font-family:Courier; font-size:12pt; color:#000000; }
 
 a:link    { color:#000000; text-decoration:none; } 
 a:visited { color:#828282; text-decoration:none; }
 
-.default { font-family:Verdana; font-size: 11pt; color:#828282; }
+.default { font-family:Verdana; font-size: 12pt; color:#828282; }
 .admin   { font-family:Verdana; font-size:9.5pt; color:#000000; }
 .title   { font-family:Verdana; font-size: 15pt; color:#828282; }
-.adtitle { font-family:Verdana; font-size:  10pt; color:#828282; }
+.adtitle { font-family:Verdana; font-size: 10pt; color:#828282; }
 .subtext { font-family:Verdana; font-size:  8pt; color:#828282; }
 .yclinks { font-family:Verdana; font-size:  9pt; color:#828282; }
-.pagetop { font-family:Verdana; font-size: 11pt; color:#222222; }
+.pagetop { font-family:Verdana; font-size: 12pt; color:#222222; }
 .comhead { font-family:Verdana; font-size:  9pt; color:#828282; }
 .comment { font-family:Verdana; font-size:  10pt; }
 .dead    { font-family:Verdana; font-size:  10pt; color:#dddddd; }
