@@ -1097,8 +1097,8 @@ pre:hover {overflow:auto} "))
   (and user
        (news-type&live i)
        (isnt user i!by)
-       (or (and (is dir 'like) (no ((votes user) i!id)))
-           (and (is dir 'nil) (is ((votes user) i!id) 'like)))))
+       (in dir 'like nil)
+       (isnt dir ((votes user) i!id))))
 
 ; Need the by argument or someone could trick logged in users into 
 ; voting something up by clicking on a link.  But a bad guy doesn't 
@@ -1112,6 +1112,8 @@ pre:hover {overflow:auto} "))
          (pr "No such item.")
         (no (in dir 'like nil))
          (pr "Can't make that vote.")
+        (is dir ((votes user) i!id))
+         (pr "Already voted that way.")
         (and by (or (isnt by user) (isnt (sym auth) (user->cookie* user))))
          (pr "User mismatch.")
         (no user)
