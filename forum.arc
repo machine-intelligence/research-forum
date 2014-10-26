@@ -267,7 +267,7 @@
 ; Votes divided by the age in hours to the gravityth power.
 ; Would be interesting to scale gravity in a slider.
 
-(= gravity* 1.8 timebase* 120 front-threshold* 1 
+(= gravity* 1.8 timebase* 120 front-threshold* 0
    nourl-factor* .4 lightweight-factor* .3 )
 
 (def frontpage-rank (s (o scorefn realscore) (o gravity gravity*))
