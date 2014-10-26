@@ -766,6 +766,7 @@ pre:hover {overflow:auto} "))
       (when (some acomment:item (uvar subject submitted))
         (sp)
         (underlink "comments" (threads-url subject)))
+      (pr " " (saved-link user subject))
       (hook 'user user subject))))
 
 (def profile-form (user subject)
@@ -813,13 +814,11 @@ pre:hover {overflow:auto} "))
       (int     delay      ,(p 'delay)                              ,u  ,u))))
 
 (def saved-link (user subject)
-  (when (or (admin user) (is user subject))
-    (let n (if (len> (votes subject) 500) 
-               "many" 
-               (len (liked-stories user subject)))
-      (if (is n 0)
-          ""
-          (tostring (underlink n (saved-url subject)))))))
+  (let n (if (len> (votes subject) 500) 
+             "many" 
+             (len (liked-stories user subject)))
+    (tostring (underlink (+ (string n) " liked " (if (is n 1) "story" "stories"))
+                         (saved-url subject)))))
 
 (def resetpw-link ()
   (tostring (underlink "reset password" "resetpw")))
@@ -936,11 +935,9 @@ pre:hover {overflow:auto} "))
       (pr "No such user.")))
 
 (def savedpage (user subject)
-  (if (or (is user subject) (admin user))
-      (listpage user (msec)
-                (sort (compare < item-age) (liked-stories user subject)) 
-               "saved" "Saved Links" (saved-url subject))
-      (pr "Can't display that.")))
+  (listpage user (msec)
+            (sort (compare < item-age) (liked-stories user subject)) 
+            "saved" "Saved Links" (saved-url subject)))
 
 (def liked-stories (user subject)
   (keep [and (astory _) (cansee user _) (is ((votes subject) _!id) 'like)]
