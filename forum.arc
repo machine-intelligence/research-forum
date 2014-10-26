@@ -518,7 +518,7 @@ table td.csb        { background-color:#e6e6e6; width:300px; padding:8px }
 table td.contents   { margin:0; padding:0; padding-right:15 }
 
 .admin td   { font-family:Verdana; font-size:9.5pt; color:#000000; }
-.subtext td { font-family:Verdana; font-size:  8pt; color:#828282; }
+.subtext td { font-family:Verdana; font-size:  9pt; color:#828282; }
 
 input    { font-family:Courier; font-size:12pt; color:#000000; }
 input[type=\"submit\"] { font-family:Verdana; }
@@ -529,14 +529,14 @@ a:visited { color:#555555; text-decoration:none; }
 
 .default { font-family:Verdana; font-size: 12pt; color:#828282; }
 .admin   { font-family:Verdana; font-size:9.5pt; color:#000000; }
-.title   { font-family:Verdana; font-size: 15pt; color:#828282; }
+.title   { font-family:Verdana; font-size: 15pt; color:#828282; font-weight:bold; }
 .adtitle { font-family:Verdana; font-size: 10pt; color:#828282; }
-.subtext { font-family:Verdana; font-size:  8pt; color:#828282; }
+.subtext { font-family:Verdana; font-size: 10pt; color:#828282; }
 .yclinks { font-family:Verdana; font-size:  9pt; color:#828282; }
 .pagetop { font-family:Verdana; font-size: 12pt; color:#222222; }
 .comhead { font-family:Verdana; font-size:  9pt; color:#828282; }
-.comment { font-family:Verdana; font-size:  10pt; }
-.dead    { font-family:Verdana; font-size:  10pt; color:#dddddd; }
+.comment { font-family:Verdana; font-size: 12pt; }
+.dead    { font-family:Verdana; font-size: 10pt; color:#dddddd; }
 
 .userlink, .you { font-weight:bold; }
 
@@ -2194,10 +2194,10 @@ pre:hover {overflow:auto} "))
         (pr "No such item."))))
 
 (def comment-color (c)
-  (if (> c!score 0) black (grayrange c!score)))
+  (if (>= c!score 0) black (grayrange c!score)))
 
 (defmemo grayrange (s)
-  (gray (min 230 (round (expt (* (+ (abs s) 2) 900) .6)))))
+  (gray (min 230 (round (expt (* (+ (abs s) 1) 900) .6)))))
 
 
 ; Threads
