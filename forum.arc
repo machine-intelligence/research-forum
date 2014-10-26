@@ -76,12 +76,10 @@
 
 (= votes* (table) profs* (table))
 
-(= initload-users* nil)
-
 (def nsv ((o port 8080))
   (map ensure-dir (list arcdir* newsdir* storydir* votedir* profdir*))
   (unless stories* (load-items))
-  (if (and initload-users* (empty profs*)) (load-users))
+  (if (empty profs*) (load-users))
   (asv port))
 
 (def load-users ()
@@ -613,7 +611,7 @@ pre:hover {overflow:auto} "))
       (tag (img src logo-url* width 18 height 18 
                 style "border:1px #@(hexrep border-color*) solid;")))))
 
-(= toplabels* '(nil "welcome" "new" "threads" "comments" "leaders" "*"))
+(= toplabels* '(nil "welcome" "new" "threads" "comments" "members" "*"))
 
 ; redefined later
 
@@ -627,7 +625,7 @@ pre:hover {overflow:auto} "))
     (when user
       (toplink "threads" (threads-url user) label))
     (toplink "comments" "newcomments" label)
-    (toplink "leaders"  "leaders"     label)
+    (toplink "members"  "members"     label)
     (hook 'toprow user label)
     (link "submit")
     (unless (mem label toplabels*)
@@ -2297,27 +2295,20 @@ pre:hover {overflow:auto} "))
 
 ; User Stats
 
-(newsop leaders () (leaderspage user))
+(newsop members () (memberspage user))
 
-(= nleaders* 20)
-
-(newscache leaderspage user 1000
-  (longpage-csb user (msec) nil "leaders" "Leaders" "leaders" t
+(newscache memberspage user 1000
+  (longpage-csb user (msec) nil "members" "members" "members" t
     (sptab
       (let i 0
-        (each u (firstn nleaders* (leading-users))
+        (each u (sort (compare > [karma _])
+                      (keep [pos [cansee nil _] (submissions _)] (users)))
           (tr (tdr:pr (++ i) ".")
               (td (userlink user u nil))
               (tdr:pr (karma u))
               (when (admin user)
                 (tdr:prt (only.num (uvar u avg) 2 t t))))
           (if (is i 10) (spacerow 30)))))))
-
-(= leader-threshold* 1)  ; redefined later
-
-(def leading-users ()
-  (sort (compare > [karma _])
-        (users [and (> (karma _) leader-threshold*) (~admin _)])))
 
 (adop editors ()
   (tab (each u (users [is (uvar _ auth) 1])
