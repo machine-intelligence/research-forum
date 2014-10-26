@@ -937,7 +937,7 @@ pre:hover {overflow:auto} "))
 (def savedpage (user subject)
   (listpage user (msec)
             (sort (compare < item-age) (liked-stories user subject)) 
-            "saved" "Saved Links" (saved-url subject)))
+            "likes" "Liked stories" (saved-url subject)))
 
 (def liked-stories (user subject)
   (keep [and (astory _) (cansee user _) (is ((votes subject) _!id) 'like)]
