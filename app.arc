@@ -441,7 +441,7 @@
                    (pr cb)
                    (= i (+ (- newi spaces 1) (len cb))))
                  (pr "</code></pre>"))
-               (iflet newi (parabreak s i (if (is i 0) 1 0))
+               (iflet newi (parabreak s i (if (is i 0) 2 0))
                       (do (if heading (do (pr "</h1>") (= heading nil)))
                           (= i (- newi 1))
                           (if (and (< newi (len s))
