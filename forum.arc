@@ -512,6 +512,8 @@
 body  { font-family:Verdana; font-size:13pt; color:#828282; }
 td    { font-family:Verdana; font-size:13pt; color:#000000; }
 
+td > h1 { font-family:Verdana; font-size:14pt; color:#000000; font-weight:bold; }
+
 table td.csb        { background-color:#e6e6e6; width:300px; padding:8px; }
 table td.contents   { margin:0; padding-right:80; }
 table td.story      { line-height:135%; }
@@ -2374,6 +2376,7 @@ pre:hover {overflow:auto} "))
 reproduced verbatim.  (This is intended for code.)
 <p> Text surrounded by asterisks is italicized, if the character after the 
 first asterisk isn't whitespace.
+<p> A paragraph beginning with a hash mark (#) is a subheading.
 <p> Urls become links, except in the text field of a submission.<br><br>")
 
 
