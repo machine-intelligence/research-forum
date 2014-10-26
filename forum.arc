@@ -76,12 +76,10 @@
 
 (= votes* (table) profs* (table))
 
-(= initload-users* nil)
-
 (def nsv ((o port 8080))
   (map ensure-dir (list arcdir* newsdir* storydir* votedir* profdir*))
   (unless stories* (load-items))
-  (if (and initload-users* (empty profs*)) (load-users))
+  (if (empty profs*) (load-users))
   (asv port))
 
 (def load-users ()
@@ -511,34 +509,35 @@
 
 (defop forum.css req
   (pr "
-body  { font-family:Verdana; font-size:12pt; color:#828282; }
-td    { font-family:Verdana; font-size:12pt; color:#000000; }
+body  { font-family:Verdana; font-size:13pt; color:#828282; }
+td    { font-family:Verdana; font-size:13pt; color:#000000; }
 
-td > h1 { font-family:Verdana; font-size:13pt; color:#000000; font-weight:bold; }
+td > h1 { font-family:Verdana; font-size:14pt; color:#000000; font-weight:bold; }
 
-table td.csb        { background-color:#e6e6e6; width:300px; padding:8px }
-table td.contents   { margin:0; padding:0; padding-right:15 }
+table td.csb        { background-color:#e6e6e6; width:300px; padding:8px; }
+table td.contents   { margin:0; padding-right:80; }
+table td.story      { line-height:135%; }
 
-.admin td   { font-family:Verdana; font-size:9.5pt; color:#000000; }
-.subtext td { font-family:Verdana; font-size:  9pt; color:#828282; }
+.admin td   { font-family:Verdana; font-size:10.5pt; color:#000000; }
+.subtext td { font-family:Verdana; font-size:  10pt; color:#828282; }
 
-input    { font-family:Courier; font-size:12pt; color:#000000; }
+input    { font-family:Courier; font-size:13pt; color:#000000; }
 input[type=\"submit\"] { font-family:Verdana; }
-textarea { font-family:Courier; font-size:12pt; color:#000000; }
+textarea { font-family:Courier; font-size:13pt; color:#000000; }
 
 a:link    { color:#000000; text-decoration:none; } 
 a:visited { color:#555555; text-decoration:none; }
 
-.default { font-family:Verdana; font-size: 12pt; color:#828282; }
-.admin   { font-family:Verdana; font-size:9.5pt; color:#000000; }
-.title   { font-family:Verdana; font-size: 15pt; color:#828282; font-weight:bold; }
-.adtitle { font-family:Verdana; font-size: 10pt; color:#828282; }
-.subtext { font-family:Verdana; font-size: 10pt; color:#828282; }
-.yclinks { font-family:Verdana; font-size:  9pt; color:#828282; }
-.pagetop { font-family:Verdana; font-size: 12pt; color:#222222; }
-.comhead { font-family:Verdana; font-size:  9pt; color:#828282; }
-.comment { font-family:Verdana; font-size: 12pt; }
-.dead    { font-family:Verdana; font-size: 10pt; color:#dddddd; }
+.default { font-family:Verdana; font-size:  13pt; color:#828282; }
+.admin   { font-family:Verdana; font-size:10.5pt; color:#000000; }
+.title   { font-family:Verdana; font-size:  16pt; color:#828282; font-weight:bold; }
+.adtitle { font-family:Verdana; font-size:  11pt; color:#828282; }
+.subtext { font-family:Verdana; font-size:  11pt; color:#828282; }
+.yclinks { font-family:Verdana; font-size:  10pt; color:#828282; }
+.pagetop { font-family:Verdana; font-size:  13pt; color:#222222; }
+.comhead { font-family:Verdana; font-size:  10pt; color:#828282; }
+.comment { font-family:Verdana; font-size:  13pt; }
+.dead    { font-family:Verdana; font-size:  11pt; color:#dddddd; }
 
 .userlink, .you { font-weight:bold; }
 
@@ -615,21 +614,21 @@ pre:hover {overflow:auto} "))
       (tag (img src logo-url* width 18 height 18 
                 style "border:1px #@(hexrep border-color*) solid;")))))
 
-(= toplabels* '(nil "welcome" "new" "threads" "comments" "leaders" "*"))
+(= toplabels* '(nil "new" "comments" "members" 
+                    "my posts" "my comments" "my likes" "*"))
 
 ; redefined later
 
-(= welcome-url* "welcome")
-
 (def toprow (user label)
   (w/bars 
-    (when (noob user)
-      (toplink "welcome" welcome-url* label)) 
     (toplink "new" "newest" label)
-    (when user
-      (toplink "threads" (threads-url user) label))
     (toplink "comments" "newcomments" label)
-    (toplink "leaders"  "leaders"     label)
+    (toplink "members"  "members"     label)
+    (when user
+      (w/bars
+        (toplink "my posts" (submitted-url user) label)
+        (toplink "my comments" (threads-url user) label)
+        (toplink "my likes" (saved-url user) label)))
     (hook 'toprow user label)
     (link "submit")
     (unless (mem label toplabels*)
@@ -768,7 +767,7 @@ pre:hover {overflow:auto} "))
       (profile-form user subject)
       (br2)
       (when (some astory:item (uvar subject submitted))
-        (underlink "submissions" (submitted-url subject)))
+        (underlink "posts" (submitted-url subject)))
       (when (some acomment:item (uvar subject submitted))
         (sp)
         (underlink "comments" (threads-url subject)))
@@ -828,9 +827,6 @@ pre:hover {overflow:auto} "))
 
 (def resetpw-link ()
   (tostring (underlink "reset password" "resetpw")))
-
-(newsop welcome ()
-  (pr "Welcome to " this-site* ", " user "!"))
 
 
 ; Main Operators
@@ -941,9 +937,12 @@ pre:hover {overflow:auto} "))
       (pr "No such user.")))
 
 (def savedpage (user subject)
-  (listpage user (msec)
-            (sort (compare < item-age) (liked-stories user subject)) 
-            "likes" "Liked stories" (saved-url subject)))
+  (withs (title (+ subject "'s likes")
+          label (if (is user subject) "my likes" title)
+          here  (saved-url subject))
+    (listpage user (msec)
+              (sort (compare < item-age) (liked-stories user subject)) 
+              label title here)))
 
 (def liked-stories (user subject)
   (keep [and (astory _) (cansee user _) (is ((votes subject) _!id) 'like)]
@@ -1002,9 +1001,9 @@ pre:hover {overflow:auto} "))
           (blastlink s user whence)
           (blastlink s user whence t)
           (deletelink s user whence)))
-    (spacerow 2)
+    (spacerow 10)
     (tr (tag (td colspan (if i 2 1)))
-        (td (display-item-text s user preview-only)))))
+        (tag (td class 'story) (display-item-text s user preview-only)))))
 
 (def display-item-number (i)
   (when i (tag (td align 'right valign 'top class 'title)
@@ -2202,7 +2201,7 @@ pre:hover {overflow:auto} "))
 (def threads-page (user subject)
   (if (profile subject)
       (withs (title (+ subject "'s comments")
-              label (if (is user subject) "threads" title)
+              label (if (is user subject) "my comments" title)
               here  (threads-url subject))
         (longpage-csb user (msec) nil label title here t
           (awhen (keep [and (cansee user _) (~subcomment _)]
@@ -2250,8 +2249,9 @@ pre:hover {overflow:auto} "))
 
 (def submitted-page (user subject)
   (if (profile subject)
-      (with (label (+ subject "'s submissions")
-             here  (submitted-url subject))
+      (withs (title (+ subject "'s posts")
+              label (if (is user subject) "my posts" title)
+              here  (submitted-url subject))
         (longpage-csb user (msec) nil label label here t
           (if (or (no (ignored subject))
                   (is user subject)
@@ -2287,27 +2287,20 @@ pre:hover {overflow:auto} "))
 
 ; User Stats
 
-(newsop leaders () (leaderspage user))
+(newsop members () (memberspage user))
 
-(= nleaders* 20)
-
-(newscache leaderspage user 1000
-  (longpage-csb user (msec) nil "leaders" "Leaders" "leaders" t
+(newscache memberspage user 1000
+  (longpage-csb user (msec) nil "members" "members" "members" t
     (sptab
       (let i 0
-        (each u (firstn nleaders* (leading-users))
+        (each u (sort (compare > [karma _])
+                      (keep [pos [cansee nil _] (submissions _)] (users)))
           (tr (tdr:pr (++ i) ".")
               (td (userlink user u nil))
               (tdr:pr (karma u))
               (when (admin user)
                 (tdr:prt (only.num (uvar u avg) 2 t t))))
           (if (is i 10) (spacerow 30)))))))
-
-(= leader-threshold* 1)  ; redefined later
-
-(def leading-users ()
-  (sort (compare > [karma _])
-        (users [and (> (karma _) leader-threshold*) (~admin _)])))
 
 (adop editors ()
   (tab (each u (users [is (uvar _ auth) 1])
