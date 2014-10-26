@@ -512,7 +512,7 @@
 (defop forum.css req
   (pr "
 body  { font-family:Verdana; font-size:12pt; color:#828282; }
-td    { font-family:Verdana; font-size:12pt; color:#828282; }
+td    { font-family:Verdana; font-size:12pt; color:#000000; }
 
 table td.csb        { background-color:#e6e6e6; width:300px }
 table td.contents   { padding-right:15px }
@@ -525,7 +525,7 @@ input[type=\"submit\"] { font-family:Verdana; }
 textarea { font-family:Courier; font-size:12pt; color:#000000; }
 
 a:link    { color:#000000; text-decoration:none; } 
-a:visited { color:#828282; text-decoration:none; }
+a:visited { color:#555555; text-decoration:none; }
 
 .default { font-family:Verdana; font-size: 12pt; color:#828282; }
 .admin   { font-family:Verdana; font-size:9.5pt; color:#000000; }
