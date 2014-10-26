@@ -435,7 +435,7 @@
 
 (mac add-sidebar (title contents . body)
   `(tag (table width '100%)
-        (tr (tag (td valign 'top) ,@body)
+        (tr (tag (td valign 'top class 'contents) ,@body)
             (tag (td valign 'top class 'csb)
               (para (tag b (pr ,title))) ,contents))))
 
@@ -445,8 +445,8 @@
        (do ,@body)
        (add-sidebar (link "RECENT COMMENTS" "newcomments")
                     (each c (csb-items ,user csb-count*)
-                      (tag (p) (tag (a href (item-url c!id))
-                                 (tag (b) (pr (shortened c!text))))
+                      (tag (p) (tag (a href (item-url c!id) class 'csb)
+                                 (tag (b) (pr (shortened c!text csb-maxlen*))))
                                (br)
                                (tab (tr (tag (td class 'subtext)
                                  (pr "by ")
@@ -465,10 +465,10 @@
   (if (is (len (halve text)) 1) text
     (reverse ((halve (reverse text)) 1))))
 
-(def shortened (text)
+(def shortened (text maxlen)
   (let utext (unmarkdown text)
-    (if (<= (len utext) csb-maxlen*) utext
-      (word-boundary (cut utext 0 csb-maxlen*)))))
+    (if (<= (len utext) maxlen) utext
+      (word-boundary (cut utext 0 maxlen)))))
   
 (def admin-bar (user elapsed whence)
   (when (admin user)
@@ -511,7 +511,8 @@
 body  { font-family:Verdana; font-size:11pt; color:#828282; }
 td    { font-family:Verdana; font-size:11pt; color:#828282; }
 
-table td.csb { background-color:#e6e6e6; width:300px }
+table td.csb        { background-color:#e6e6e6; width:300px }
+table td.contents   { padding-right:15px }
 
 .admin td   { font-family:Verdana; font-size:9.5pt; color:#000000; }
 .subtext td { font-family:Verdana; font-size:  8pt; color:#828282; }
@@ -536,13 +537,16 @@ a:visited { color:#828282; text-decoration:none; }
 
 .userlink, .you { font-weight:bold; }
 
-.comment a:link, .comment a:visited { text-decoration:underline;}
+.comment a:link, .comment a:visited { text-decoration:underline; }
 .dead a:link, .dead a:visited { color:#dddddd; }
 .pagetop a:visited { color:#000000;}
 .topsel a:link, .topsel a:visited { color:#ffffff; }
 
 .subtext a:link, .subtext a:visited { color:#828282; }
 .subtext a:hover { text-decoration:underline; }
+
+.csb a:link, .csb a:visited { color:#828282; }
+.csb a:hover { text-decoration:underline; }
 
 .comhead a:link, .subtext a:visited { color:#828282; }
 .comhead a:hover { text-decoration:underline; }
@@ -830,7 +834,7 @@ pre:hover {overflow:auto} "))
 ; remember to set caching to 0 when testing non-logged-in 
 
 (= caching* 1 perpage* 30 threads-perpage* 10 maxend* 210 
-   csb-count* 5 csb-maxlen* 30)
+   csb-count* 5 csb-maxlen* 30 preview-maxlen* 1000)
 
 ; Limiting that newscache can't take any arguments except the user.
 ; To allow other arguments, would have to turn the cache from a single 
@@ -953,7 +957,7 @@ pre:hover {overflow:auto} "))
       (each i (cut items start end)
         (display-item (and number (++ n)) i user whence t)
         (display-item-text i user t)
-        (spacerow (if (acomment i) 15 5))))
+        (spacerow (if (acomment i) 15 30))))
     (when end
       (let newend (+ end perpage*)
         (when (and (<= newend maxend*) (< end (len items)))
@@ -1892,13 +1896,17 @@ pre:hover {overflow:auto} "))
     (if (no index) text
       (cut text 0 index))))
 
+(def preview (text)
+  (if (<= (len text) preview-maxlen*) text
+    (first-para text)))
+
 (def display-item-text (s user (o preview-only))
   (when (and (cansee user s) 
              (in s!type 'story 'poll)
              (blank s!url) 
              (~blank s!text))
     (spacerow 2)
-    (if preview-only (row "" (pr (first-para s!text)))
+    (if preview-only (row "" (pr (preview s!text)))
       (row "" s!text))))
 
 
