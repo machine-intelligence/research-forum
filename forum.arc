@@ -611,17 +611,21 @@ pre:hover {overflow:auto} "))
       (tag (img src logo-url* width 18 height 18 
                 style "border:1px #@(hexrep border-color*) solid;")))))
 
-(= toplabels* '(nil "new" "threads" "comments" "members" "*"))
+(= toplabels* '(nil "new" "comments" "members" 
+                    "my posts" "my comments" "my likes" "*"))
 
 ; redefined later
 
 (def toprow (user label)
   (w/bars 
     (toplink "new" "newest" label)
-    (when user
-      (toplink "threads" (threads-url user) label))
     (toplink "comments" "newcomments" label)
     (toplink "members"  "members"     label)
+    (when user
+      (w/bars
+        (toplink "my posts" (submitted-url user) label)
+        (toplink "my comments" (threads-url user) label)
+        (toplink "my likes" (saved-url user) label)))
     (hook 'toprow user label)
     (link "submit")
     (unless (mem label toplabels*)
@@ -760,7 +764,7 @@ pre:hover {overflow:auto} "))
       (profile-form user subject)
       (br2)
       (when (some astory:item (uvar subject submitted))
-        (underlink "submissions" (submitted-url subject)))
+        (underlink "posts" (submitted-url subject)))
       (when (some acomment:item (uvar subject submitted))
         (sp)
         (underlink "comments" (threads-url subject)))
@@ -930,9 +934,12 @@ pre:hover {overflow:auto} "))
       (pr "No such user.")))
 
 (def savedpage (user subject)
-  (listpage user (msec)
-            (sort (compare < item-age) (liked-stories user subject)) 
-            "likes" "Liked stories" (saved-url subject)))
+  (withs (title (+ subject "'s likes")
+          label (if (is user subject) "my likes" title)
+          here  (saved-url subject))
+    (listpage user (msec)
+              (sort (compare < item-age) (liked-stories user subject)) 
+              label title here)))
 
 (def liked-stories (user subject)
   (keep [and (astory _) (cansee user _) (is ((votes subject) _!id) 'like)]
@@ -2203,7 +2210,7 @@ pre:hover {overflow:auto} "))
 (def threads-page (user subject)
   (if (profile subject)
       (withs (title (+ subject "'s comments")
-              label (if (is user subject) "threads" title)
+              label (if (is user subject) "my comments" title)
               here  (threads-url subject))
         (longpage-csb user (msec) nil label title here t
           (awhen (keep [and (cansee user _) (~subcomment _)]
@@ -2251,8 +2258,9 @@ pre:hover {overflow:auto} "))
 
 (def submitted-page (user subject)
   (if (profile subject)
-      (with (label (+ subject "'s submissions")
-             here  (submitted-url subject))
+      (withs (title (+ subject "'s posts")
+              label (if (is user subject) "my posts" title)
+              here  (submitted-url subject))
         (longpage-csb user (msec) nil label label here t
           (if (or (no (ignored subject))
                   (is user subject)
