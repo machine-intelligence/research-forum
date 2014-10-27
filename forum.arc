@@ -54,7 +54,6 @@
   text       nil
   likes      nil   ; list of users, not including item!by
   score      0
-  sockvotes  0
   dead       nil
   deleted    nil
   parts      nil
@@ -244,7 +243,7 @@
        (min 1 (expt (/ (realscore s) it) 2))
        1))
 
-(def realscore (i) (+ 1 (- i!score i!sockvotes)))
+(def realscore (i) (+ 1 i!score))
 
 (def item-age (i) (minutes-since i!time))
 
@@ -1109,24 +1108,6 @@ pre:hover {overflow:auto} "))
 
 ; Voting
 
-; A user needs legit-threshold karma for a vote to count if there has 
-; already been a vote from the same IP address.  A new account below both
-; new- thresholds won't affect rankings, though such votes still affect 
-; scores unless not a legit-user.
-
-(= legit-threshold* 0 new-age-threshold* 0 new-karma-threshold* 2)
-
-(def legit-user (user) 
-  (or (editor user)
-      (> (karma user) legit-threshold*)))
-
-(def possible-sockpuppet (user)
-  (or (< (uvar user weight) .5)
-      (and (< (user-age user) new-age-threshold*)
-           (< (karma user) new-karma-threshold*))))
-
-(= downvote-ratio-limit* .65 recent-votes* nil votewindow* 100)
-
 ; Note: if vote-for by one user changes (s 'score) while s is being
 ; edited by another, the save after the edit will overwrite the change.
 ; Actual votes can't be lost because that field is not editable.  Not a
@@ -1134,48 +1115,18 @@ pre:hover {overflow:auto} "))
 
 (def vote-for (user i (o dir 'like))
   (unless (or (is (vote user i) dir)
-              (is user i!by)
-              (and (~live i) (isnt user i!by)))
-    (withs (ip   (logins* user)
-            vote (list (seconds) ip user dir i!score))
-      (++ i!score (case dir like 1 nil -1))
-      ; canvote protects against sockpuppet downvote of comments 
-      (when (and (is dir 'like) (possible-sockpuppet user))
-        (++ i!sockvotes))
-      (astory&adjust-rank i)
-      (++ (karma i!by) (case dir like 1 nil -1))
-      (save-prof i!by)
-      (wipe (comment-cache* i!id))
-      (if (is dir 'like) (pushnew user i!likes)
-                         (zap [rem user _] i!likes))
-      (save-item i)
-      (= ((votes* user) i!id) dir)
-      (save-votes user)
-      (push (cons i!id vote) recent-votes*))))
-
-; redefined later
-
-(def biased-voter (i vote) nil)
-
-; ugly to access vote fields by position number
-
-; TODO: remove this rather than just setting to 0
-(def downvote-ratio (user (o sample 20))
-  0)
-
-(def just-downvoted (user victim (o n 3))
-  (let prev (firstn n (recent-votes-by user))
-    (and (is (len prev) n)
-         (all (fn ((id sec ip voter dir score))
-                (and (author victim (item id)) (is dir 'down)))
-              prev))))
-
-; Ugly to pluck out fourth element.  Should read votes into a vote
-; template.  They're stored slightly differently in two diff places: 
-; in one with the voter in the car and the other without.
-
-(def recent-votes-by (user)
-  (keep [is _.3 user] recent-votes*))
+              (author user i)
+              (~live i))
+    (++ i!score (case dir like 1 nil -1))
+    (astory&adjust-rank i)
+    (++ (karma i!by) (case dir like 1 nil -1))
+    (save-prof i!by)
+    (wipe (comment-cache* i!id))
+    (if (is dir 'like) (pushnew user i!likes)
+                       (zap [rem user _] i!likes))
+    (save-item i)
+    (= ((votes* user) i!id) dir)
+    (save-votes user)))
 
 
 ; Story Submission
@@ -1376,7 +1327,6 @@ pre:hover {overflow:auto} "))
 (def standard-item-fields (i a e x)
        `((int     likes     ,(len i!likes) ,a  nil)
          (int     score     ,i!score        t ,a)
-         (int     sockvotes ,i!sockvotes   ,a ,a)
          (yesno   dead      ,i!dead        ,e ,e)
          (yesno   deleted   ,i!deleted     ,a ,a)
          (sexpr   keys      ,i!keys        ,a ,a)
