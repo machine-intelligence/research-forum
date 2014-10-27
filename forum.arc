@@ -36,11 +36,6 @@
   email      nil
   about      nil
   showdead   nil
-  noprocrast nil
-  firstview  nil
-  lastview   nil
-  maxvisit   20 
-  minaway    180
   keys       nil
   delay      0)
 
@@ -357,11 +352,9 @@
   (w/uniq (gu gi gl gt gw)
     `(with (,gu ,user ,gi ,lid ,gl ,label ,gt ,title ,gw ,whence)
        (npage (+ this-site* (if ,gt (+ bar* ,gt) ""))
-         (if (check-procrast ,gu)
-             (do (pagetop 'full ,gi ,gl ,gt ,gu ,gw)
-                 (hook 'page ,gu ,gl)
-                 ,@body)
-             (row (procrast-msg ,gu ,gw)))))))
+         (do (pagetop 'full ,gi ,gl ,gt ,gu ,gw)
+             (hook 'page ,gu ,gl)
+             ,@body)))))
 
 (mac longpage (user t1 lid label title whence . body)
   (w/uniq (gu gt gi)
@@ -718,11 +711,6 @@ pre:hover {overflow:auto} "))
       (mdtext2 about      ,(p 'about)                               t  ,u)
       (string  email      ,(p 'email)                              ,u  ,u)
       (yesno   showdead   ,(p 'showdead)                           ,u  ,u)
-      (yesno   noprocrast ,(p 'noprocrast)                         ,u  ,u)
-      (string  firstview  ,(p 'firstview)                          ,a   nil)
-      (string  lastview   ,(p 'lastview)                           ,a   nil)
-      (posint  maxvisit   ,(p 'maxvisit)                           ,u  ,u)
-      (posint  minaway    ,(p 'minaway)                            ,u  ,u)
       (sexpr   keys       ,(p 'keys)                               ,a  ,a)
       (int     delay      ,(p 'delay)                              ,u  ,u))))
 
@@ -1709,48 +1697,6 @@ reproduced verbatim.  (This is intended for code.)
 first asterisk isn't whitespace.
 <p> A paragraph beginning with a hash mark (#) is a subheading.
 <p> Urls become links, except in the text field of a submission.<br><br>")
-
-
-; Noprocrast
-
-(def check-procrast (user)
-  (or (no user)
-      (no (uvar user noprocrast))
-      (let now (seconds)
-        (unless (uvar user firstview)
-          (reset-procrast user))
-        (or (when (< (/ (- now (uvar user firstview)) 60)
-                     (uvar user maxvisit))
-              (= (uvar user lastview) now)
-              (save-prof user)
-              t)
-            (when (> (/ (- now (uvar user lastview)) 60)
-                     (uvar user minaway))
-              (reset-procrast user)
-              t)))))
-                
-(def reset-procrast (user)
-  (= (uvar user lastview) (= (uvar user firstview) (seconds)))
-  (save-prof user))
-
-(def procrast-msg (user whence)
-  (let m (+ 1 (trunc (- (uvar user minaway)
-                        (minutes-since (uvar user lastview)))))
-    (pr "<b>Get back to work!</b>")
-    (para "Sorry, you can't see this page.  Based on the anti-procrastination
-           parameters you set in your profile, you'll be able to use the site 
-           again in " (plural m "minute") ".")
-    (para "(If you got this message after submitting something, don't worry,
-           the submission was processed.)")
-    (para "To change your anti-procrastination settings, go to your profile 
-           by clicking on your username.  If <tt>noprocrast</tt> is set to 
-           <tt>yes</tt>, you'll be limited to sessions of <tt>maxvisit</tt>
-           minutes, with <tt>minaway</tt> minutes between them.")
-    (para)
-    (w/rlink whence (underline (pr "retry")))
-    ; (hspace 20)
-    ; (w/rlink (do (reset-procrast user) whence) (underline (pr "override")))
-    (br2)))
 
 
 ; Reset PW
