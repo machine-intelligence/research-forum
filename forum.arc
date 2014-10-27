@@ -238,9 +238,6 @@
 
 (def user-age (u) (minutes-since (uvar u created)))
 
-; Only looks at the 1000 most recent stories, which might one day be a 
-; problem if there is massive spam. 
-
 (def gen-topstories ()
   (= ranked-stories* (rank-stories 180 1000 (memo frontpage-rank))))
 
@@ -1129,11 +1126,6 @@ pre:hover {overflow:auto} "))
    retry*       "Please try again."
    toolong*     "Please make title < @title-limit* characters."
    blanktext*   "Please fill in the title and the body.")
-
-; Only for annoyingly high-volume spammers. For ordinary spammers it's
-; enough to ban their sites and ip addresses.
-
-(disktable big-spamsites* (+ newsdir* "big-spamsites"))
 
 (def process-story (user title showtext text ip)
   (if (no user)
