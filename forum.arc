@@ -1015,26 +1015,18 @@ pre:hover {overflow:auto} "))
 (def userlink-or-you (user subject)
   (if (is user subject) (spanclass you (pr "You")) (userlink user subject)))
 
-(= show-threadavg* nil)
-
 (def commentlink (i user)
   (when (cansee user i) 
     (pr bar*)
     (tag (a href (item-url i!id))
       (let n (- (visible-family user i) 1)
         (if (> n 0)
-            (do (pr (plural n "comment"))
-                (awhen (and show-threadavg* (admin user) (threadavg i))
-                  (pr " (@(num it 1 t t))")))
+            (pr (plural n "comment"))
             (pr "discuss"))))))
 
 (def visible-family (user i)
   (+ (if (cansee user i) 1 0)
      (sum [visible-family user (item _)] i!kids)))
-
-(def threadavg (i)
-  (only.avg (map [or (uvar _ avg) 1] 
-                 (rem admin (dedup (map !by (keep live (family i))))))))
 
 (= user-changetime* 120 editor-changetime* 1440)
 
