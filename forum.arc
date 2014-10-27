@@ -53,7 +53,6 @@
   title      nil
   text       nil
   likes      nil   ; list of users, not including item!by
-  score      0
   dead       nil
   deleted    nil
   parts      nil
@@ -243,7 +242,7 @@
        (min 1 (expt (/ (realscore s) it) 2))
        1))
 
-(def realscore (i) (+ 1 i!score))
+(def realscore (i) (+ 1 (len i!likes)))
 
 (def item-age (i) (minutes-since i!time))
 
@@ -1108,16 +1107,10 @@ pre:hover {overflow:auto} "))
 
 ; Voting
 
-; Note: if vote-for by one user changes (s 'score) while s is being
-; edited by another, the save after the edit will overwrite the change.
-; Actual votes can't be lost because that field is not editable.  Not a
-; big enough problem to drag in locking.
-
 (def vote-for (user i (o dir 'like))
   (unless (or (is (vote user i) dir)
               (author user i)
               (~live i))
-    (++ i!score (case dir like 1 nil -1))
     (astory&adjust-rank i)
     (++ (karma i!by) (case dir like 1 nil -1))
     (save-prof i!by)
@@ -1326,7 +1319,6 @@ pre:hover {overflow:auto} "))
 
 (def standard-item-fields (i a e x)
        `((int     likes     ,(len i!likes) ,a  nil)
-         (int     score     ,i!score        t ,a)
          (yesno   dead      ,i!dead        ,e ,e)
          (yesno   deleted   ,i!deleted     ,a ,a)
          (sexpr   keys      ,i!keys        ,a ,a)
@@ -1502,8 +1494,7 @@ pre:hover {overflow:auto} "))
       (spanclass comment
         (if (~cansee user c)               (pr (pseudo-text c))
             (nor (live c) (author user c)) (spanclass dead (pr c!text))
-                                           (fontcolor (comment-color c)
-                                             (pr c!text))))
+                                           (pr c!text)))
       (when (and astree (cansee user c) (live c))
         (para)
         (tag (font size 1)
@@ -1540,12 +1531,6 @@ pre:hover {overflow:auto} "))
                           (newslog ip u 'comment-login)
                           (addcomment-page i u whence))))
         (pr "No such item."))))
-
-(def comment-color (c)
-  (if (>= c!score 0) black (grayrange c!score)))
-
-(defmemo grayrange (s)
-  (gray (min 230 (round (expt (* (+ (abs s) 1) 900) .6)))))
 
 
 ; Threads
