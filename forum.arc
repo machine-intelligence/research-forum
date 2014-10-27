@@ -42,7 +42,6 @@
   lastview   nil
   maxvisit   20 
   minaway    180
-  topcolor   nil
   keys       nil
   delay      0)
 
@@ -389,7 +388,7 @@
        (fulltop ,gu ,gi ,label ,title ,whence
          (trtd ,@body)
          (trtd (vspace 10)
-               (color-stripe (main-color ,gu))
+               (color-stripe site-color*)
                (br)
                (center
                  (hook 'longfoot)
@@ -546,14 +545,9 @@ pre:hover {overflow:auto} "))
 
 (= sand (color 246 246 239) textgray (gray 130))
 
-(def main-color (user) 
-  (aif (and user (uvar user topcolor))
-       (hex>color it)
-       site-color*))
-
 (def pagetop (switch lid label (o title) (o user) (o whence))
 ; (tr (tdcolor black (vspace 5)))
-  (tr (tdcolor (main-color user)
+  (tr (tdcolor site-color*
         (tag (table border 0 cellpadding 0 cellspacing 0 width "100%"
                     style "padding:2px")
           (tr (gen-logo)
@@ -743,13 +737,10 @@ pre:hover {overflow:auto} "))
                (fn () (save-prof subject)
                       (user-page user subject)))))
 
-(= topcolor-threshold* 250)
-
 (def user-fields (user subject)
   (withs (e (editor user) 
           a (admin user) 
           w (is user subject)
-          k (and w (> (karma user) topcolor-threshold*))
           u (or a w)
           m (or a (and (member user) w))
           p (profile subject))
@@ -773,7 +764,6 @@ pre:hover {overflow:auto} "))
       (posint  maxvisit   ,(p 'maxvisit)                           ,u  ,u)
       (posint  minaway    ,(p 'minaway)                            ,u  ,u)
       (sexpr   keys       ,(p 'keys)                               ,a  ,a)
-      (hexcol  topcolor   ,(or (p 'topcolor) (hexrep site-color*)) ,k  ,k)
       (int     delay      ,(p 'delay)                              ,u  ,u))))
 
 (def saved-link (user subject)
