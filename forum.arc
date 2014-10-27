@@ -31,7 +31,6 @@
   member     nil
   submitted  nil
   karma      1
-  avg        nil
   weight     .5
   email      nil
   about      nil
@@ -564,7 +563,7 @@ pre:hover {overflow:auto} "))
 
 (def topright (user whence (o showkarma t))
   (when user 
-    (userlink user user nil)
+    (userlink user user)
     (when showkarma (pr  "&nbsp;(@(karma user))"))
     (pr "&nbsp;|&nbsp;"))
   (if user
@@ -699,7 +698,6 @@ pre:hover {overflow:auto} "))
       (int     auth       ,(p 'auth)                               ,e  ,a)
       (yesno   member     ,(p 'member)                             ,a  ,a)
       (posint  karma      ,(p 'karma)                               t  ,a)
-      (num     avg        ,(p 'avg)                                ,a  nil)
       (num     weight     ,(p 'weight)                             ,a  ,a)
       (mdtext2 about      ,(p 'about)                               t  ,u)
       (string  email      ,(p 'email)                              ,u  ,u)
@@ -980,12 +978,8 @@ pre:hover {overflow:auto} "))
 
 (def user-url (user) (+ "user?id=" user))
 
-(= show-avg* nil)
-
-(def userlink (user subject (o show-avg t))
-  (clink userlink subject (user-url subject))
-  (awhen (and show-avg* (admin user) show-avg (uvar subject avg))
-    (pr " (@(num it 1 t t))")))
+(def userlink (user subject)
+  (clink userlink subject (user-url subject)))
 
 (def userlink-or-you (user subject)
   (if (is user subject) (spanclass you (pr "You")) (userlink user subject)))
@@ -1601,32 +1595,13 @@ pre:hover {overflow:auto} "))
         (each u (sort (compare > [karma _])
                       (keep [pos [cansee nil _] (submissions _)] (users)))
           (tr (tdr:pr (++ i) ".")
-              (td (userlink user u nil))
-              (tdr:pr (karma u))
-              (when (admin user)
-                (tdr:prt (only.num (uvar u avg) 2 t t))))
+              (td (userlink user u))
+              (tdr:pr (karma u)))
           (if (is i 10) (spacerow 30)))))))
 
 (adop editors ()
   (tab (each u (users [is (uvar _ auth) 1])
          (row (userlink user u)))))
-
-
-(= update-avg-threshold* 0)  ; redefined later
-
-(defbg update-avg 45
-  (unless (or (empty profs*) (no stories*))
-    (update-avg (rand-user [and (only.> (car (uvar _ submitted)) 
-                                        (- maxid* initload*))
-                                (len> (uvar _ submitted) 
-                                      update-avg-threshold*)]))))
-
-(def update-avg (user)
-  (= (uvar user avg) (comment-score user))
-  (save-prof user))
-
-(def rand-user ((o test idfn))
-  (evtil (rand-key profs*) test))
 
 ; Ignore the most recent 5 comments since they may still be gaining votes.  
 ; Also ignore the highest-scoring comment, since possibly a fluff outlier.
