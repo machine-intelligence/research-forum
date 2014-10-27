@@ -33,7 +33,6 @@
   karma      1
   avg        nil
   weight     .5
-  ignore     nil
   email      nil
   about      nil
   showdead   nil
@@ -56,7 +55,6 @@
   likes      nil   ; list of users, not including item!by
   score      0
   sockvotes  0
-  flags      nil
   dead       nil
   deleted    nil
   parts      nil
@@ -137,7 +135,6 @@
 (mac uvar (u k) `((profile ,u) ',k))
 
 (mac karma   (u) `(uvar ,u karma))
-(mac ignored (u) `(uvar ,u ignore))
 
 ; Note that users will now only consider currently loaded users.
 
@@ -212,18 +209,6 @@
 (def live (i) (nor i!dead i!deleted))
 
 (def save-item (i) (save-table i (+ storydir* i!id)))
-
-(def kill (i how)
-  (unless i!dead
-    (log-kill i how)
-    (wipe (comment-cache* i!id))
-    (set i!dead)
-    (save-item i)))
-
-(= kill-log* nil)
-
-(def log-kill (i how)
-  (push (list i!id how) kill-log*))
 
 (mac each-loaded-item (var . body)
   (w/uniq g
@@ -329,7 +314,7 @@
                  nil)))))
 
 (def seesdead (user)
-  (or (and user (uvar user showdead) (no (ignored user)))
+  (or (and user (uvar user showdead))
       (editor user)))
 
 (def visible (user is)
@@ -672,9 +657,7 @@ pre:hover {overflow:auto} "))
 ; Note that caching* is reset to val in source when restart server.
 
 (def nad-fields ()
-  `((num      caching         ,caching*                       t t)
-    (bigtoks  comment-kill    ,comment-kill*                  t t)
-    (bigtoks  comment-ignore  ,comment-ignore*                t t)))
+  `((num      caching         ,caching*                       t t)))
 
 ; Need a util like vars-form for a collection of variables.
 ; Or could generalize vars-form to think of places (in the setf sense).
@@ -686,24 +669,8 @@ pre:hover {overflow:auto} "))
                (fn (name val)
                  (case name
                    caching            (= caching* val)
-                   comment-kill       (todisk comment-kill* val)
-                   comment-ignore     (todisk comment-ignore* val)
                    ))
-               (fn () (newsadmin-page user))) 
-    (br2)
-    (aform (fn (req)
-             (with (user (get-user req) subject (arg req "id"))
-               (if (profile subject)
-                   (do (killallby subject)
-                       (submitted-page user subject))
-                   (admin&newsadmin-page user))))
-      (single-input "" 'id 20 "kill all by"))
-    (br2)
-    (aform (fn (req)
-             (let user (get-user req)
-               (set-ip-ban user (arg req "ip") t)
-               (admin&newsadmin-page user)))
-      (single-input "" 'ip 20 "ban ip"))))
+               (fn () (newsadmin-page user)))))
 
 
 ; Users
@@ -731,8 +698,6 @@ pre:hover {overflow:auto} "))
     (vars-form user
                (user-fields user subject)
                (fn (name val) 
-                 (when (and (is name 'ignore) val (no prof!ignore))
-                   (log-ignore user subject 'profile))
                  (= (prof name) val))
                (fn () (save-prof subject)
                       (user-page user subject)))))
@@ -753,7 +718,6 @@ pre:hover {overflow:auto} "))
       (yesno   member     ,(p 'member)                             ,a  ,a)
       (posint  karma      ,(p 'karma)                               t  ,a)
       (num     avg        ,(p 'avg)                                ,a  nil)
-      (yesno   ignore     ,(p 'ignore)                             ,e  ,e)
       (num     weight     ,(p 'weight)                             ,a  ,a)
       (mdtext2 about      ,(p 'about)                               t  ,u)
       (string  email      ,(p 'email)                              ,u  ,u)
@@ -857,8 +821,7 @@ pre:hover {overflow:auto} "))
       (row (link "active")       "Most active current discussions.")
       (row (link "bestcomments") "Highest voted recent comments.")
       (when (admin user)
-        (map row:link
-             '(optimes topips flagged killed badguys badlogins goodlogins)))
+        (row (link "optimes")))
       (hook 'listspage user))))
 
 
@@ -928,10 +891,6 @@ pre:hover {overflow:auto} "))
           (itemline s user whence)
           (when (astory s) (commentlink s user))
           (editlink s user)
-          (unless i (flaglink s user whence))
-          (killlink s user whence)
-          (blastlink s user whence)
-          (blastlink s user whence t)
           (deletelink s user whence)))
     (spacerow 10)
     (tr (tag (td colspan (if i 2 1)))
@@ -1053,17 +1012,12 @@ pre:hover {overflow:auto} "))
 (= show-avg* nil)
 
 (def userlink (user subject (o show-avg t))
-  (clink userlink (user-name user subject) (user-url subject))
+  (clink userlink subject (user-url subject))
   (awhen (and show-avg* (admin user) show-avg (uvar subject avg))
     (pr " (@(num it 1 t t))")))
 
 (def userlink-or-you (user subject)
   (if (is user subject) (spanclass you (pr "You")) (userlink user subject)))
-
-(def user-name (user subject)
-  (if (and (editor user) (ignored subject))
-       (tostring (fontcolor darkred (pr subject)))
-      subject))
 
 (= show-threadavg* nil)
 
@@ -1109,71 +1063,6 @@ pre:hover {overflow:auto} "))
     (pr bar*)
     (link "edit" (edit-url i))))
 
-; reset later
-
-(= flag-threshold* 30 flag-kill-threshold* 7 many-flags* 1)
-
-; Un-flagging something doesn't unkill it, if it's now no longer
-; over flag-kill-threshold.  Ok, since arbitrary threshold anyway.
-
-(def flaglink (i user whence)
-  (when (and user
-             (isnt user i!by)
-             (or (admin user) (> (karma user) flag-threshold*)))
-    (pr bar*)
-    (w/rlink (do (togglemem user i!flags)
-                 (when (and (~mem 'nokill i!keys)
-                            (len> i!flags flag-kill-threshold*)
-                            (< (realscore i) 10)
-                            (~admin i!by)
-                            (~find admin i!likes))
-                   (kill i 'flags))
-                 whence)
-      (pr "@(if (mem user i!flags) 'un)flag"))
-    (when (and (admin user) (len> i!flags many-flags*))
-      (pr bar* (plural (len i!flags) "flag") " ")
-      (w/rlink (do (togglemem 'nokill i!keys)
-                   (save-item i)
-                   whence)
-        (pr (if (mem 'nokill i!keys) "un-notice" "noted"))))))
-
-(def killlink (i user whence)
-  (when (admin user)
-    (pr bar*)
-    (w/rlink (do (zap no i!dead)
-                 (if i!dead 
-                     (do (pull 'nokill i!keys)
-                         (log-kill i user))
-                     (pushnew 'nokill i!keys))
-                 (save-item i)
-                 whence)
-      (pr "@(if i!dead 'un)kill"))))
-
-; Blast kills the submission and bans the user.  Nuke also bans the 
-; site, so that all future submitters will be ignored.  Does not ban 
-; the ip address, but that will eventually get banned by maybe-ban-ip.
-
-(def blastlink (i user whence (o nuke))
-  (when (and (admin user) 
-             (or (no nuke) (~empty i!url)))
-    (pr bar*)
-    (w/rlink (do (toggle-blast i user nuke)
-                 whence)
-      (prt (if (ignored i!by) "un-") (if nuke "nuke" "blast")))))
-
-(def toggle-blast (i user (o nuke))
-  (atomic
-    (if (ignored i!by)
-        (do (wipe i!dead (ignored i!by))
-            (awhen (and nuke (sitename i!url))
-              (set-site-ban user it nil)))
-        (do (set i!dead)
-            (ignore user i!by (if nuke 'nuke 'blast))
-            (awhen (and nuke (sitename i!url))
-              (set-site-ban user it 'ignore))))
-    (if i!dead (log-kill i user))
-    (save-item i)
-    (save-prof i!by)))
 
 (def candelete (user i)
   (or (admin user) (own-changeable-item user i)))
@@ -1232,8 +1121,7 @@ pre:hover {overflow:auto} "))
       (> (karma user) legit-threshold*)))
 
 (def possible-sockpuppet (user)
-  (or (ignored user)
-      (< (uvar user weight) .5)
+  (or (< (uvar user weight) .5)
       (and (< (user-age user) new-age-threshold*)
            (< (karma user) new-karma-threshold*))))
 
@@ -1250,16 +1138,14 @@ pre:hover {overflow:auto} "))
               (and (~live i) (isnt user i!by)))
     (withs (ip   (logins* user)
             vote (list (seconds) ip user dir i!score))
-      (unless (or (ignored user) (check-key user 'novote))
-        (++ i!score (case dir like 1 nil -1))
-        ; canvote protects against sockpuppet downvote of comments 
-        (when (and (is dir 'like) (possible-sockpuppet user))
-          (++ i!sockvotes))
-        (astory&adjust-rank i)
-        (++ (karma i!by) (case dir like 1 nil -1))
-        (save-prof i!by)
-        (wipe (comment-cache* i!id)))
-      (if (admin user) (pushnew 'nokill i!keys))
+      (++ i!score (case dir like 1 nil -1))
+      ; canvote protects against sockpuppet downvote of comments 
+      (when (and (is dir 'like) (possible-sockpuppet user))
+        (++ i!sockvotes))
+      (astory&adjust-rank i)
+      (++ (karma i!by) (case dir like 1 nil -1))
+      (save-prof i!by)
+      (wipe (comment-cache* i!id))
       (if (is dir 'like) (pushnew user i!likes)
                          (zap [rem user _] i!likes))
       (save-item i)
@@ -1493,7 +1379,6 @@ pre:hover {overflow:auto} "))
          (int     sockvotes ,i!sockvotes   ,a ,a)
          (yesno   dead      ,i!dead        ,e ,e)
          (yesno   deleted   ,i!deleted     ,a ,a)
-         (sexpr   flags     ,i!flags       ,a nil)
          (sexpr   keys      ,i!keys        ,a ,a)
          (string  ip        ,i!ip          ,e  nil)))
 
@@ -1508,21 +1393,15 @@ pre:hover {overflow:auto} "))
       (br2)
       (vars-form user
                  ((fieldfn* i!type) user i)
-                 (fn (name val) 
-                   (unless (ignore-edit user i name val)
-                     (when (and (is name 'dead) val (no i!dead))
-                       (log-kill i user))
-                     (= (i name) val)))
+                 (fn (name val)
+                     (unless (and (is name 'title) (len> val title-limit*))
+                       (= (i name) val)))
                  (fn () (if (admin user) (pushnew 'locked i!keys))
                         (save-item i)
                         (astory&adjust-rank i)
                         (wipe (comment-cache* i!id))
                         (edit-page user i)))
       (hook 'edit user i))))
-
-(def ignore-edit (user i name val)
-  (case name title (len> val title-limit*)
-             dead  (and (mem 'nokill i!keys) (~admin user))))
 
  
 ; Comment Submission
@@ -1569,9 +1448,6 @@ pre:hover {overflow:auto} "))
        (atlet c (create-comment parent (md-from-form text) user ip)
          (submit-item user c)
          whence)))
-
-(def bad-user (u)
-  (or (ignored u) (< (karma u) comment-threshold*)))
 
 (def create-comment (parent text user ip)
   (newslog ip user 'comment (parent 'id))
@@ -1666,9 +1542,6 @@ pre:hover {overflow:auto} "))
             (link "parent" (item-url ((item parent) 'id))))
           (editlink c user)
           (deletelink c user whence)
-          ; a hack to check whence but otherwise need an arg just for this
-          (unless (or astree (is whence "newcomments"))
-            (flaglink c user whence))
           (deadmark c user)
           (when showon
             (pr " | on: ")
@@ -1789,12 +1662,9 @@ pre:hover {overflow:auto} "))
               label (if (is user subject) "my posts" title)
               here  (submitted-url subject))
         (longpage-csb user (msec) nil label label here t
-          (if (or (no (ignored subject))
-                  (is user subject)
-                  (seesdead user))
-              (aif (keep [and (astory _) (cansee user _)]
-                         (submissions subject))
-                   (display-items user it label label here 0 perpage* t t)))))
+          (aif (keep [and (astory _) (cansee user _)]
+                     (submissions subject))
+               (display-items user it label label here 0 perpage* t t))))
       (pr "No such user.")))
 
 
