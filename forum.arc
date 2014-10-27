@@ -220,8 +220,6 @@
 
 (def newslog args (apply srvlog 'news args))
 
-(def votelog args (apply srvlog 'votes args))
-
 
 ; Ranking
 
@@ -958,11 +956,11 @@ pre:hover {overflow:auto} "))
                              (newslog ip u 'vote-login)
                              (when (canvote u i dir)
                                (vote-for u i dir)
-                               (logvote ip u i)))
+                               (logvote ip u i dir)))
                            whence))
         (canvote user i dir)
          (do (vote-for by i dir)
-             (logvote ip by i)
+             (logvote ip by i dir)
              (pr "<meta http-equiv='refresh' content='0; url="
                  (esc-tags whence) "' />"))
          (pr "Can't make that vote."))))
@@ -1095,8 +1093,8 @@ pre:hover {overflow:auto} "))
     (pr bar*) 
     (link "link" (item-url story!id))))
 
-(def logvote (ip user story)
-  (newslog ip user 'vote (story 'id) (list (story 'title))))
+(def logvote (ip user story dir)
+  (newslog ip user 'vote story!id dir (list (story 'title))))
 
 (def text-age (a)
   (tostring
@@ -1669,7 +1667,7 @@ pre:hover {overflow:auto} "))
 
 (def comment-score (user)
   (aif (check (nthcdr 5 (comments user 50)) [len> _ 10])
-       (avg (cdr (sort > (map !score (rem !deleted it)))))
+       (avg (cdr (sort > (map realscore (rem !deleted it)))))
        nil))
 
 
