@@ -35,7 +35,6 @@
   weight     .5
   email      nil
   about      nil
-  showdead   nil
   keys       nil
   delay      0)
 
@@ -48,7 +47,6 @@
   title      nil
   text       nil
   likes      nil   ; list of users, not including item!by
-  dead       nil
   deleted    nil
   parts      nil
   parent     nil
@@ -199,7 +197,7 @@
 (def arg->item (req key)
   (safe-item:saferead (arg req key)))
 
-(def live (i) (nor i!dead i!deleted))
+(def live (i) (no i!deleted))
 
 (def save-item (i) (save-table i (+ storydir* i!id)))
 
@@ -292,7 +290,6 @@
 
 (def cansee (user i)
   (if i!deleted   (admin user)
-      i!dead      (or (author user i) (seesdead user))
       (delayed i) (author user i)
       t))
 
@@ -303,10 +300,6 @@
          (or (< (item-age i) (min max-delay* (uvar i!by delay)))
              (do (set (mature i!id))
                  nil)))))
-
-(def seesdead (user)
-  (or (and user (uvar user showdead))
-      (editor user)))
 
 (def visible (user is)
   (keep [cansee user _] is))
@@ -710,7 +703,6 @@ pre:hover {overflow:auto} "))
       (num     weight     ,(p 'weight)                             ,a  ,a)
       (mdtext2 about      ,(p 'about)                               t  ,u)
       (string  email      ,(p 'email)                              ,u  ,u)
-      (yesno   showdead   ,(p 'showdead)                           ,u  ,u)
       (sexpr   keys       ,(p 'keys)                               ,a  ,a)
       (int     delay      ,(p 'delay)                              ,u  ,u))))
 
@@ -766,7 +758,7 @@ pre:hover {overflow:auto} "))
 
 (newsop newest () (newestpage user))
 
-; Note: dead/deleted items will persist for the remaining life of the 
+; Note: deleted items will persist for the remaining life of the 
 ; cached page.  If this were a prob, could make deletion clear caches.
 
 (newscache newestpage user 40
@@ -889,14 +881,9 @@ pre:hover {overflow:auto} "))
     (if (cansee user s)
         (do (deadmark s user)
             (link s!title (item-url s!id)))
-        (pr (pseudo-text s)))))
-      
-(def pseudo-text (i)
-  (if i!deleted "[deleted]" "[dead]"))
+        (pr "[deleted]"))))
 
 (def deadmark (i user)
-  (when (and i!dead (seesdead user))
-    (pr " [dead] "))
   (when (and i!deleted (admin user))
     (pr " [deleted] ")))
 
@@ -1297,7 +1284,6 @@ pre:hover {overflow:auto} "))
 
 (def standard-item-fields (i a e x)
        `((int     likes     ,(len i!likes) ,a  nil)
-         (yesno   dead      ,i!dead        ,e ,e)
          (yesno   deleted   ,i!deleted     ,a ,a)
          (sexpr   keys      ,i!keys        ,a ,a)
          (string  ip        ,i!ip          ,e  nil)))
@@ -1470,7 +1456,7 @@ pre:hover {overflow:auto} "))
       (when (or parent (cansee user c))
         (br))
       (spanclass comment
-        (if (~cansee user c)               (pr (pseudo-text c))
+        (if (~cansee user c)               (pr "[deleted]")
             (nor (live c) (author user c)) (spanclass dead (pr c!text))
                                            (pr c!text)))
       (when (and astree (cansee user c) (live c))
