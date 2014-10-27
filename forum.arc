@@ -172,7 +172,7 @@
     (noisy-each 100 id (firstn initload* ids)
       (let i (load-item id)
         (push i (items i!type))))
-    (= stories*  (rev (merge (compare < !id) items!story items!poll))
+    (= stories*  (rev items!story)
        comments* (rev items!comment))
     (hook 'initload items))
   (ensure-topstories))
@@ -184,9 +184,8 @@
            (flushout)
            (gen-topstories))))
 
-(def astory   (i) (is i!type 'story))
-(def acomment (i) (is i!type 'comment))
-(def apoll    (i) (is i!type 'poll))
+(def astory   (i) (and i (is i!type 'story)))
+(def acomment (i) (and i (is i!type 'comment)))
 
 (def load-item (id)
   (= (items* id) (temload 'item (+ storydir* id))))
@@ -253,8 +252,8 @@
   (* (/ (let base (- (scorefn s) 1)
           (if (> base 0) (expt base .8) base))
         (expt (/ (+ (item-age s) timebase*) 60) gravity))
-     (if (no (in s!type 'story 'poll))  .5
-                                        (contro-factor s))))
+     (if (~astory s)  .5
+                      (contro-factor s))))
 
 (def contro-factor (s)
   (aif (check (visible-family nil s) [> _ 20])
@@ -278,10 +277,10 @@
              (+ newsdir* "topstories")))
  
 (def rank-stories (n consider scorefn)
-  (bestn n (compare > scorefn) (latest-items metastory nil consider)))
+  (bestn n (compare > scorefn) (latest-items astory nil consider)))
 
 ; With virtual lists the above call to latest-items could be simply:
-; (map item (retrieve consider metastory:item (gen maxid* [- _ 1])))
+; (map item (retrieve consider astory:item (gen maxid* [- _ 1])))
 
 (def latest-items (test (o stop) (o n))
   (accum a
@@ -293,10 +292,6 @@
           (when (test i) 
             (a i) 
             (if n (-- n))))))))
-             
-; redefined later
-
-(def metastory (i) (and i (in i!type 'story 'poll)))
 
 (def adjust-rank (s (o scorefn frontpage-rank))
   (insortnew (compare > (memo scorefn)) s ranked-stories*)
@@ -941,9 +936,8 @@ pre:hover {overflow:auto} "))
         (tag (td class 'subtext)
           (hook 'itemline s user)
           (itemline s user whence)
-          (when (in s!type 'story 'poll) (commentlink s user))
+          (when (astory s) (commentlink s user))
           (editlink s user)
-          (when (apoll s) (addoptlink s user))
           (unless i (flaglink s user whence))
           (killlink s user whence)
           (blastlink s user whence)
@@ -1125,11 +1119,6 @@ pre:hover {overflow:auto} "))
     (pr bar*)
     (link "edit" (edit-url i))))
 
-(def addoptlink (p user)
-  (when (or (admin user) (author user p))
-    (pr bar*)
-    (onlink "add choice" (add-pollopt-page p user))))
-
 ; reset later
 
 (= flag-threshold* 30 flag-kill-threshold* 7 many-flags* 1)
@@ -1276,10 +1265,9 @@ pre:hover {overflow:auto} "))
         ; canvote protects against sockpuppet downvote of comments 
         (when (and (is dir 'like) (possible-sockpuppet user))
           (++ i!sockvotes))
-        (metastory&adjust-rank i)
-        (unless (is i!type 'pollopt)
-          (++ (karma i!by) (case dir like 1 nil -1))
-          (save-prof i!by))
+        (astory&adjust-rank i)
+        (++ (karma i!by) (case dir like 1 nil -1))
+        (save-prof i!by)
         (wipe (comment-cache* i!id)))
       (if (admin user) (pushnew 'nokill i!keys))
       (if (is dir 'like) (pushnew user i!likes)
@@ -1382,7 +1370,7 @@ pre:hover {overflow:auto} "))
 (def submit-item (user i)
   (push i!id (uvar user submitted))
   (save-prof user)
-  (metastory&adjust-rank i))
+  (astory&adjust-rank i))
 
 (def create-story (title text user ip)
   (newslog ip user 'create (list title))
@@ -1392,109 +1380,6 @@ pre:hover {overflow:auto} "))
     (= (items* s!id) s)
     (push s stories*)
     s))
-
-
-; Polls
-
-; a way to add a karma threshold for voting in a poll
-;  or better still an arbitrary test fn, or at least pair of name/threshold.
-; option to sort the elements of a poll when displaying
-; exclusive field? (means only allow one vote per poll)
-
-(= poll-threshold* 20)
-
-(newsop newpoll ()
-  (if (and user (> (karma user) poll-threshold*))
-      (newpoll-page user)
-      (pr "Sorry, you need @poll-threshold* karma to create a poll.")))
-  
-(def newpoll-page (user (o title "Poll: ") (o text "") (o opts "") (o msg))
-  (minipage "New Poll"
-    (pagemessage msg)
-    (urform user req
-            (process-poll (get-user req)
-                          (striptags (arg req "t"))
-                          (md-from-form (arg req "x") t)
-                          (striptags (arg req "o"))
-                          req!ip)
-      (tab   
-        (row "title"   (input "t" title 50))
-        (row "text"    (textarea "x" 4 50 (only.pr text)))
-        (row ""        "Use blank lines to separate choices:")
-        (row "choices" (textarea "o" 7 50 (only.pr opts)))
-        (row ""        (submit))))))
-
-(= fewopts* "A poll must have at least two options.")
-
-(def process-poll (user title text opts ip)
-  (if (or (blank title) (blank opts))
-       (flink [newpoll-page user title text opts retry*])
-      (len> title title-limit*)
-       (flink [newpoll-page user title text opts toolong*])
-      (len< (paras opts) 2)
-       (flink [newpoll-page user title text opts fewopts*])
-      (atlet p (create-poll title text opts user ip)
-        (submit-item user p)
-        "newest")))
-
-(def create-poll (title text opts user ip)
-  (newslog ip user 'create-poll title)
-  (let p (inst 'item 'type 'poll 'id (new-item-id)
-                     'title title 'text text 'by user 'ip ip)
-    (= p!parts (map get!id (map [create-pollopt p nil nil _ user ip]
-                                (paras opts))))
-    (save-item p)
-    (= (items* p!id) p)
-    (push p stories*)
-    p))
-
-(def create-pollopt (p title text user ip)
-  (let o (inst 'item 'type 'pollopt 'id (new-item-id)
-                     'title title 'text text 'parent p!id
-                     'by user 'ip ip)
-    (save-item o)
-    (= (items* o!id) o) 
-    o))
-
-(def add-pollopt-page (p user)
-  (minipage "Add Poll Choice"
-    (urform user req
-            (do (add-pollopt user p (striptags (arg req "x")) req!ip)
-                (item-url p!id))
-      (tab
-        (row "text" (textarea "x" 4 50))
-        (row ""     (submit))))))
-
-(def add-pollopt (user p text ip)
-  (unless (blank text)
-    (atlet o (create-pollopt p nil nil text user ip)
-      (++ p!parts (list o!id))
-      (save-item p))))
-
-(def display-pollopts (p user whence)
-  (each o (visible user (map item p!parts))
-    (display-pollopt nil o user whence)
-    (spacerow 7)))
-
-(def display-pollopt (n o user whence)
-  (tr (display-item-number n)
-      (tag (td valign 'top)
-        (votelinks-space))
-      (tag (td class 'comment)
-        (tag (div style "margin-top:1px;margin-bottom:0px")
-          (if (~cansee user o) (pr (pseudo-text o))
-              (~live o)        (spanclass dead 
-                                 (pr (if (~blank o!title) o!title o!text)))
-                               (fontcolor black (pr o!text))))))
-  (tr (if n (td))
-      (td)
-      (tag (td class 'default)
-        (spanclass comhead
-          (itemscore o)
-          (editlink o user)
-          (killlink o user whence)
-          (deletelink o user whence)
-          (deadmark o user)))))
 
 
 ; Individual Item Page (= Comments Page of Stories)
@@ -1523,7 +1408,7 @@ pre:hover {overflow:auto} "))
 
 ; redefined later
 
-(def news-type (i) (and i (in i!type 'story 'comment 'poll 'pollopt)))
+(def news-type (i) (and i (in i!type 'story 'comment)))
 
 (def item-page (user i)
   (with (title (and (cansee user i)
@@ -1531,10 +1416,6 @@ pre:hover {overflow:auto} "))
          here (item-url i!id))
     (longpage-csb user (msec) nil nil title here t
       (tab (display-item nil i user here)
-           (when (apoll i)
-             (spacerow 10)
-             (tr (td)
-                 (td (tab (display-pollopts i user here)))))
            (when (and (cansee user i) (comments-active i))
              (spacerow 10)
              (row "" (comment-form i user here))))
@@ -1543,7 +1424,7 @@ pre:hover {overflow:auto} "))
         (tab (display-subcomments i user here))
         (br2)))))
 
-(def commentable (i) (in i!type 'story 'comment 'poll))
+(def commentable (i) (in i!type 'story 'comment))
 
 ; By default the ability to comment on an item is turned off after 
 ; 45 days, but this can be overriden with commentable key.
@@ -1565,11 +1446,6 @@ pre:hover {overflow:auto} "))
 (= (displayfn* 'comment) (fn (n i user here inlist preview-only)
                            (display-comment n i user here nil 0 nil inlist)))
 
-(= (displayfn* 'poll)    (displayfn* 'story))
-
-(= (displayfn* 'pollopt) (fn (n i user here inlist preview-only)
-                           (display-pollopt n i user here)))
-
 (def display-item (n i user here (o inlist) (o preview-only))
   ((displayfn* (i 'type)) n i user here inlist preview-only))
 
@@ -1586,8 +1462,7 @@ pre:hover {overflow:auto} "))
     (first-para text)))
 
 (def display-item-text (s user preview-only)
-  (when (and (cansee user s) 
-             (in s!type 'story 'poll))
+  (when (and (cansee user s) (astory s))
     (if preview-only (pr (preview s!text))
       (pr s!text))))
 
@@ -1622,20 +1497,6 @@ pre:hover {overflow:auto} "))
        `((mdtext  text      ,c!text         t ,x)
          ,@(standard-item-fields c a e x)))))
 
-(= (fieldfn* 'poll)
-   (fn (user p)
-     (with (a (admin user)  e (editor user)  x (canedit user p))
-       `((string1 title     ,p!title        t ,x)
-         (mdtext2 text      ,p!text         t ,x)
-         ,@(standard-item-fields p a e x)))))
-
-(= (fieldfn* 'pollopt)
-   (fn (user p)
-     (with (a (admin user)  e (editor user)  x (canedit user p))
-       `((string  title     ,p!title        t ,x)
-         (mdtext2 text      ,p!text         t ,x)
-         ,@(standard-item-fields p a e x)))))
-
 (def standard-item-fields (i a e x)
        `((int     likes     ,(len i!likes) ,a  nil)
          (int     score     ,i!score        t ,a)
@@ -1664,7 +1525,7 @@ pre:hover {overflow:auto} "))
                      (= (i name) val)))
                  (fn () (if (admin user) (pushnew 'locked i!keys))
                         (save-item i)
-                        (metastory&adjust-rank i)
+                        (astory&adjust-rank i)
                         (wipe (comment-cache* i!id))
                         (edit-page user i)))
       (hook 'edit user i))))
@@ -1941,7 +1802,7 @@ pre:hover {overflow:auto} "))
           (if (or (no (ignored subject))
                   (is user subject)
                   (seesdead user))
-              (aif (keep [and (metastory _) (cansee user _)]
+              (aif (keep [and (astory _) (cansee user _)]
                          (submissions subject))
                    (display-items user it label label here 0 perpage* t t)))))
       (pr "No such user.")))
