@@ -716,7 +716,7 @@ pre:hover {overflow:auto} "))
 
 ; remember to set caching to 0 when testing non-logged-in 
 
-(= caching* 1 perpage* 30 threads-perpage* 10 maxend* 210 
+(= caching* 1 perpage* 25 threads-perpage* 10 maxend* 500
    csb-count* 5 csb-maxlen* 30 preview-maxlen* 1000)
 
 ; Limiting that newscache can't take any arguments except the user.
@@ -830,7 +830,7 @@ pre:hover {overflow:auto} "))
         (when (and (<= newend maxend*) (< end (len items)))
           (spacerow 10)
           (tr (tag (td colspan (if number 2 1)))
-              (tag (td class 'title)
+              (td
                 (morelink display-items 
                           items label title end newend number))))))))
 
@@ -1514,7 +1514,7 @@ pre:hover {overflow:auto} "))
           (spacerow 10)
           (row (tab (tr (td (hspace 0))
                         (td (hspace votewid*))
-                        (tag (td class 'title)
+                        (td
                           (morelink display-threads
                                     comments label title end newend))))))))))
 
