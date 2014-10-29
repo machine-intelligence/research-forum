@@ -129,7 +129,7 @@
   (logout-user user))
   
 (def set-pw (user pw)
-  (= (hpasswords* user) (and pw (shash pw)))
+  (= (hpasswords* user) (and pw (shash (+ user pw))))
   (save-table hpasswords* hpwfile*))
 
 (def hello-page (user ip)
@@ -207,7 +207,7 @@
 
 (def good-login (user pw ip)
   (let record (list (seconds) ip user)
-    (if (and user pw (aand (shash pw) (is it (hpasswords* user))))
+    (if (and user pw (aand (shash (+ user pw)) (is it (hpasswords* user))))
         (do (unless (user->cookie* user) (cook-user user))
             (enq-limit record good-logins*)
             user)
