@@ -480,6 +480,8 @@ a:visited { color:#555555; text-decoration:none; }
 .comhead a:link, .subtext a:visited { color:#828282; }
 .comhead a:hover { text-decoration:underline; }
 
+.continue a:link, .subtext a:visited { color:#828282; text-decoration:underline; }
+
 .default p { margin-top: 8px; margin-bottom: 0px; }
 
 .pagebreak {page-break-before:always}
@@ -824,7 +826,7 @@ pre:hover {overflow:auto} "))
   (zerotable
     (let n start
       (each i (cut items start end)
-        (trtd (tab (display-item (and number (++ n)) i user whence t preview-only)
+        (trtd (tag (table width '100%) (display-item (and number (++ n)) i user whence t preview-only)
              (spacerow (if (acomment i) 15 30))))))
     (when end
       (let newend (+ end perpage*)
@@ -866,7 +868,14 @@ pre:hover {overflow:auto} "))
           (deletelink s user whence)))
     (spacerow 10)
     (tr (tag (td colspan (if i 2 1)))
-        (tag (td class 'story) (display-item-text s user preview-only)))))
+        (tag (td class 'story)
+          (let displayed (display-item-text s user preview-only)
+            displayed
+            (if (and preview-only (no (is displayed s!text)))
+              (tag (table width '100%)
+                (spacerow 20)
+                (tr (tag (td align 'right class 'continue)
+                  (link "continue reading &raquo;" (item-url s!id)))))))))))
 
 (def display-item-number (i)
   (when i (tag (td align 'right valign 'top class 'title)
