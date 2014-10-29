@@ -1264,7 +1264,7 @@ pre:hover {overflow:auto} "))
 (= (fieldfn* 'comment)
    (fn (user c)
      (with (a (admin user)  e (editor user)  x (canedit user c))
-       `((mdtext  text      ,c!text         t ,x)
+       `((mdtextc text      ,c!text         t ,x)
          ,@(standard-item-fields c a e x)))))
 
 (def standard-item-fields (i a e x)
@@ -1339,7 +1339,7 @@ pre:hover {overflow:auto} "))
        (flink [comment-login-warning parent whence text])
       (empty text)
        (flink [addcomment-page parent (get-user _) whence text retry*])
-       (atlet c (create-comment parent (md-from-form text) user ip)
+       (atlet c (create-comment parent (md-from-form text nil t t) user ip)
          (submit-item user c)
          whence)))
 
@@ -1650,7 +1650,8 @@ pre:hover {overflow:auto} "))
 reproduced verbatim.  (This is intended for code.)
 <p> Text surrounded by asterisks is italicized, if the character after the 
 first asterisk isn't whitespace.
-<p> A paragraph beginning with a hash mark (#) is a subheading.
+<p> A paragraph beginning with a hash mark (#) is a subheading (posts only,
+not comments).
 <p> Urls become links, except in the text field of a submission.<br><br>")
 
 
