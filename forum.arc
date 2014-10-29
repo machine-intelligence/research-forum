@@ -569,7 +569,7 @@ pre:hover {overflow:auto} "))
           (logout-user user)
           whence))
       (onlink "login"
-        (login-page 'both nil 
+        (login-page 'login nil
                     (list (fn (u ip) 
                             (ensure-news-user u)
                             (newslog ip u 'top-login))
@@ -582,7 +582,7 @@ pre:hover {overflow:auto} "))
   `(defop ,name ,parm
      (if (,test (get-user ,parm))
          (do ,@body)
-         (login-page 'both (+ "Please log in" ,msg ".")
+         (login-page 'login (+ "Please log in" ,msg ".")
                      (list (fn (u ip) (ensure-news-user u))
                            (string ',name (reassemble-args ,parm)))))))
 
@@ -642,6 +642,7 @@ pre:hover {overflow:auto} "))
 
 (def newsadmin-page (user)
   (shortpage user nil nil "newsadmin" "newsadmin"
+    (para (onlink "Create Account" (admin-page user)))
     (vars-form user 
                (nad-fields)
                (fn (name val)
@@ -920,7 +921,7 @@ pre:hover {overflow:auto} "))
         (and by (or (isnt by user) (isnt (sym auth) (user->cookie* user))))
          (pr "User mismatch.")
         (no user)
-         (login-page 'both "You have to be logged in to vote."
+         (login-page 'login "You have to be logged in to vote."
                      (list (fn (u ip)
                              (ensure-news-user u)
                              (newslog ip u 'vote-login)
@@ -1086,7 +1087,7 @@ pre:hover {overflow:auto} "))
       (submit-login-warning "" t)))
 
 (def submit-login-warning ((o title) (o showtext) (o text))
-  (login-page 'both "You have to be logged in to submit."
+  (login-page 'login "You have to be logged in to submit."
               (fn (user ip) 
                 (ensure-news-user user)
                 (newslog ip user 'submit-login)
@@ -1298,7 +1299,7 @@ pre:hover {overflow:auto} "))
 ; Comment Submission
 
 (def comment-login-warning (parent whence (o text))
-  (login-page 'both "You have to be logged in to comment."
+  (login-page 'login "You have to be logged in to comment."
               (fn (u ip)
                 (ensure-news-user u)
                 (newslog ip u 'comment-login)
@@ -1477,7 +1478,7 @@ pre:hover {overflow:auto} "))
     (if (only.comments-active i)
         (if user
             (addcomment-page i user whence)
-            (login-page 'both "You have to be logged in to comment."
+            (login-page 'login "You have to be logged in to comment."
                         (fn (u ip)
                           (ensure-news-user u)
                           (newslog ip u 'comment-login)
