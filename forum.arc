@@ -1103,15 +1103,14 @@ pre:hover {overflow:auto} "))
                            req!ip)
       (tab
         (row "title"  (input "t" title 50))
-        (row "text" (textarea "x" 4 50 (only.pr text)))
-        (row "" (submit))
-        (spacerow 20)
-        (row "" submit-instructions*)))))
-
-(= submit-instructions*
-   "Leave url blank to submit a question for discussion. If there is 
-    no url, the text (if any) will appear at the top of the comments 
-    page. If there is a url, the text will be ignored.")
+        (tr
+          (td "text")
+          (td 
+            (textarea "x" 4 50 (only.pr text))
+            (pr " ")
+            (tag (font size -2)
+              (link "formatting help" formatdoc-url* (gray 175)))))
+        (row "" (submit))))))
 
 ; For use by outside code like bookmarklet.
 ; http://news.domain.com/submitlink?u=http://foo.com&t=Foo
@@ -1323,6 +1322,9 @@ pre:hover {overflow:auto} "))
                (process-comment user parent (arg req "text") req!ip whence)))
     (textarea "text" 6 60  
       (aif text (prn (unmarkdown it))))
+    (pr " ")
+    (tag (font size -2)
+      (link "formatting help" formatdoc-url* (gray 175)))
     (br2)
     (submit (if (acomment parent) "reply" "add comment"))))
 

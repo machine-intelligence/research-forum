@@ -304,7 +304,7 @@
          (when (and formatdoc-url* (in typ 'mdtext 'mdtext2))
            (pr " ")
            (tag (font size -2)
-             (link "help" formatdoc-url* (gray 175)))))
+             (link "formatting help" formatdoc-url* (gray 175)))))
       (caris typ 'choice)
        (menu id (cddr typ) val)
       (is typ 'yesno)
