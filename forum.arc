@@ -480,6 +480,8 @@ a:visited { color:#555555; text-decoration:none; }
 .comhead a:link, .subtext a:visited { color:#828282; }
 .comhead a:hover { text-decoration:underline; }
 
+.continue a:link, .subtext a:visited { color:#828282; text-decoration:underline; }
+
 .default p { margin-top: 8px; margin-bottom: 0px; }
 
 .pagebreak {page-break-before:always}
@@ -569,7 +571,7 @@ pre:hover {overflow:auto} "))
           (logout-user user)
           whence))
       (onlink "login"
-        (login-page 'both nil 
+        (login-page 'login nil
                     (list (fn (u ip) 
                             (ensure-news-user u)
                             (newslog ip u 'top-login))
@@ -582,7 +584,7 @@ pre:hover {overflow:auto} "))
   `(defop ,name ,parm
      (if (,test (get-user ,parm))
          (do ,@body)
-         (login-page 'both (+ "Please log in" ,msg ".")
+         (login-page 'login (+ "Please log in" ,msg ".")
                      (list (fn (u ip) (ensure-news-user u))
                            (string ',name (reassemble-args ,parm)))))))
 
@@ -642,6 +644,7 @@ pre:hover {overflow:auto} "))
 
 (def newsadmin-page (user)
   (shortpage user nil nil "newsadmin" "newsadmin"
+    (para (onlink "Create Account" (admin-page user)))
     (vars-form user 
                (nad-fields)
                (fn (name val)
@@ -696,7 +699,7 @@ pre:hover {overflow:auto} "))
       (yesno   member     ,(p 'member)                             ,a  ,a)
       (posint  karma      ,(p 'karma)                               t  ,a)
       (num     weight     ,(p 'weight)                             ,a  ,a)
-      (mdtext2 about      ,(p 'about)                               t  ,u)
+      (mdtext  about      ,(p 'about)                               t  ,u)
       (string  email      ,(p 'email)                              ,u  ,u)
       (sexpr   keys       ,(p 'keys)                               ,a  ,a)
       (int     delay      ,(p 'delay)                              ,u  ,u))))
@@ -716,7 +719,7 @@ pre:hover {overflow:auto} "))
 
 ; remember to set caching to 0 when testing non-logged-in 
 
-(= caching* 1 perpage* 30 threads-perpage* 10 maxend* 210 
+(= caching* 1 perpage* 25 threads-perpage* 10 maxend* 500
    csb-count* 5 csb-maxlen* 30 preview-maxlen* 1000)
 
 ; Limiting that newscache can't take any arguments except the user.
@@ -823,14 +826,14 @@ pre:hover {overflow:auto} "))
   (zerotable
     (let n start
       (each i (cut items start end)
-        (trtd (tab (display-item (and number (++ n)) i user whence t preview-only)
+        (trtd (tag (table width '100%) (display-item (and number (++ n)) i user whence t preview-only)
              (spacerow (if (acomment i) 15 30))))))
     (when end
       (let newend (+ end perpage*)
         (when (and (<= newend maxend*) (< end (len items)))
           (spacerow 10)
           (tr (tag (td colspan (if number 2 1)))
-              (tag (td class 'title)
+              (td
                 (morelink display-items 
                           items label title end newend number))))))))
 
@@ -865,7 +868,14 @@ pre:hover {overflow:auto} "))
           (deletelink s user whence)))
     (spacerow 10)
     (tr (tag (td colspan (if i 2 1)))
-        (tag (td class 'story) (display-item-text s user preview-only)))))
+        (tag (td class 'story)
+          (let displayed (display-item-text s user preview-only)
+            displayed
+            (if (and preview-only (no (is displayed s!text)))
+              (tag (table width '100%)
+                (spacerow 20)
+                (tr (tag (td align 'right class 'continue)
+                  (link "continue reading &raquo;" (item-url s!id)))))))))))
 
 (def display-item-number (i)
   (when i (tag (td align 'right valign 'top class 'title)
@@ -920,7 +930,7 @@ pre:hover {overflow:auto} "))
         (and by (or (isnt by user) (isnt (sym auth) (user->cookie* user))))
          (pr "User mismatch.")
         (no user)
-         (login-page 'both "You have to be logged in to vote."
+         (login-page 'login "You have to be logged in to vote."
                      (list (fn (u ip)
                              (ensure-news-user u)
                              (newslog ip u 'vote-login)
@@ -994,23 +1004,23 @@ pre:hover {overflow:auto} "))
   (+ (if (cansee user i) 1 0)
      (sum [visible-family user (item _)] i!kids)))
 
-(= user-changetime* 120 editor-changetime* 1440)
+;(= user-changetime* 120 editor-changetime* 1440)
 
 (= everchange* (table) noedit* (table))
 
 (def canedit (user i)
   (or (admin user)
       (and (~noedit* i!type)
-           (editor user) 
-           (< (item-age i) editor-changetime*))
+           (editor user))
+           ;(< (item-age i) editor-changetime*))
       (own-changeable-item user i)))
 
 (def own-changeable-item (user i)
   (and (author user i)
        (~mem 'locked i!keys)
-       (no i!deleted)
-       (or (everchange* i!type)
-           (< (item-age i) user-changetime*))))
+       (no i!deleted)))
+       ;(or (everchange* i!type)
+       ;    (< (item-age i) user-changetime*))))
 
 (def editlink (i user)
   (when (canedit user i)
@@ -1086,7 +1096,7 @@ pre:hover {overflow:auto} "))
       (submit-login-warning "" t)))
 
 (def submit-login-warning ((o title) (o showtext) (o text))
-  (login-page 'both "You have to be logged in to submit."
+  (login-page 'login "You have to be logged in to submit."
               (fn (user ip) 
                 (ensure-news-user user)
                 (newslog ip user 'submit-login)
@@ -1103,15 +1113,14 @@ pre:hover {overflow:auto} "))
                            req!ip)
       (tab
         (row "title"  (input "t" title 50))
-        (row "text" (textarea "x" 4 50 (only.pr text)))
-        (row "" (submit))
-        (spacerow 20)
-        (row "" submit-instructions*)))))
-
-(= submit-instructions*
-   "Leave url blank to submit a question for discussion. If there is 
-    no url, the text (if any) will appear at the top of the comments 
-    page. If there is a url, the text will be ignored.")
+        (tr
+          (td "text")
+          (td 
+            (textarea "x" 4 50 (only.pr text))
+            (pr " ")
+            (tag (font size -2)
+              (link "formatting help" formatdoc-url* (gray 175)))))
+        (row "" (submit))))))
 
 ; For use by outside code like bookmarklet.
 ; http://news.domain.com/submitlink?u=http://foo.com&t=Foo
@@ -1259,13 +1268,13 @@ pre:hover {overflow:auto} "))
    (fn (user s)
      (with (a (admin user)  e (editor user)  x (canedit user s))
        `((string1 title     ,s!title        t ,x)
-         (mdtext2 text      ,s!text         t ,x)
+         (mdtext  text      ,s!text         t ,x)
          ,@(standard-item-fields s a e x)))))
 
 (= (fieldfn* 'comment)
    (fn (user c)
      (with (a (admin user)  e (editor user)  x (canedit user c))
-       `((mdtext  text      ,c!text         t ,x)
+       `((mdtextc text      ,c!text         t ,x)
          ,@(standard-item-fields c a e x)))))
 
 (def standard-item-fields (i a e x)
@@ -1299,7 +1308,7 @@ pre:hover {overflow:auto} "))
 ; Comment Submission
 
 (def comment-login-warning (parent whence (o text))
-  (login-page 'both "You have to be logged in to comment."
+  (login-page 'login "You have to be logged in to comment."
               (fn (u ip)
                 (ensure-news-user u)
                 (newslog ip u 'comment-login)
@@ -1323,6 +1332,9 @@ pre:hover {overflow:auto} "))
                (process-comment user parent (arg req "text") req!ip whence)))
     (textarea "text" 6 60  
       (aif text (prn (unmarkdown it))))
+    (pr " ")
+    (tag (font size -2)
+      (link "formatting help" formatdoc-url* (gray 175)))
     (br2)
     (submit (if (acomment parent) "reply" "add comment"))))
 
@@ -1337,7 +1349,7 @@ pre:hover {overflow:auto} "))
        (flink [comment-login-warning parent whence text])
       (empty text)
        (flink [addcomment-page parent (get-user _) whence text retry*])
-       (atlet c (create-comment parent (md-from-form text) user ip)
+       (atlet c (create-comment parent (md-from-form text nil t t) user ip)
          (submit-item user c)
          whence)))
 
@@ -1475,7 +1487,7 @@ pre:hover {overflow:auto} "))
     (if (only.comments-active i)
         (if user
             (addcomment-page i user whence)
-            (login-page 'both "You have to be logged in to comment."
+            (login-page 'login "You have to be logged in to comment."
                         (fn (u ip)
                           (ensure-news-user u)
                           (newslog ip u 'comment-login)
@@ -1514,7 +1526,7 @@ pre:hover {overflow:auto} "))
           (spacerow 10)
           (row (tab (tr (td (hspace 0))
                         (td (hspace votewid*))
-                        (tag (td class 'title)
+                        (td
                           (morelink display-threads
                                     comments label title end newend))))))))))
 
@@ -1648,7 +1660,8 @@ pre:hover {overflow:auto} "))
 reproduced verbatim.  (This is intended for code.)
 <p> Text surrounded by asterisks is italicized, if the character after the 
 first asterisk isn't whitespace.
-<p> A paragraph beginning with a hash mark (#) is a subheading.
+<p> A paragraph beginning with a hash mark (#) is a subheading (posts only,
+not comments).
 <p> Urls become links, except in the text field of a submission.<br><br>")
 
 

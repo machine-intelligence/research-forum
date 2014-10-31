@@ -129,7 +129,7 @@
   (logout-user user))
   
 (def set-pw (user pw)
-  (= (hpasswords* user) (and pw (shash pw)))
+  (= (hpasswords* user) (and pw (hash-password pw)))
   (save-table hpasswords* hpwfile*))
 
 (def hello-page (user ip)
@@ -207,7 +207,7 @@
 
 (def good-login (user pw ip)
   (let record (list (seconds) ip user)
-    (if (and user pw (aand (shash pw) (is it (hpasswords* user))))
+    (if (and user pw (aand (hpasswords* user) (verify-password pw it)))
         (do (unless (user->cookie* user) (cook-user user))
             (enq-limit record good-logins*)
             user)
@@ -217,12 +217,12 @@
 ; Create a file in case people have quote chars in their pws.  I can't 
 ; believe there's no way to just send the chars.
 
-(def shash (str)
-  (let fname (+ "/tmp/shash" (rand-string 10))
-    (w/outfile f fname (disp str f))
-    (let res (tostring (system (+ "openssl dgst -sha1 <" fname)))
-      (do1 (cut res 0 (- (len res) 1))
-           (rmfile fname)))))
+(def hash-password (pw)
+  (tostring (system (+ "python hash.py '" (urlencode pw) "'"))))
+
+(def verify-password (pw hash)
+  (is "True" (tostring (system (+ "python verify.py '" (urlencode pw) 
+                                  "' '" hash "'")))))
 
 (= dc-usernames* (table))
 
@@ -284,12 +284,12 @@
        (gentag input type 'text name id 
                      value (tostring (map [do (write _) (sp)] val))
                      size formwid*)
-      (in typ 'syms 'text 'doc 'mdtext 'mdtext2 'lines 'bigtoks)
+      (in typ 'syms 'text 'doc 'mdtext 'mdtextc 'mdtext2 'lines 'bigtoks)
        (let text (if (in typ 'syms 'bigtoks)
                       (tostring (apply prs val))
                      (is typ 'lines)
                       (tostring (apply pr (intersperse #\newline val)))
-                     (in typ 'mdtext 'mdtext2)
+                     (in typ 'mdtext 'mdtextc 'mdtext2)
                       (unmarkdown val)
                      (no val)
                       ""
@@ -301,10 +301,10 @@
                         name id)
            (prn) ; needed or 1 initial newline gets chopped off
            (pr text))
-         (when (and formatdoc-url* (in typ 'mdtext 'mdtext2))
+         (when (and formatdoc-url* (in typ 'mdtext 'mdtextc 'mdtext2))
            (pr " ")
            (tag (font size -2)
-             (link "help" formatdoc-url* (gray 175)))))
+             (link "formatting help" formatdoc-url* (gray 175)))))
       (caris typ 'choice)
        (menu id (cddr typ) val)
       (is typ 'yesno)
@@ -335,7 +335,7 @@
       (text-type typ)                       (pr (or val ""))
                                             (pr val)))
 
-(def text-type (typ) (in typ 'string 'string1 'url 'text 'mdtext 'mdtext2))
+(def text-type (typ) (in typ 'string 'string1 'url 'text 'mdtext 'mdtextc 'mdtext2))
 
 ; Newlines in forms come back as /r/n.  Only want the /ns. Currently
 ; remove the /rs in individual cases below.  Could do it in aform or
@@ -358,6 +358,7 @@
     text    (striptags str)
     doc     (striptags str)
     mdtext  (md-from-form str)
+    mdtextc (md-from-form str nil t t)                ; for md with no headers (i.e. comments)
     mdtext2 (md-from-form str t)                      ; for md with no links
     sym     (or (sym:car:tokens str) fail)
     syms    (map sym (tokens str))
@@ -428,10 +429,10 @@
 
 ; http://daringfireball.net/projects/markdown/syntax
 
-(def md-from-form (str (o nolinks))
-  (markdown (trim (rem #\return (esc-tags str)) 'end) 60 nolinks))
+(def md-from-form (str (o nolinks) (o latex t) (o noheading))
+  (markdown (trim (rem #\return (esc-tags str)) 'end) 60 nolinks latex noheading))
 
-(def markdown (s (o maxurl) (o nolinks) (o latex t))
+(def markdown (s (o maxurl) (o nolinks) (o latex t) (o noheading))
   (with (ital nil heading nil)
     (tostring
       (forlen i s
@@ -442,11 +443,11 @@
                    (= i (+ (- newi spaces 1) (len cb))))
                  (pr "</code></pre>"))
                (iflet newi (or (parabreak s i (if (is i 0) 1 0))
-                               (and (is i 0) (is (s 0) #\#) 0))
+                               (and (is i 0) (and (no noheading) (is (s 0) #\#)i) 0))
                       (do (if heading (do (pr "</h1>") (= heading nil)))
                           (= i (- newi 1))
                           (if (and (< newi (len s))
-                                   (is #\# (s newi)))
+                                   (and (no noheading) (is #\# (s newi))))
                                (do (= heading t) (++ i) (pr "<h1>"))
                               (isnt i 0)
                                (pr "<p>")))
