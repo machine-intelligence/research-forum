@@ -129,7 +129,7 @@
   (logout-user user))
   
 (def set-pw (user pw)
-  (= (hpasswords* user) (and pw (shash (+ user pw))))
+  (= (hpasswords* user) (and pw (hash-password pw)))
   (save-table hpasswords* hpwfile*))
 
 (def hello-page (user ip)
@@ -207,7 +207,7 @@
 
 (def good-login (user pw ip)
   (let record (list (seconds) ip user)
-    (if (and user pw (aand (shash (+ user pw)) (is it (hpasswords* user))))
+    (if (and user pw (aand (hpasswords* user) (verify-password pw it)))
         (do (unless (user->cookie* user) (cook-user user))
             (enq-limit record good-logins*)
             user)
@@ -217,12 +217,12 @@
 ; Create a file in case people have quote chars in their pws.  I can't 
 ; believe there's no way to just send the chars.
 
-(def shash (str)
-  (let fname (+ "/tmp/shash" (rand-string 10))
-    (w/outfile f fname (disp str f))
-    (let res (tostring (system (+ "openssl dgst -sha1 <" fname)))
-      (do1 (cut res 0 (- (len res) 1))
-           (rmfile fname)))))
+(def hash-password (pw)
+  (tostring (system (+ "python hash.py '" (urlencode pw) "'"))))
+
+(def verify-password (pw hash)
+  (is "True" (tostring (system (+ "python verify.py '" (urlencode pw) 
+                                  "' '" hash "'")))))
 
 (= dc-usernames* (table))
 
