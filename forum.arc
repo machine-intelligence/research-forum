@@ -1103,7 +1103,7 @@ pre:hover {overflow:auto} "))
                 (submit-page user title showtext text))))
 
 (def submit-page (user (o title) (o showtext) (o text "") (o msg))
-  (minipage "Submit"
+  (shortpage user nil nil "Submit" "submit"
     (pagemessage msg)
     (urform user req
             (process-story (get-user req)
