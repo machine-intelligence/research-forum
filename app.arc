@@ -358,7 +358,7 @@
   (case (carif typ)
     string  (striptags str)
     string1 (if (blank str) fail (striptags str))
-    string2 (striptags str)
+    string2 (if (blank str) fail (striptags str))
     url     (if (blank str) "" (valid-url str) (clean-url str) fail)
     num     (let n (saferead str) (if (number n) n fail))
     int     (let n (saferead str)
