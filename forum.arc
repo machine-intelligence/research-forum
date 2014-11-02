@@ -435,6 +435,9 @@
 body  { font-family:Verdana; font-size:13pt; color:#828282; }
 td    { font-family:Verdana; font-size:13pt; color:#000000; }
 
+hr       { border:0; text-align:center; }
+hr:after { content:\"*\"; }
+
 td > h1 { font-family:Verdana; font-size:14pt; color:#000000; font-weight:bold; }
 
 table td.csb      { background-color:#e6e6e6; width:300px; padding:8px; font-size:10pt; }
@@ -870,7 +873,7 @@ pre:hover {overflow:auto} "))
     (tr (tag (td colspan (if i 2 1)))
         (tag (td class 'story width '100%)
           (let displayed (display-item-text s user preview-only)
-            displayed
+            (pr displayed)
             (if (and preview-only (no (is displayed s!text)))
               (tag (table width '100%)
                 (spacerow 20)
@@ -1232,19 +1235,22 @@ pre:hover {overflow:auto} "))
 (def superparent (i)
   (aif i!parent (superparent:item it) i))
 
-(def first-para (text)
-  (let index (posmatch "<p>" text)
+(def until-token (text token)
+  (let index (posmatch token text)
     (if (no index) text
       (cut text 0 index))))
 
 (def preview (text)
-  (if (<= (len text) preview-maxlen*) text
-    (first-para text)))
+  (if (posmatch "<hr />" text) (until-token text "<hr />")
+    (posmatch "<hr>" text) (until-token text "<hr>")
+    (<= (len text) preview-maxlen*) text
+    (posmatch "<h1>" text) (until-token text "<h1>")
+    (until-token text "<p>")))
 
 (def display-item-text (s user preview-only)
   (when (and (cansee user s) (astory s))
-    (if preview-only (pr (preview s!text))
-      (pr s!text))))
+    (if preview-only (preview s!text)
+      s!text)))
 
 
 ; Edit Item
