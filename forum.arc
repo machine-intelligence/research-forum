@@ -1120,7 +1120,7 @@ pre:hover {overflow:auto} "))
             (pr " ")
             (tag (font size -2)
               (link "formatting help" formatdoc-url* (gray 175)))))
-        (row "" (submit))))))
+        (row "" (protected-submit))))))
 
 ; For use by outside code like bookmarklet.
 ; http://news.domain.com/submitlink?u=http://foo.com&t=Foo
@@ -1301,7 +1301,8 @@ pre:hover {overflow:auto} "))
                         (save-item i)
                         (astory&adjust-rank i)
                         (wipe (comment-cache* i!id))
-                        (edit-page user i)))
+                        (edit-page user i))
+                 "update" nil t)
       (hook 'edit user i))))
 
  

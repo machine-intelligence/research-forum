@@ -110,6 +110,7 @@
 (attribute input      type           opsym)
 (attribute input      value          opesc)
 (attribute input      checked        opcheck)
+(attribute input      onclick        opstring)
 (attribute select     name           opstring)
 (attribute option     selected       opsel)
 (attribute table      bgcolor        opcolor)

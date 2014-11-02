@@ -394,7 +394,18 @@
 ; a fn f and generates a form such that when submitted (f label newval) 
 ; will be called for each valid value.  Finally done is called.
 
-(def vars-form (user fields f done (o button "update") (o lasts))
+(def protected-submit ((o val "submit") (o protect t))
+  (if (no protect) (submit)
+    (do (pr "<script language='javascript'><!--
+               var needToConfirm = true;
+               window.onbeforeunload = function(e) {
+                 if(needToConfirm)
+                   return \"Do you really want to leave without saving your work?\";
+               }
+             --></script>")
+        (tag (input type 'submit value val onclick "needToConfirm = false;")))))
+
+(def vars-form (user fields f done (o button "update") (o lasts) (o protect))
   (taform lasts
           (if (all [no (_ 4)] fields)
               (fn (req))
@@ -414,8 +425,8 @@
        (showvars fields))
      (unless (all [no (_ 4)] fields)  ; no modifiable fields
        (br)
-       (submit button))))
-                
+       (protected-submit button protect))))
+
 (def showvars (fields (o liveurls))
   (each (typ id val view mod question) fields
     (when view
