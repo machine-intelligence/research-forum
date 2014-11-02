@@ -47,7 +47,6 @@
   text       nil
   likes      nil   ; list of users, not including item!by
   deleted    nil
-  parts      nil
   parent     nil
   kids       nil
   keys       nil)
