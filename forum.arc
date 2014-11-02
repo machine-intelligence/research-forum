@@ -459,6 +459,9 @@
 body  { font-family:Verdana; font-size:13pt; color:#828282; }
 td    { font-family:Verdana; font-size:13pt; color:#000000; }
 
+hr       { border:0; text-align:center; }
+hr:after { content:\"*\"; }
+
 td > h1 { font-family:Verdana; font-size:14pt; color:#000000; font-weight:bold; }
 
 table td.csb      { background-color:#e6e6e6; width:300px; padding:8px; font-size:10pt; }
@@ -587,7 +590,7 @@ pre:hover {overflow:auto} "))
 (def topright (user whence (o showkarma t))
   (when user 
     (userlink user user)
-    (when showkarma (pr  "&nbsp;(@(karma user))"))
+    (when showkarma (pr  "&nbsp;(@(* karma-multiplier* (karma user)))"))
     (pr "&nbsp;|&nbsp;"))
   (if user
       (rlinkf 'logout (req)
@@ -744,7 +747,8 @@ pre:hover {overflow:auto} "))
 ; remember to set caching to 0 when testing non-logged-in 
 
 (= caching* 1 perpage* 25 threads-perpage* 10 maxend* 500
-   csb-count* 5 csb-maxlen* 30 preview-maxlen* 1000)
+   csb-count* 5 csb-maxlen* 30 preview-maxlen* 1000
+   karma-multiplier* 5)
 
 ; Limiting that newscache can't take any arguments except the user.
 ; To allow other arguments, would have to turn the cache from a single 
@@ -771,10 +775,10 @@ pre:hover {overflow:auto} "))
 (def newspage (user) (newestpage user))
 
 (def listpage (user t1 items label title 
-               (o url label) (o number t) (o show-comments t) (o preview-only t))
+               (o url label) (o number t) (o show-comments t) (o preview-only t) (o show-immediate-parent))
   (hook 'listpage user)
   (longpage-csb user t1 nil label title url show-comments
-    (display-items user items label title url 0 perpage* number preview-only)))
+    (display-items user items label title url 0 perpage* number preview-only show-immediate-parent)))
 
 
 (newsop newest () (newestpage user))
@@ -845,11 +849,11 @@ pre:hover {overflow:auto} "))
 ; Story Display
 
 (def display-items (user items label title whence 
-                    (o start 0) (o end perpage*) (o number) (o preview-only))
+                    (o start 0) (o end perpage*) (o number) (o preview-only) (o show-immediate-parent))
   (zerotable
     (let n start
       (each i (cut items start end)
-        (trtd (tag (table width '100%) (display-item (and number (++ n)) i user whence t preview-only)
+        (trtd (tag (table width '100%) (display-item (and number (++ n)) i user whence t preview-only show-immediate-parent)
              (spacerow (if (acomment i) 15 30))))))
     (when end
       (let newend (+ end perpage*)
@@ -877,12 +881,14 @@ pre:hover {overflow:auto} "))
           rel 'nofollow)
     (pr "More")))
 
-(def display-story (i s user whence preview-only)
+(def display-story (i s user whence preview-only (o commentpage))
   (when (or (cansee user s) (itemkids* s!id))
-    (tr (td (votelinks-space))
-        (display-item-number i)
+    (tr (if (no commentpage)
+          (td (votelinks-space))
+          (display-item-number i))
         (titleline s user whence))
-    (tr (tag (td colspan (if i 2 1)))    
+    (tr (if (no commentpage)
+          (tag (td colspan (if i 2 1))))
         (tag (td class 'subtext)
           (hook 'itemline s user)
           (itemline s user whence)
@@ -890,10 +896,11 @@ pre:hover {overflow:auto} "))
           (editlink s user)
           (deletelink s user whence)))
     (spacerow 10)
-    (tr (tag (td colspan (if i 2 1)))
-        (tag (td class 'story)
+    (tr (if (no commentpage)
+          (tag (td colspan (if i 2 1))))
+        (tag (td class 'story width '100%)
           (let displayed (display-item-text s user preview-only)
-            displayed
+            (pr displayed)
             (if (and preview-only (no (is displayed (item-text s))))
               (tag (table width '100%)
                 (spacerow 20)
@@ -1125,7 +1132,7 @@ pre:hover {overflow:auto} "))
                 (submit-page user title showtext text))))
 
 (def submit-page (user (o title) (o showtext) (o text "") (o msg))
-  (minipage "Submit"
+  (shortpage user nil nil "Submit" "submit"
     (pagemessage msg)
     (urform user req
             (process-story (get-user req)
@@ -1243,31 +1250,37 @@ pre:hover {overflow:auto} "))
 
 (= displayfn* (table))
 
-(= (displayfn* 'story)   (fn (n i user here inlist preview-only)
+(= (displayfn* 'story)   (fn (n i user here inlist preview-only show-immediate-parent)
                            (display-story n i user here preview-only)))
 
-(= (displayfn* 'comment) (fn (n i user here inlist preview-only)
-                           (display-comment n i user here nil 0 nil inlist)))
+(= (displayfn* 'comment) (fn (n i user here inlist preview-only show-immediate-parent)
+                           (display-comment n i user here nil 0 nil inlist show-immediate-parent)))
 
-(def display-item (n i user here (o inlist) (o preview-only))
-  ((displayfn* (i 'type)) n i user here inlist preview-only))
+(def display-item (n i user here (o inlist) (o preview-only) (o show-immediate-parent))
+  ((displayfn* (i 'type)) n i user here inlist preview-only show-immediate-parent))
 
 (def superparent (i)
   (aif i!parent (superparent:item it) i))
 
-(def first-para (text)
-  (let index (posmatch "<p>" text)
+(def until-token (text token)
+  (let index (posmatch token text)
     (if (no index) text
       (cut text 0 index))))
 
 (def preview (text)
-  (if (<= (len text) preview-maxlen*) text
-    (first-para text)))
+  (withs (idx-hr (posmatch "<hr" text) idx-h1 (posmatch "<h1" text))
+    (if
+      (and idx-hr idx-h1) (if
+                            (< idx-hr idx-h1) (until-token text "<hr")
+                            (until-token text "<h1"))
+      idx-hr (until-token text "<hr")
+      idx-h1 (until-token text "<h1")
+      (<= (len text) preview-maxlen*) text
+      (until-token text "<p>"))))
 
 (def display-item-text (s user preview-only)
   (when (and (cansee user s) (astory s))
-    (if preview-only (pr (preview (item-text s)))
-      (pr (item-text s)))))
+    (if preview-only (preview (item-text s)) (item-text s))))
 
 
 ; Edit Item
@@ -1290,7 +1303,7 @@ pre:hover {overflow:auto} "))
 (= (fieldfn* 'story)
    (fn (user s)
      (with (a (admin user)  e (editor user)  x (canedit user s))
-       `((string1 title     ,s!title        t ,x)
+       `((string2 title     ,s!title        t ,x)
          (text    text      ,s!text         t ,x)
          ,@(standard-item-fields s a e x)))))
 
@@ -1360,7 +1373,7 @@ pre:hover {overflow:auto} "))
     (tag (font size -2)
       (link "formatting help" formatdoc-url* (gray 175)))
     (br2)
-    (submit (if (acomment parent) "reply" "add comment"))))
+    (protected-submit (if (acomment parent) "reply" "add comment") t)))
 
 (= comment-threshold* -20)
 
@@ -1403,11 +1416,23 @@ pre:hover {overflow:auto} "))
     (display-comment-tree k user whence indent)))
 
 (def display-comment (n c user whence (o astree) (o indent 0) 
-                                      (o showpar) (o showon))
+                                      (o showpar) (o showon)
+                                      (o show-immediate-parent))
   (tr (display-item-number n)
       (when astree (td (hspace (* indent 40))))
       (tag (td valign 'top) (votelinks-space))
-      (display-comment-body c user whence astree indent showpar showon)))
+      (let parent (item (c 'parent))
+        (if (and show-immediate-parent (cansee user parent))
+          (tag (td width '100% style 'padding-right:80px)
+            (tab
+              (if (is (parent 'type) 'comment)
+                (tr (display-comment-body parent user whence astree indent showpar showon))
+                (display-story nil parent user whence t t)))
+            (tab
+              (spacerow 10)
+              (tr (tag (td width 40) "") (display-comment-body c user whence t indent showpar showon))
+              (spacerow 25)))
+          (display-comment-body c user whence astree indent showpar showon)))))
 
 ; Comment caching doesn't make generation of comments significantly
 ; faster, but may speed up everything else by generating less garbage.
@@ -1623,7 +1648,7 @@ pre:hover {overflow:auto} "))
                       (keep [pos [cansee nil _] (submissions _)] (users)))
           (tr (tdr:pr (++ i) ".")
               (td (userlink user u))
-              (tdr:pr (karma u)))
+              (tdr:pr (* karma-multiplier* (karma u))))
           (if (is i 10) (spacerow 30)))))))
 
 (adop editors ()
@@ -1666,7 +1691,7 @@ pre:hover {overflow:auto} "))
 
 (newscache newcomments-page user 60
   (listpage user (msec) (visible user (firstn maxend* comments*))
-            "comments" "New Comments" "newcomments" nil nil))
+            "comments" "New Comments" "newcomments" nil nil t t))
 
 
 ; Doc
@@ -1694,19 +1719,26 @@ not comments).
 
 (def resetpw-page (user (o msg))
   (minipage "Reset Password"
-    (if msg
-         (pr msg)
-        (blank (uvar user email))
-         (do (pr "Before you do this, please add your email address to your ")
-             (underlink "profile" (user-url user))
-             (pr ". Otherwise you could lose your account if you mistype 
-                  your new password.")))
+    (if msg (pr msg))
     (br2)
-    (uform user req (try-resetpw user (arg req "p"))
-      (single-input "New password: " 'p 20 "reset" t))))
+    (uform user req (try-resetpw user (arg req "p") (arg req "c"))
+      (tab
+        (tr
+          (td (pr "new password: "))
+          (td (gentag input type 'password name 'p value "" size 20)))
+        (spacerow 5)
+        (tr
+          (td (pr "confirmation: "))
+          (td (gentag input type 'password name 'c value "" size 20)))
+        (spacerow 15)
+        (tr
+          (tag (td colspan 2) (submit "reset")))))))
 
-(def try-resetpw (user newpw)
-  (if (len< newpw 4)
+(def try-resetpw (user newpw confirm)
+  (if (no (is newpw confirm))
+      (resetpw-page user "Passwords do not match.
+                          Please try again.")
+      (len< newpw 4)
       (resetpw-page user "Passwords should be a least 4 characters long.  
                           Please choose another.")
       (do (set-pw user newpw)
