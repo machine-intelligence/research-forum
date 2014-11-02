@@ -752,10 +752,10 @@ pre:hover {overflow:auto} "))
   (listpage user (msec) (topstories user maxend*) nil nil "news" nil t))
 
 (def listpage (user t1 items label title 
-               (o url label) (o number t) (o show-comments t) (o preview-only t))
+               (o url label) (o number t) (o show-comments t) (o preview-only t) (o show-immediate-parent))
   (hook 'listpage user)
   (longpage-csb user t1 nil label title url show-comments
-    (display-items user items label title url 0 perpage* number preview-only)))
+    (display-items user items label title url 0 perpage* number preview-only show-immediate-parent)))
 
 
 (newsop newest () (newestpage user))
@@ -826,11 +826,11 @@ pre:hover {overflow:auto} "))
 ; Story Display
 
 (def display-items (user items label title whence 
-                    (o start 0) (o end perpage*) (o number) (o preview-only))
+                    (o start 0) (o end perpage*) (o number) (o preview-only) (o show-immediate-parent))
   (zerotable
     (let n start
       (each i (cut items start end)
-        (trtd (tag (table width '100%) (display-item (and number (++ n)) i user whence t preview-only)
+        (trtd (tag (table width '100%) (display-item (and number (++ n)) i user whence t preview-only show-immediate-parent)
              (spacerow (if (acomment i) 15 30))))))
     (when end
       (let newend (+ end perpage*)
@@ -858,12 +858,14 @@ pre:hover {overflow:auto} "))
           rel 'nofollow)
     (pr "More")))
 
-(def display-story (i s user whence preview-only)
+(def display-story (i s user whence preview-only (o commentpage))
   (when (or (cansee user s) (s 'kids))
-    (tr (td (votelinks-space))
-        (display-item-number i)
+    (tr (if (no commentpage)
+          (td (votelinks-space))
+          (display-item-number i))
         (titleline s user whence))
-    (tr (tag (td colspan (if i 2 1)))    
+    (tr (if (no commentpage)
+          (tag (td colspan (if i 2 1))))
         (tag (td class 'subtext)
           (hook 'itemline s user)
           (itemline s user whence)
@@ -871,7 +873,8 @@ pre:hover {overflow:auto} "))
           (editlink s user)
           (deletelink s user whence)))
     (spacerow 10)
-    (tr (tag (td colspan (if i 2 1)))
+    (tr (if (no commentpage)
+          (tag (td colspan (if i 2 1))))
         (tag (td class 'story width '100%)
           (let displayed (display-item-text s user preview-only)
             (pr displayed)
@@ -1224,14 +1227,14 @@ pre:hover {overflow:auto} "))
 
 (= displayfn* (table))
 
-(= (displayfn* 'story)   (fn (n i user here inlist preview-only)
+(= (displayfn* 'story)   (fn (n i user here inlist preview-only show-immediate-parent)
                            (display-story n i user here preview-only)))
 
-(= (displayfn* 'comment) (fn (n i user here inlist preview-only)
-                           (display-comment n i user here nil 0 nil inlist)))
+(= (displayfn* 'comment) (fn (n i user here inlist preview-only show-immediate-parent)
+                           (display-comment n i user here nil 0 nil inlist show-immediate-parent)))
 
-(def display-item (n i user here (o inlist) (o preview-only))
-  ((displayfn* (i 'type)) n i user here inlist preview-only))
+(def display-item (n i user here (o inlist) (o preview-only) (o show-immediate-parent))
+  ((displayfn* (i 'type)) n i user here inlist preview-only show-immediate-parent))
 
 (def superparent (i)
   (aif i!parent (superparent:item it) i))
@@ -1387,11 +1390,23 @@ pre:hover {overflow:auto} "))
     (display-comment-tree (item k) user whence indent)))
 
 (def display-comment (n c user whence (o astree) (o indent 0) 
-                                      (o showpar) (o showon))
+                                      (o showpar) (o showon)
+                                      (o show-immediate-parent))
   (tr (display-item-number n)
       (when astree (td (hspace (* indent 40))))
       (tag (td valign 'top) (votelinks-space))
-      (display-comment-body c user whence astree indent showpar showon)))
+      (let parent (item (c 'parent))
+        (if (and show-immediate-parent (cansee user parent))
+          (tag (td width '100% style 'padding-right:80px)
+            (tab
+              (if (is (parent 'type) 'comment)
+                (tr (display-comment-body parent user whence astree indent showpar showon))
+                (display-story nil parent user whence t t)))
+            (tab
+              (spacerow 10)
+              (tr (tag (td width 40) "") (display-comment-body c user whence t indent showpar showon))
+              (spacerow 25)))
+          (display-comment-body c user whence astree indent showpar showon)))))
 
 ; Comment caching doesn't make generation of comments significantly
 ; faster, but may speed up everything else by generating less garbage.
@@ -1650,7 +1665,7 @@ pre:hover {overflow:auto} "))
 
 (newscache newcomments-page user 60
   (listpage user (msec) (visible user (firstn maxend* comments*))
-            "comments" "New Comments" "newcomments" nil nil))
+            "comments" "New Comments" "newcomments" nil nil t t))
 
 
 ; Doc
