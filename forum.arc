@@ -868,7 +868,7 @@ pre:hover {overflow:auto} "))
           (deletelink s user whence)))
     (spacerow 10)
     (tr (tag (td colspan (if i 2 1)))
-        (tag (td class 'story)
+        (tag (td class 'story width '100%)
           (let displayed (display-item-text s user preview-only)
             displayed
             (if (and preview-only (no (is displayed s!text)))
