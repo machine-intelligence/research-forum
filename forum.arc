@@ -1138,7 +1138,7 @@ pre:hover {overflow:auto} "))
             (process-story (get-user req)
                            (striptags (arg req "t"))
                            showtext
-                           (and showtext (arg req "x") t)
+                           (and showtext (arg req "x"))
                            req!ip)
       (tab
         (row "title"  (input "t" title 50))
