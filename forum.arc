@@ -1671,19 +1671,26 @@ not comments).
 
 (def resetpw-page (user (o msg))
   (minipage "Reset Password"
-    (if msg
-         (pr msg)
-        (blank (uvar user email))
-         (do (pr "Before you do this, please add your email address to your ")
-             (underlink "profile" (user-url user))
-             (pr ". Otherwise you could lose your account if you mistype 
-                  your new password.")))
+    (if msg (pr msg))
     (br2)
-    (uform user req (try-resetpw user (arg req "p"))
-      (single-input "New password: " 'p 20 "reset" t))))
+    (uform user req (try-resetpw user (arg req "p") (arg req "c"))
+      (tab
+        (tr
+          (td (pr "new password: "))
+          (td (gentag input type 'password name 'p value "" size 20)))
+        (spacerow 5)
+        (tr
+          (td (pr "confirmation: "))
+          (td (gentag input type 'password name 'c value "" size 20)))
+        (spacerow 15)
+        (tr
+          (tag (td colspan 2) (submit "reset")))))))
 
-(def try-resetpw (user newpw)
-  (if (len< newpw 4)
+(def try-resetpw (user newpw confirm)
+  (if (no (is newpw confirm))
+      (resetpw-page user "Passwords do not match.
+                          Please try again.")
+      (len< newpw 4)
       (resetpw-page user "Passwords should be a least 4 characters long.  
                           Please choose another.")
       (do (set-pw user newpw)
