@@ -566,7 +566,7 @@ pre:hover {overflow:auto} "))
 (def topright (user whence (o showkarma t))
   (when user 
     (userlink user user)
-    (when showkarma (pr  "&nbsp;(@(karma user))"))
+    (when showkarma (pr  "&nbsp;(@(* karma-multiplier* (karma user)))"))
     (pr "&nbsp;|&nbsp;"))
   (if user
       (rlinkf 'logout (req)
@@ -723,7 +723,8 @@ pre:hover {overflow:auto} "))
 ; remember to set caching to 0 when testing non-logged-in 
 
 (= caching* 1 perpage* 25 threads-perpage* 10 maxend* 500
-   csb-count* 5 csb-maxlen* 30 preview-maxlen* 1000)
+   csb-count* 5 csb-maxlen* 30 preview-maxlen* 1000
+   karma-multiplier* 5)
 
 ; Limiting that newscache can't take any arguments except the user.
 ; To allow other arguments, would have to turn the cache from a single 
@@ -1606,7 +1607,7 @@ pre:hover {overflow:auto} "))
                       (keep [pos [cansee nil _] (submissions _)] (users)))
           (tr (tdr:pr (++ i) ".")
               (td (userlink user u))
-              (tdr:pr (karma u)))
+              (tdr:pr (* karma-multiplier* (karma u))))
           (if (is i 10) (spacerow 30)))))))
 
 (adop editors ()
