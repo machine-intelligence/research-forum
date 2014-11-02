@@ -73,6 +73,11 @@
      id "v" version
      (if ext (+ "." ext) "")))
 
+(def newest-item-file (id)
+  (let v 1
+    (while (file-exists (item-file id (+ v 1))) (++ v))
+    (item-file id v)))
+
 (def load-users ()
   (pr "load users: ")
   (noisy-each 100 id (dir profdir*)
@@ -162,12 +167,11 @@
   (system (+ "rm " storydir* "*.tmp"))
   (pr "load items: ")
   (with (items (table)
-         idvs  (sort (lexico >)
-                     (map [map int (tokens _ #\v)] (dir storydir*))))
-    (if idvs (= maxid* (caar idvs)))
-    (noisy-each 100 (id v) (firstn initload* idvs)
+         ids  (sort > (map [int:car:tokens _ #\v] (dir storydir*))))
+    (if ids (= maxid* (car ids)))
+    (noisy-each 100 id (firstn initload* ids)
       (when (~items* id)
-        (let i (load-item id v)
+        (let i (load-item id)
           (push i (items i!type)))))
     (= stories*  (rev items!story)
        comments* (rev items!comment))
@@ -184,9 +188,9 @@
 (def astory   (i) (and i (is i!type 'story)))
 (def acomment (i) (and i (is i!type 'comment)))
 
-(def load-item (id v)
-  (let i (temload 'item (item-file id v))
-    (= (itemtext* id) (filechars:item-file id v "html"))
+(def load-item (id)
+  (let i (temload 'item (newest-item-file id))
+    (= (itemtext* id) (filechars:item-file id i!version "html"))
     (if i!parent (pushnew id (itemkids* i!parent)))
     (= (items* id) i)))
 
