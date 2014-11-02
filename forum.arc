@@ -1335,7 +1335,7 @@ pre:hover {overflow:auto} "))
     (tag (font size -2)
       (link "formatting help" formatdoc-url* (gray 175)))
     (br2)
-    (submit (if (acomment parent) "reply" "add comment"))))
+    (protected-submit (if (acomment parent) "reply" "add comment") t)))
 
 (= comment-threshold* -20)
 
