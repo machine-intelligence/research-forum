@@ -1245,11 +1245,15 @@ pre:hover {overflow:auto} "))
       (cut text 0 index))))
 
 (def preview (text)
-  (if (posmatch "<hr />" text) (until-token text "<hr />")
-    (posmatch "<hr>" text) (until-token text "<hr>")
-    (<= (len text) preview-maxlen*) text
-    (posmatch "<h1>" text) (until-token text "<h1>")
-    (until-token text "<p>")))
+  (withs (idx-hr (posmatch "<hr" text) idx-h1 (posmatch "<h1" text))
+    (if
+      (and idx-hr idx-h1) (if
+                            (< idx-hr idx-h1) (until-token text "<hr")
+                            (until-token text "<h1"))
+      idx-hr (until-token text "<hr")
+      idx-h1 (until-token text "<h1")
+      (<= (len text) preview-maxlen*) text
+      (until-token text "<p>"))))
 
 (def display-item-text (s user preview-only)
   (when (and (cansee user s) (astory s))
