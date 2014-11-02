@@ -744,8 +744,7 @@ pre:hover {overflow:auto} "))
 
 (def csb-items (user n) (retrieve n [cansee user _] comments*))
 
-(newscache newspage user 90
-  (listpage user (msec) (topstories user maxend*) nil nil "news" nil t))
+(def newspage (user) (newestpage user))
 
 (def listpage (user t1 items label title 
                (o url label) (o number t) (o show-comments t) (o preview-only t))
