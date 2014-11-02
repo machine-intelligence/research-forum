@@ -322,7 +322,6 @@
   (keep [cansee user _] is))
 
 (def cansee-descendant (user c)
-  (pr "XXX cansee-desc " c "\n")
   (or (cansee user c)
       (some [cansee-descendant user _] (kids c))))
   
@@ -392,8 +391,7 @@
        (add-sidebar (link "RECENT COMMENTS" "newcomments")
                     (each c (csb-items ,user csb-count*)
                       (tag (p) (tag (a href (item-url c!id) class 'csb)
-                                 (tag (b) (pr (shortened (item-text c) 
-                                                         csb-maxlen*))))
+                                 (tag (b) (pr (shortened c!text csb-maxlen*))))
                                (br)
                                (tab (tr (tag (td class 'csb-subtext)
                                  (pr "by ")
@@ -1104,7 +1102,6 @@ pre:hover {overflow:auto} "))
     (wipe (comment-cache* i!id))
     (if (is dir 'like) (pushnew user (itemlikes* i!id))
                        (zap [rem user _] (itemlikes* i!id)))
-    (save-item i)
     (= ((votes* user) i!id) dir)
     (save-votes user)))
 
@@ -1390,7 +1387,6 @@ pre:hover {overflow:auto} "))
 ; Comment Display
 
 (def display-comment-tree (c user whence (o indent 0) (o initialpar))
-  (pr "NOW DISPLAYING TREE XXX " c user "\n")
   (when (cansee-descendant user c)
     (display-1comment c user whence indent initialpar)
     (display-subcomments c user whence (+ indent 1))))
@@ -1400,7 +1396,7 @@ pre:hover {overflow:auto} "))
 
 (def display-subcomments (c user whence (o indent 0))
   (each k (sort (compare > frontpage-rank) (kids c))
-    (display-comment-tree (item k) user whence indent)))
+    (display-comment-tree k user whence indent)))
 
 (def display-comment (n c user whence (o astree) (o indent 0) 
                                       (o showpar) (o showon))
