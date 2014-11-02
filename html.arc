@@ -111,6 +111,8 @@
 (attribute input      value          opesc)
 (attribute input      checked        opcheck)
 (attribute input      onclick        opstring)
+(attribute input      onkeyup        opstring)
+(attribute input      onpaste        opstring)
 (attribute select     name           opstring)
 (attribute option     selected       opsel)
 (attribute table      bgcolor        opcolor)
@@ -122,6 +124,8 @@
 (attribute textarea   name           opstring)
 (attribute textarea   rows           opnum)
 (attribute textarea   wrap           opsym)
+(attribute textarea   onkeyup        opstring)
+(attribute textarea   onpaste        opstring)
 (attribute td         align          opsym)
 (attribute td         bgcolor        opcolor)
 (attribute td         colspan        opnum)
@@ -305,10 +309,21 @@
   `(tag (form method "post" action ,action) ,@body))
 
 (mac textarea (name rows cols . body)
-  `(tag (textarea name ,name rows ,rows cols ,cols) ,@body))
+  `(tag (textarea
+          name ,name
+          rows ,rows
+          cols ,cols
+          onkeyup "needToConfirm = true;"
+          onpaste "needToConfirm = true;")
+    ,@body))
 
 (def input (name (o val "") (o size 10))
-  (gentag input type 'text name name value val size size))
+  (gentag input type 'text
+                name name
+                value val
+                size size
+                onkeyup "needToConfirm = true;"
+                onpaste "needToConfirm = true;"))
 
 (mac inputs args
   `(tag (table border 0)

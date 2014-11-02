@@ -275,6 +275,13 @@
 (def varfield (typ id val)
   (if (in typ 'string 'string1 'url)
        (gentag input type 'text name id value val size formwid*)
+      (in typ 'string2)
+       (gentag input type 'text
+                     name id
+                     value val
+                     size formwid*
+                     onpaste "needToConfirm = true;"
+                     onkeyup "needToConfirm = true;")
       (in typ 'num 'int 'posint 'sym)
        (gentag input type 'text name id value val size numwid*)
       (in typ 'users 'toks)
@@ -298,7 +305,9 @@
                         rows (needrows text formwid* 4)
                         wrap 'virtual 
                         style (if (is typ 'doc) "font-size:8.5pt")
-                        name id)
+                        name id
+                        onpaste "needToConfirm = true;"
+                        onkeyup "needToConfirm = true;")
            (prn) ; needed or 1 initial newline gets chopped off
            (pr text))
          (when (and formatdoc-url* (in typ 'mdtext 'mdtextc 'mdtext2))
@@ -397,10 +406,10 @@
 (def protected-submit ((o val "submit") (o protect t))
   (if (no protect) (submit)
     (do (pr "<script language='javascript'><!--
-               var needToConfirm = true;
+               var needToConfirm = false;
                window.onbeforeunload = function(e) {
-                 if(needToConfirm)
-                   return \"Do you really want to leave without saving your work?\";
+                 if (needToConfirm)
+                   return \"You have unsaved changes that will be lost if you leave this page.\";
                }
              --></script>")
         (tag (input type 'submit value val onclick "needToConfirm = false;")))))

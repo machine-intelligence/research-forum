@@ -1265,7 +1265,7 @@ pre:hover {overflow:auto} "))
 (= (fieldfn* 'story)
    (fn (user s)
      (with (a (admin user)  e (editor user)  x (canedit user s))
-       `((string1 title     ,s!title        t ,x)
+       `((string2 title     ,s!title        t ,x)
          (mdtext  text      ,s!text         t ,x)
          ,@(standard-item-fields s a e x)))))
 
