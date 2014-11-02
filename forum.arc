@@ -39,16 +39,15 @@
 
 (deftem item
   id         nil
+  version    0     ; incremented before first save
   type       nil
   by         nil
   ip         nil
-  time       (seconds)
+  time       nil   ; set on save
   title      nil
   text       nil
-  likes      nil   ; list of users, not including item!by
   deleted    nil
   parent     nil
-  kids       nil
   keys       nil)
 
 
@@ -56,16 +55,23 @@
 
 (= newsdir*  "arc/news/"
    storydir* "arc/news/story/"
+   textdir*  "arc/news/text/"
    profdir*  "arc/news/profile/"
    votedir*  "arc/news/vote/")
 
-(= votes* (table) profs* (table))
+(= votes* (table) profs* (table)
+   itemlikes* (table) itemkids* (table) itemtext* (table))
 
 (def nsv ((o port 8080))
-  (map ensure-dir (list arcdir* newsdir* storydir* votedir* profdir*))
+  (map ensure-dir (list arcdir* newsdir* storydir* textdir* votedir* profdir*))
   (unless stories* (load-items))
   (if (empty profs*) (load-users))
   (asv port))
+
+(def item-file (id version (o ext))
+  (+ (if ext textdir* storydir*)
+     id "v" version
+     (if ext (+ "." ext) "")))
 
 (def load-users ()
   (pr "load users: ")
@@ -81,6 +87,8 @@
 (def load-user (u)
   (= (votes* u) (load-table (+ votedir* u))
      (profs* u) (temload 'profile (+ profdir* u)))
+  (each (id dir) (tablist (votes* u))
+    (when (is dir 'like) (push u (itemlikes* id))))
   u)
 
 ; Have to check goodname because some user ids come from http requests.
@@ -101,7 +109,7 @@
 
 (def vote (user item)
   (votes.user item!id))
-          
+
 (def init-user (u)
   (= (votes* u) (table) 
      (profs* u) (inst 'profile 'id u))
@@ -135,6 +143,8 @@
 
 (def author (u i) (is u i!by))
 
+(def item-text (i) (itemtext* i!id))
+
 
 (= stories* nil comments* nil 
    items* (table) maxid* 0 initload* 15000)
@@ -150,13 +160,15 @@
 
 (def load-items ()
   (system (+ "rm " storydir* "*.tmp"))
-  (pr "load items: ") 
+  (pr "load items: ")
   (with (items (table)
-         ids   (sort > (map int (dir storydir*))))
-    (if ids (= maxid* (car ids)))
-    (noisy-each 100 id (firstn initload* ids)
-      (let i (load-item id)
-        (push i (items i!type))))
+         idvs  (sort (lexico >)
+                     (map [map int (tokens _ #\v)] (dir storydir*))))
+    (if idvs (= maxid* (caar idvs)))
+    (noisy-each 100 (id v) (firstn initload* idvs)
+      (when (~items* id)
+        (let i (load-item id v)
+          (push i (items i!type)))))
     (= stories*  (rev items!story)
        comments* (rev items!comment))
     (hook 'initload items))
@@ -172,16 +184,19 @@
 (def astory   (i) (and i (is i!type 'story)))
 (def acomment (i) (and i (is i!type 'comment)))
 
-(def load-item (id)
-  (= (items* id) (temload 'item (+ storydir* id))))
+(def load-item (id v)
+  (let i (temload 'item (item-file id v))
+    (= (itemtext* id) (filechars:item-file id v "html"))
+    (if i!parent (pushnew id (itemkids* i!parent)))
+    (= (items* id) i)))
 
 (def new-item-id ()
-  (evtil (++ maxid*) [~file-exists (+ storydir* _)]))
+  (evtil (++ maxid*) [~file-exists (+ storydir* _ "v1")]))
 
 (def item (id)
   (or (items* id) (errsafe:load-item id)))
 
-(def kids (i) (map item i!kids))
+(def kids (i) (map item (itemkids* i!id)))
 
 ; For use on external item references (from urls).  Checks id is int 
 ; because people try e.g. item?id=363/blank.php
@@ -197,7 +212,14 @@
 
 (def live (i) (no i!deleted))
 
-(def save-item (i) (save-table i (+ storydir* i!id)))
+(def save-item (i)
+  (++ i!version)
+  (= i!time (seconds))
+  (w/outfile f (item-file i!id i!version "md") (disp i!text f))
+  (system (+ "pandoc --mathjax -S " (item-file i!id i!version "md")
+             " -o "                 (item-file i!id i!version "html")))
+  (= (itemtext* i!id) (filechars (item-file i!id i!version "html")))
+  (save-table i (item-file i!id i!version)))
 
 (mac each-loaded-item (var . body)
   (w/uniq g
@@ -231,7 +253,7 @@
        (min 1 (expt (/ (realscore s) it) 2))
        1))
 
-(def realscore (i) (+ 1 (len i!likes)))
+(def realscore (i) (+ 1 (len (itemlikes* i!id))))
 
 (def item-age (i) (minutes-since i!time))
 
@@ -300,9 +322,9 @@
   (keep [cansee user _] is))
 
 (def cansee-descendant (user c)
+  (pr "XXX cansee-desc " c "\n")
   (or (cansee user c)
-      (some [cansee-descendant user (item _)] 
-            c!kids)))
+      (some [cansee-descendant user _] (kids c))))
   
 (def editor (u) 
   (and u (or (admin u) (> (uvar u auth) 0))))
@@ -327,6 +349,7 @@
      (tag head 
        (gen-css-url)
        (prn "<link rel=\"shortcut icon\" href=\"" favicon-url* "\">")
+       (prn "<script src=\"http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML\" type=\"text/javascript\"></script>")
        (tag title (pr ,title)))
      (tag body 
        (center
@@ -369,7 +392,8 @@
        (add-sidebar (link "RECENT COMMENTS" "newcomments")
                     (each c (csb-items ,user csb-count*)
                       (tag (p) (tag (a href (item-url c!id) class 'csb)
-                                 (tag (b) (pr (shortened c!text csb-maxlen*))))
+                                 (tag (b) (pr (shortened (item-text c) 
+                                                         csb-maxlen*))))
                                (br)
                                (tab (tr (tag (td class 'csb-subtext)
                                  (pr "by ")
@@ -389,10 +413,9 @@
     (reverse ((halve (reverse text)) 1))))
 
 (def shortened (text maxlen)
-  (let utext (unmarkdown text)
-    (if (<= (len utext) maxlen) utext
-      (word-boundary (cut utext 0 maxlen)))))
-  
+  (if (<= (len text) maxlen) text
+    (word-boundary (cut text 0 maxlen))))
+
 (def admin-bar (user elapsed whence)
   (when (admin user)
     (br2)
@@ -853,7 +876,7 @@ pre:hover {overflow:auto} "))
     (pr "More")))
 
 (def display-story (i s user whence preview-only)
-  (when (or (cansee user s) (s 'kids))
+  (when (or (cansee user s) (itemkids* s!id))
     (tr (td (votelinks-space))
         (display-item-number i)
         (titleline s user whence))
@@ -869,7 +892,7 @@ pre:hover {overflow:auto} "))
         (tag (td class 'story)
           (let displayed (display-item-text s user preview-only)
             displayed
-            (if (and preview-only (no (is displayed s!text)))
+            (if (and preview-only (no (is displayed (item-text s))))
               (tag (table width '100%)
                 (spacerow 20)
                 (tr (tag (td align 'right class 'continue)
@@ -970,8 +993,8 @@ pre:hover {overflow:auto} "))
       (clink likelink "Unlike" (vote-url user i nil whence)))))
 
 (def likes (i user)
-  (+ (if (mem user i!likes) (list user) '())
-     (sort < (rem user i!likes))))
+  (+ (if (mem user (itemlikes* i!id)) (list user) '())
+     (sort < (rem user (itemlikes* i!id)))))
 
 (def itemscore (i (o user))
   (tag (span id (+ "score_" i!id))
@@ -1000,7 +1023,7 @@ pre:hover {overflow:auto} "))
 
 (def visible-family (user i)
   (+ (if (cansee user i) 1 0)
-     (sum [visible-family user (item _)] i!kids)))
+     (sum [visible-family user (item _)] (itemkids* i!id))))
 
 ;(= user-changetime* 120 editor-changetime* 1440)
 
@@ -1079,8 +1102,8 @@ pre:hover {overflow:auto} "))
     (++ (karma i!by) (case dir like 1 nil -1))
     (save-prof i!by)
     (wipe (comment-cache* i!id))
-    (if (is dir 'like) (pushnew user i!likes)
-                       (zap [rem user _] i!likes))
+    (if (is dir 'like) (pushnew user (itemlikes* i!id))
+                       (zap [rem user _] (itemlikes* i!id)))
     (save-item i)
     (= ((votes* user) i!id) dir)
     (save-votes user)))
@@ -1107,7 +1130,7 @@ pre:hover {overflow:auto} "))
             (process-story (get-user req)
                            (striptags (arg req "t"))
                            showtext
-                           (and showtext (md-from-form (arg req "x") t))
+                           (and showtext (arg req "x") t)
                            req!ip)
       (tab
         (row "title"  (input "t" title 50))
@@ -1190,7 +1213,8 @@ pre:hover {overflow:auto} "))
 
 (def item-page (user i)
   (with (title (and (cansee user i)
-                    (or i!title (aand i!text (ellipsize (striptags it)))))
+                    (or i!title (aand (item-text i) 
+                                      (ellipsize (striptags it)))))
          here (item-url i!id))
     (longpage-csb user (msec) nil nil title here t
       (tab (display-item nil i user here)
@@ -1198,7 +1222,7 @@ pre:hover {overflow:auto} "))
              (spacerow 10)
              (row "" (comment-form i user here))))
       (br2) 
-      (when (and i!kids (commentable i))
+      (when (and (itemkids* i!id) (commentable i))
         (tab (display-subcomments i user here))
         (br2)))))
 
@@ -1241,8 +1265,8 @@ pre:hover {overflow:auto} "))
 
 (def display-item-text (s user preview-only)
   (when (and (cansee user s) (astory s))
-    (if preview-only (pr (preview s!text))
-      (pr s!text))))
+    (if preview-only (pr (preview (item-text s)))
+      (pr (item-text s)))))
 
 
 ; Edit Item
@@ -1266,20 +1290,20 @@ pre:hover {overflow:auto} "))
    (fn (user s)
      (with (a (admin user)  e (editor user)  x (canedit user s))
        `((string1 title     ,s!title        t ,x)
-         (mdtext  text      ,s!text         t ,x)
+         (text    text      ,s!text         t ,x)
          ,@(standard-item-fields s a e x)))))
 
 (= (fieldfn* 'comment)
    (fn (user c)
      (with (a (admin user)  e (editor user)  x (canedit user c))
-       `((mdtextc text      ,c!text         t ,x)
+       `((text    text      ,c!text         t ,x)
          ,@(standard-item-fields c a e x)))))
 
 (def standard-item-fields (i a e x)
-       `((int     likes     ,(len i!likes) ,a  nil)
-         (yesno   deleted   ,i!deleted     ,a ,a)
-         (sexpr   keys      ,i!keys        ,a ,a)
-         (string  ip        ,i!ip          ,e  nil)))
+       `((int     likes     ,(len (itemlikes* i!id)) ,a  nil)
+         (yesno   deleted   ,i!deleted               ,a ,a)
+         (sexpr   keys      ,i!keys                  ,a ,a)
+         (string  ip        ,i!ip                    ,e  nil)))
 
 ; Should check valid-url etc here too.  In fact make a fn that
 ; does everything that has to happen after submitting a story,
@@ -1330,7 +1354,7 @@ pre:hover {overflow:auto} "))
              (when-umatch/r user req
                (process-comment user parent (arg req "text") req!ip whence)))
     (textarea "text" 6 60  
-      (aif text (prn (unmarkdown it))))
+      (aif text (prn it)))
     (pr " ")
     (tag (font size -2)
       (link "formatting help" formatdoc-url* (gray 175)))
@@ -1348,7 +1372,7 @@ pre:hover {overflow:auto} "))
        (flink [comment-login-warning parent whence text])
       (empty text)
        (flink [addcomment-page parent (get-user _) whence text retry*])
-       (atlet c (create-comment parent (md-from-form text nil t t) user ip)
+       (atlet c (create-comment parent text user ip)
          (submit-item user c)
          whence)))
 
@@ -1358,8 +1382,7 @@ pre:hover {overflow:auto} "))
                      'text text 'parent parent!id 'by user 'ip ip)
     (save-item c)
     (= (items* c!id) c)
-    (push c!id parent!kids)
-    (save-item parent)
+    (push c!id (itemkids* parent!id))
     (push c comments*)
     c))
 
@@ -1367,6 +1390,7 @@ pre:hover {overflow:auto} "))
 ; Comment Display
 
 (def display-comment-tree (c user whence (o indent 0) (o initialpar))
+  (pr "NOW DISPLAYING TREE XXX " c user "\n")
   (when (cansee-descendant user c)
     (display-1comment c user whence indent initialpar)
     (display-subcomments c user whence (+ indent 1))))
@@ -1375,7 +1399,7 @@ pre:hover {overflow:auto} "))
   (row (tab (display-comment nil c user whence t indent showpar showpar))))
 
 (def display-subcomments (c user whence (o indent 0))
-  (each k (sort (compare > frontpage-rank:item) c!kids)
+  (each k (sort (compare > frontpage-rank) (kids c))
     (display-comment-tree (item k) user whence indent)))
 
 (def display-comment (n c user whence (o astree) (o indent 0) 
@@ -1454,8 +1478,8 @@ pre:hover {overflow:auto} "))
         (br))
       (spanclass comment
         (if (~cansee user c)               (pr "[deleted]")
-            (nor (live c) (author user c)) (spanclass dead (pr c!text))
-                                           (pr c!text)))
+            (nor (live c) (author user c)) (spanclass dead (pr (item-text c)))
+                                           (pr (item-text c))))
       (when (and astree (cansee user c) (live c))
         (para)
         (tag (font size 1)
@@ -1635,7 +1659,7 @@ pre:hover {overflow:auto} "))
   (sum [max 0 (- active-threshold* (item-age _))]
        (cdr (family s))))
 
-(def family (i) (cons i (mappend family:item i!kids)))
+(def family (i) (cons i (mappend family (kids i))))
 
 
 (newsop newcomments () (newcomments-page user))
