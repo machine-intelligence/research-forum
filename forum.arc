@@ -47,7 +47,6 @@
   text       nil
   likes      nil   ; list of users, not including item!by
   deleted    nil
-  parts      nil
   parent     nil
   kids       nil
   keys       nil)
@@ -744,8 +743,7 @@ pre:hover {overflow:auto} "))
 
 (def csb-items (user n) (retrieve n [cansee user _] comments*))
 
-(newscache newspage user 90
-  (listpage user (msec) (topstories user maxend*) nil nil "news" nil t))
+(def newspage (user) (newestpage user))
 
 (def listpage (user t1 items label title 
                (o url label) (o number t) (o show-comments t) (o preview-only t))
@@ -1120,7 +1118,7 @@ pre:hover {overflow:auto} "))
             (pr " ")
             (tag (font size -2)
               (link "formatting help" formatdoc-url* (gray 175)))))
-        (row "" (submit))))))
+        (row "" (protected-submit))))))
 
 ; For use by outside code like bookmarklet.
 ; http://news.domain.com/submitlink?u=http://foo.com&t=Foo
@@ -1267,7 +1265,7 @@ pre:hover {overflow:auto} "))
 (= (fieldfn* 'story)
    (fn (user s)
      (with (a (admin user)  e (editor user)  x (canedit user s))
-       `((string1 title     ,s!title        t ,x)
+       `((string2 title     ,s!title        t ,x)
          (mdtext  text      ,s!text         t ,x)
          ,@(standard-item-fields s a e x)))))
 
@@ -1301,7 +1299,8 @@ pre:hover {overflow:auto} "))
                         (save-item i)
                         (astory&adjust-rank i)
                         (wipe (comment-cache* i!id))
-                        (edit-page user i)))
+                        (edit-page user i))
+                 "update" nil t)
       (hook 'edit user i))))
 
  
@@ -1336,7 +1335,7 @@ pre:hover {overflow:auto} "))
     (tag (font size -2)
       (link "formatting help" formatdoc-url* (gray 175)))
     (br2)
-    (submit (if (acomment parent) "reply" "add comment"))))
+    (protected-submit (if (acomment parent) "reply" "add comment") t)))
 
 (= comment-threshold* -20)
 

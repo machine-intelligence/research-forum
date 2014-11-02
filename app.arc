@@ -275,6 +275,13 @@
 (def varfield (typ id val)
   (if (in typ 'string 'string1 'url)
        (gentag input type 'text name id value val size formwid*)
+      (in typ 'string2)
+       (gentag input type 'text
+                     name id
+                     value val
+                     size formwid*
+                     onpaste "needToConfirm = true;"
+                     onkeyup "needToConfirm = true;")
       (in typ 'num 'int 'posint 'sym)
        (gentag input type 'text name id value val size numwid*)
       (in typ 'users 'toks)
@@ -298,7 +305,9 @@
                         rows (needrows text formwid* 4)
                         wrap 'virtual 
                         style (if (is typ 'doc) "font-size:8.5pt")
-                        name id)
+                        name id
+                        onpaste "needToConfirm = true;"
+                        onkeyup "needToConfirm = true;")
            (prn) ; needed or 1 initial newline gets chopped off
            (pr text))
          (when (and formatdoc-url* (in typ 'mdtext 'mdtextc 'mdtext2))
@@ -394,7 +403,18 @@
 ; a fn f and generates a form such that when submitted (f label newval) 
 ; will be called for each valid value.  Finally done is called.
 
-(def vars-form (user fields f done (o button "update") (o lasts))
+(def protected-submit ((o val "submit") (o protect t))
+  (if (no protect) (submit)
+    (do (pr "<script language='javascript'><!--
+               var needToConfirm = false;
+               window.onbeforeunload = function(e) {
+                 if (needToConfirm)
+                   return \"You have unsaved changes that will be lost if you leave this page.\";
+               }
+             --></script>")
+        (tag (input type 'submit value val onclick "needToConfirm = false;")))))
+
+(def vars-form (user fields f done (o button "update") (o lasts) (o protect))
   (taform lasts
           (if (all [no (_ 4)] fields)
               (fn (req))
@@ -414,8 +434,8 @@
        (showvars fields))
      (unless (all [no (_ 4)] fields)  ; no modifiable fields
        (br)
-       (submit button))))
-                
+       (protected-submit button protect))))
+
 (def showvars (fields (o liveurls))
   (each (typ id val view mod question) fields
     (when view
