@@ -1364,16 +1364,6 @@
 ;(def compare (comparer scorer)
 ;  (fn args (apply comparer map scorer args)))
 
-; Lexicographical comparison
-
-(def lexico (less)
-  (fn (xs ys)
-    (if (is xs nil)                t
-        (is ys nil)                nil
-        (less (car xs) (car ys))   t
-        (less (car ys) (car xs))   nil
-                                   ((lexico less) (cdr xs) (cdr ys)))))
-
 ; (def only (f g . args) (aif (apply g args) (f it)))
 
 (def only (f) 
