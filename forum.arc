@@ -1327,10 +1327,12 @@ pre:hover {overflow:auto} "))
          ,@(standard-item-fields c a e x)))))
 
 (def standard-item-fields (i a e x)
-       `((int     likes     ,(len (itemlikes* i!id)) ,a  nil)
-         (yesno   deleted   ,i!deleted               ,a ,a)
-         (sexpr   keys      ,i!keys                  ,a ,a)
-         (string  ip        ,i!ip                    ,e  nil)))
+  (let fields `((int     likes     ,(len (itemlikes* i!id)) ,a  nil)
+                (yesno   deleted   ,i!deleted               ,a ,a)
+                (sexpr   keys      ,i!keys                  ,a ,a)
+                (string  ip        ,i!ip                    ,e  nil))
+    (if i!draft (+ fields `((yesno draft ,i!draft ,x ,x)))
+        fields)))
 
 ; Should check valid-url etc here too.  In fact make a fn that
 ; does everything that has to happen after submitting a story,
