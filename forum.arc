@@ -569,7 +569,7 @@ pre:hover {overflow:auto} "))
                 style "border:1px #@(hexrep border-color*) solid;")))))
 
 (= toplabels* '(nil "new" "comments" "members" 
-                    "my posts" "my comments" "my likes" "*"))
+                    "my posts" "my comments" "my drafts" "my likes" "*"))
 
 ; redefined later
 
@@ -582,6 +582,7 @@ pre:hover {overflow:auto} "))
       (w/bars
         (toplink "my posts" (submitted-url user) label)
         (toplink "my comments" (threads-url user) label)
+        (toplink "my drafts" "drafts" label)
         (toplink "my likes" (saved-url user) label)))
     (hook 'toprow user label)
     (link "submit")
@@ -850,6 +851,19 @@ pre:hover {overflow:auto} "))
   (keep [and (astory _) (cansee user _) (is ((votes subject) _!id) 'like)]
         (map item (keys:votes subject))))
 
+(newsop drafts ()
+  (if user (draftspage user)
+    (login-page 'login "You have to be logged in to view your drafts."
+                (fn (user ip)
+                  (ensure-news-user user)
+                  (newslog ip user 'submit-login)
+                  (draftspage user)))))
+
+(def draftspage (user)
+  (listpage user (msec) (drafts user) "my drafts" "My Drafts" "drafts" nil t t t))
+
+(def drafts (user)
+  (keep [and (cansee user _) _!draft] (submissions user)))
 
 ; Story Display
 
