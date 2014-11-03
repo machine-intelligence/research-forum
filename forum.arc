@@ -8,10 +8,10 @@
 (declare 'atstrings t)
 
 (= this-site*    "FAI research forum"
-   site-url*     "http://news.yourdomain.com/"
-   parent-url*   "http://www.yourdomain.com"
+   site-url*     ""
+   parent-url*   ""
    favicon-url*  ""
-   site-desc*    "What this site is about."               ; for rss feed
+   site-desc*    "FAI research forum"               ; for rss feed
    site-color*   (color 180 180 180)
    border-color* (color 180 180 180)
    prefer-url*   t)
