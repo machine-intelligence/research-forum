@@ -1755,7 +1755,7 @@ before the first subheading or separator.  If there are no
 subheadings or separators, then the preview the first paragraph
 (for long posts) or the entire post (for short posts).
 <p> Text surrounded by dollar signs is rendered as LaTeX.
-<p> Text after a blank line that is indented by two or more spaces is 
+<p> Text after a blank line that is indented by four or more spaces is 
 reproduced verbatim.  (This is intended for code.)
 <p> Additional formatting options can be found at the
 <a href=\"http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html\">
