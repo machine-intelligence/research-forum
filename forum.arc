@@ -517,6 +517,9 @@ a:visited { color:#555555; text-decoration:none; }
 
 .default p { margin-top: 8px; margin-bottom: 0px; }
 
+.example-raw      { margin:20px; background-color:white; }
+.example-rendered { margin:20px; }
+
 .pagebreak {page-break-before:always}
 
 pre { overflow: auto; padding: 2px; max-width:600px; }
@@ -1747,20 +1750,102 @@ pre:hover {overflow:auto} "))
 (= formatdoc-url* "formatdoc")
 
 (= formatdoc* 
-"Blank lines separate paragraphs.
-<p> A paragraph beginning with a hash mark (#) is a subheading.
-<p> A paragraph consisting of a single line with three or more
-asterisks (***) will be rendered as a separator.
-<p> The preview for a post consists of everything that appears
+"<p>Blank lines separate paragraphs.</p>
+
+<div class=\"example-raw\">
+<pre>Contents of first paragraph.
+Contents of first paragraph continued.
+
+Contents of second paragraph.</pre>
+</div>
+
+<div class=\"example-rendered\">
+<p>Contents of first paragraph. Contents of first paragraph continued.</p>
+<p>Contents of second paragraph.
+</div>
+
+<p>A paragraph beginning with a hash mark (#) is a subheading.</p>
+
+<div class=\"example-raw\">
+<pre># Subheading
+
+Paragraph contents</pre>
+</div>
+
+<div class=\"example-rendered\">
+<h1>Subheading</h1>
+<p>Paragraph contents</p>
+</div>
+
+<p>A paragraph consisting of a single line with three or more
+asterisks (***) will be rendered as a separator.</p>
+
+<div class=\"example-raw\">
+<pre>Contents above the separator
+
+***
+
+Contents below the separator</pre>
+</div>
+
+<div class=\"example-rendered\">
+<p>Contents above the separator</p>
+<hr />
+<p>Contents below the separator</p>
+</div>
+
+<p>The preview for a post consists of everything that appears
 before the first subheading or separator.  If there are no
-subheadings or separators, then the preview the first paragraph
-(for long posts) or the entire post (for short posts).
-<p> Text surrounded by dollar signs is rendered as LaTeX.
-<p> Text after a blank line that is indented by four or more spaces is 
-reproduced verbatim.  (This is intended for code.)
-<p> See the <span class=\"doclink\">
+subheadings or separators, then the preview is the first paragraph
+(for long posts) or the entire post (for short posts).</p>
+
+<div class=\"example-raw\">
+<pre>This will appear before the fold.
+
+***
+
+This will appear after the fold.</pre>
+</div>
+
+<p>Text surrounded by dollar signs is rendered as LaTeX.</p>
+
+<div class=\"example-raw\">
+<pre>
+This is my equation: $x^2 + x + 1 = 0$</pre>
+</div>
+
+<div class=\"example-rendered\">
+This is my equation: <span class=\"math\">\\(x^2 + x + 1 = 0\\)</span>
+</div>
+
+<p>Text after a blank line that is indented by four or more spaces is
+ reproduced verbatim.  (This is intended for code.)</p>
+
+<div class=\"example-raw\">
+<pre>This is my code:
+
+    sum = 0
+    for i in range(1000):
+      if i % 3 == 0 or i % 5 == 0:
+        sum += i
+    print sum
+
+It should output 233168.</pre>
+</div>
+
+<div class=\"example-rendered\">
+<p>This is my code:</p>
+<pre><code>sum = 0
+for i in range(1000):
+  if i % 3 == 0 or i % 5 == 0:
+    sum += i
+print sum</code></pre>
+<p>It should output 233168.</p>
+</div>
+
+<p>See the <span class=\"doclink\">
 <a href=\"http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html\">
-Pandoc markdown documentation</a></span> for additional formatting options.<br><br>")
+Pandoc markdown documentation</a></span> for additional formatting options.</p>")
 
 
 ; Reset PW
