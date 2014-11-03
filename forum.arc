@@ -1321,13 +1321,32 @@ pre:hover {overflow:auto} "))
 
 (def edit-url (i) (+ "edit?id=" i!id))
 
-(newsop edit (id)
-  (let i (safe-item id)
+(defop edit req
+  (with (user (get-user req) i (only.safe-item (arg req "id")))
     (if (and i 
              (cansee user i)
              (editable-type i)
              (or (news-type i) (admin user) (author user i)))
-        (edit-page user i)
+        (if (arg req "auth")
+             (handle-vars-form req
+               ((fieldfn* i!type) user i)
+               (fn (name val)
+                   (unless (and (is name 'title) (len> val title-limit*))
+                     (= (i name) val)))
+               (fn () (if (admin user) (pushnew 'locked i!keys))
+                      (save-item i)
+                      (astory&adjust-rank i)
+                      (wipe (comment-cache* i!id))
+                      (edit-page user i))
+               (fn () (pr "AUTHENTICATION FAILURE! Your work has not been saved.
+                           (You probably logged out in a different window
+                           while you were editing.)
+                           Please copy & paste your work somewhere else
+                           and try again."
+                          "<p>Title: " (esc-tags (arg req "title"))
+                          "<p>Text:"
+                          "<pre>" (esc-tags (arg req "text")) "</pre>")))
+             (edit-page user i))
         (pr "No such item."))))
 
 (def editable-type (i) (fieldfn* i!type))
@@ -1359,20 +1378,12 @@ pre:hover {overflow:auto} "))
 ; does everything that has to happen after submitting a story,
 ; and call it both there and here.
 
-(def edit-page (user i)
+(def edit-page (user i (o msg))
   (let here (edit-url i)
     (shortpage user nil nil "Edit" here
-      (vars-form user
-                 ((fieldfn* i!type) user i)
-                 (fn (name val)
-                     (unless (and (is name 'title) (len> val title-limit*))
-                       (= (i name) val)))
-                 (fn () (if (admin user) (pushnew 'locked i!keys))
-                        (save-item i)
-                        (astory&adjust-rank i)
-                        (wipe (comment-cache* i!id))
-                        (edit-page user i))
-                 "update" nil t)
+      (pagemessage msg)
+      (url-vars-form user ((fieldfn* i!type) user i) "/edit" `((id ,i!id))
+                     "update" t)
       (br2)
       (tab (tr (tag (td width '100% style 'padding-right:80px)
                  (tab (display-item nil i user here)))))
