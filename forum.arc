@@ -1710,14 +1710,19 @@ pre:hover {overflow:auto} "))
 
 (= formatdoc* 
 "Blank lines separate paragraphs.
+<p> A paragraph beginning with a hash mark (#) is a subheading.
+<p> A paragraph consisting of a single line with three or more
+asterisks (***) will be rendered as a separator.
+<p> The preview for a post consists of everything that appears
+before the first subheading or separator.  If there are no
+subheadings or separators, then the preview the first paragraph
+(for long posts) or the entire post (for short posts).
 <p> Text surrounded by dollar signs is rendered as LaTeX.
 <p> Text after a blank line that is indented by two or more spaces is 
 reproduced verbatim.  (This is intended for code.)
-<p> Text surrounded by asterisks is italicized, if the character after the 
-first asterisk isn't whitespace.
-<p> A paragraph beginning with a hash mark (#) is a subheading (posts only,
-not comments).
-<p> Urls become links.<br><br>")
+<p> Additional formatting options can be found at the
+<a href=\"http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html\">
+Pandoc markdown documentation</a> page.<br><br>")
 
 
 ; Reset PW
