@@ -922,7 +922,6 @@ pre:hover {overflow:auto} "))
             (pr displayed)
             (if (and preview-only (no (is displayed (item-text s))))
               (tag (table width '100%)
-                (spacerow 20)
                 (tr (tag (td align 'right class 'continue)
                   (link "continue reading &raquo;" (item-url s!id)))))))))))
 
