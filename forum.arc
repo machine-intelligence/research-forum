@@ -1150,7 +1150,8 @@ pre:hover {overflow:auto} "))
             (textarea "x" 4 50 (only.pr text))
             (pr " ")
             (tag (font size -2)
-              (link "formatting help" formatdoc-url* (gray 175)))))
+              (tag (a href formatdoc-url* target '_blank)
+                (tag (font color (gray 175)) (pr "formatting help"))))))
         (row "" (protected-submit))))))
 
 ; For use by outside code like bookmarklet.
@@ -1374,7 +1375,8 @@ pre:hover {overflow:auto} "))
       (aif text (prn it)))
     (pr " ")
     (tag (font size -2)
-      (link "formatting help" formatdoc-url* (gray 175)))
+      (tag (a href formatdoc-url* target '_blank)
+        (tag (font color (gray 175)) (pr "formatting help"))))
     (br2)
     (protected-submit (if (acomment parent) "reply" "add comment") t)))
 
@@ -1715,7 +1717,7 @@ reproduced verbatim.  (This is intended for code.)
 first asterisk isn't whitespace.
 <p> A paragraph beginning with a hash mark (#) is a subheading (posts only,
 not comments).
-<p> Urls become links, except in the text field of a submission.<br><br>")
+<p> Urls become links.<br><br>")
 
 
 ; Reset PW
