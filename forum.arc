@@ -1276,7 +1276,7 @@ pre:hover {overflow:auto} "))
       idx-hr (until-token text "<hr")
       idx-h1 (until-token text "<h1")
       (<= (len text) preview-maxlen*) text
-      (until-token text "<p>"))))
+      (+ (until-token text "</p>") "</p>"))))
 
 (def display-item-text (s user preview-only)
   (when (and (cansee user s) (astory s))
