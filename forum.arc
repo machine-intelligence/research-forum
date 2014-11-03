@@ -1203,7 +1203,7 @@ pre:hover {overflow:auto} "))
        (flink [submit-page user title showtext text toolong*])
       (let s (create-story title text user ip draft)
         (submit-item user s)
-        (if draft "drafts" "newest"))))
+        (if draft (+ "edit?id=" s!id) "newest"))))
 
 (def submit-item (user i)
   (push i!id (uvar user submitted))
