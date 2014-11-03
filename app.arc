@@ -312,7 +312,7 @@
                         onkeyup "needToConfirm = true;")
            (prn) ; needed or 1 initial newline gets chopped off
            (pr text))
-         (when (and formatdoc-url* (in typ 'mdtext 'mdtextc 'mdtext2))
+         (when (and formatdoc-url* (in typ 'mdtext 'mdtextc 'mdtext2 'pandoc))
            (pr " ")
            (tag (font size -2)
              (link "formatting help" formatdoc-url* (gray 175)))))
