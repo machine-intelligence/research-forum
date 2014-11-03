@@ -354,7 +354,7 @@
      (tag head 
        (gen-css-url)
        (prn "<link rel=\"shortcut icon\" href=\"" favicon-url* "\">")
-       (prn "<script src=\"http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML\" type=\"text/javascript\"></script>")
+       (prn "<script src=\"https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML\" type=\"text/javascript\"></script>")
        (tag title (pr ,title)))
      (tag body 
        (center
