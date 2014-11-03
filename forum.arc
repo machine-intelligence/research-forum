@@ -8,10 +8,10 @@
 (declare 'atstrings t)
 
 (= this-site*    "FAI research forum"
-   site-url*     "http://news.yourdomain.com/"
-   parent-url*   "http://www.yourdomain.com"
+   site-url*     ""
+   parent-url*   ""
    favicon-url*  ""
-   site-desc*    "What this site is about."               ; for rss feed
+   site-desc*    "FAI research forum"               ; for rss feed
    site-color*   (color 180 180 180)
    border-color* (color 180 180 180)
    prefer-url*   t)
@@ -40,6 +40,7 @@
 (deftem item
   id         nil
   version    0     ; incremented before first save
+  draft      nil
   type       nil
   by         nil
   ip         nil
@@ -220,8 +221,10 @@
   (++ i!version)
   (= i!time (seconds))
   (w/outfile f (item-file i!id i!version "md") (disp i!text f))
-  (system (+ "pandoc --mathjax -S " (item-file i!id i!version "md")
-             " -o "                 (item-file i!id i!version "html")))
+  (system (+ "pandoc --mathjax -S -f markdown-raw_html "
+             (item-file i!id i!version "md")
+             " -o "
+             (item-file i!id i!version "html")))
   (= (itemtext* i!id) (filechars (item-file i!id i!version "html")))
   (save-table i (item-file i!id i!version)))
 
@@ -311,6 +314,7 @@
 
 (def cansee (user i)
   (if i!deleted   (admin user)
+      i!draft     (author user i)
       (delayed i) (author user i)
       t))
 
@@ -322,8 +326,8 @@
              (do (set (mature i!id))
                  nil)))))
 
-(def visible (user is)
-  (keep [cansee user _] is))
+(def visible (user is (o hide-drafts))
+  (keep [and (cansee user _) (or (no hide-drafts) (no _!draft))] is))
 
 (def cansee-descendant (user c)
   (or (cansee user c)
@@ -352,7 +356,7 @@
      (tag head 
        (gen-css-url)
        (prn "<link rel=\"shortcut icon\" href=\"" favicon-url* "\">")
-       (prn "<script src=\"http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML\" type=\"text/javascript\"></script>")
+       (prn "<script src=\"https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML\" type=\"text/javascript\"></script>")
        (tag title (pr ,title)))
      (tag body 
        (center
@@ -472,6 +476,7 @@ table td.story    { line-height:135%; }
 .admin td   { font-family:Verdana; font-size:10.5pt; color:#000000; }
 .subtext td { font-family:Verdana; font-size:  10pt; color:#828282; }
 
+button   { font-family:Verdana; font-size:11pt; color:#000000; }
 input    { font-family:Courier; font-size:13pt; color:#000000; }
 input[type=\"submit\"] { font-family:Verdana; }
 textarea { font-family:Courier; font-size:13pt; color:#000000; }
@@ -564,7 +569,7 @@ pre:hover {overflow:auto} "))
                 style "border:1px #@(hexrep border-color*) solid;")))))
 
 (= toplabels* '(nil "new" "comments" "members" 
-                    "my posts" "my comments" "my likes" "*"))
+                    "my posts" "my comments" "my drafts" "my likes" "*"))
 
 ; redefined later
 
@@ -577,6 +582,7 @@ pre:hover {overflow:auto} "))
       (w/bars
         (toplink "my posts" (submitted-url user) label)
         (toplink "my comments" (threads-url user) label)
+        (toplink "my drafts" "drafts" label)
         (toplink "my likes" (saved-url user) label)))
     (hook 'toprow user label)
     (link "submit")
@@ -724,7 +730,7 @@ pre:hover {overflow:auto} "))
       (string  saved      ,(saved-link user subject)               ,u   nil)
       (int     auth       ,(p 'auth)                               ,e  ,a)
       (yesno   member     ,(p 'member)                             ,a  ,a)
-      (posint  karma      ,(p 'karma)                               t  ,a)
+      (posint  karma      ,(* karma-multiplier* (p 'karma))         t  ,a)
       (num     weight     ,(p 'weight)                             ,a  ,a)
       (mdtext  about      ,(p 'about)                               t  ,u)
       (string  email      ,(p 'email)                              ,u  ,u)
@@ -791,7 +797,7 @@ pre:hover {overflow:auto} "))
             nil t))
 
 (def newstories (user n)
-  (retrieve n [cansee user _] stories*))
+  (retrieve n [and (cansee user _) (no _!draft)] stories*))
 
 
 (newsop best () (bestpage user))
@@ -845,12 +851,25 @@ pre:hover {overflow:auto} "))
   (keep [and (astory _) (cansee user _) (is ((votes subject) _!id) 'like)]
         (map item (keys:votes subject))))
 
+(newsop drafts ()
+  (if user (draftspage user)
+    (login-page 'login "You have to be logged in to view your drafts."
+                (fn (user ip)
+                  (ensure-news-user user)
+                  (newslog ip user 'submit-login)
+                  (draftspage user)))))
+
+(def draftspage (user)
+  (listpage user (msec) (drafts user) "my drafts" "My Drafts" "drafts" nil t t t))
+
+(def drafts (user)
+  (keep [and (cansee user _) _!draft] (submissions user)))
 
 ; Story Display
 
 (def display-items (user items label title whence 
                     (o start 0) (o end perpage*) (o number) (o preview-only) (o show-immediate-parent))
-  (zerotable
+  (tag (table width '100%)
     (let n start
       (each i (cut items start end)
         (trtd (tag (table width '100%) (display-item (and number (++ n)) i user whence t preview-only show-immediate-parent)
@@ -883,11 +902,11 @@ pre:hover {overflow:auto} "))
 
 (def display-story (i s user whence preview-only (o commentpage))
   (when (or (cansee user s) (itemkids* s!id))
-    (tr (if (no commentpage)
+    (tr (when (no commentpage)
           (td (votelinks-space))
           (display-item-number i))
         (titleline s user whence))
-    (tr (if (no commentpage)
+    (tr (when (no commentpage)
           (tag (td colspan (if i 2 1))))
         (tag (td class 'subtext)
           (hook 'itemline s user)
@@ -896,14 +915,13 @@ pre:hover {overflow:auto} "))
           (editlink s user)
           (deletelink s user whence)))
     (spacerow 10)
-    (tr (if (no commentpage)
+    (tr (when (no commentpage)
           (tag (td colspan (if i 2 1))))
         (tag (td class 'story width '100%)
           (let displayed (display-item-text s user preview-only)
             (pr displayed)
             (if (and preview-only (no (is displayed (item-text s))))
               (tag (table width '100%)
-                (spacerow 20)
                 (tr (tag (td align 'right class 'continue)
                   (link "continue reading &raquo;" (item-url s!id)))))))))))
 
@@ -915,7 +933,10 @@ pre:hover {overflow:auto} "))
   (tag (td class 'title)
     (if (cansee user s)
         (do (deadmark s user)
-            (link s!title (item-url s!id)))
+            (if s!draft (tag (a href (item-url s!id)
+                                style 'font-style:italic)
+                          (pr (+ "[draft] " s!title)))
+                (link s!title (item-url s!id))))
         (pr "[deleted]"))))
 
 (def deadmark (i user)
@@ -1022,7 +1043,7 @@ pre:hover {overflow:auto} "))
   (if (is user subject) (spanclass you (pr "You")) (userlink user subject)))
 
 (def commentlink (i user)
-  (when (cansee user i) 
+  (when (and (cansee user i) (no i!draft))
     (pr bar*)
     (tag (a href (item-url i!id))
       (let n (- (visible-family user i) 1)
@@ -1139,7 +1160,8 @@ pre:hover {overflow:auto} "))
                            (striptags (arg req "t"))
                            showtext
                            (and showtext (arg req "x"))
-                           req!ip)
+                           req!ip
+                           (no (is (arg req "draft") nil)))
       (tab
         (row "title"  (input "t" title 50))
         (tr
@@ -1148,8 +1170,15 @@ pre:hover {overflow:auto} "))
             (textarea "x" 4 50 (only.pr text))
             (pr " ")
             (tag (font size -2)
-              (link "formatting help" formatdoc-url* (gray 175)))))
-        (row "" (protected-submit))))))
+              (tag (a href formatdoc-url* target '_blank)
+                (tag (font color (gray 175)) (pr "formatting help"))))))
+        (row "" (do
+                  (tag (button type 'submit
+                               name "draft"
+                               value "t"
+                               onclick "needToConfirm = false;")
+                    (pr "save draft & preview"))
+                  (protected-submit "publish post")))))))
 
 ; For use by outside code like bookmarklet.
 ; http://news.domain.com/submitlink?u=http://foo.com&t=Foo
@@ -1165,14 +1194,14 @@ pre:hover {overflow:auto} "))
    toolong*     "Please make title < @title-limit* characters."
    blanktext*   "Please fill in the title and the body.")
 
-(def process-story (user title showtext text ip)
+(def process-story (user title showtext text ip draft)
   (if (no user)
        (flink [submit-login-warning title showtext text])
       (or (blank title) (blank text))
        (flink [submit-page user title showtext text blanktext*])
       (len> title title-limit*)
        (flink [submit-page user title showtext text toolong*])
-      (let s (create-story title text user ip)
+      (let s (create-story title text user ip draft)
         (submit-item user s)
         "newest")))
 
@@ -1181,10 +1210,10 @@ pre:hover {overflow:auto} "))
   (save-prof user)
   (astory&adjust-rank i))
 
-(def create-story (title text user ip)
+(def create-story (title text user ip draft)
   (newslog ip user 'create (list title))
   (let s (inst 'item 'type 'story 'id (new-item-id) 
-                     'title title 'text text 'by user 'ip ip)
+                     'title title 'text text 'by user 'ip ip 'draft draft)
     (save-item s)
     (= (items* s!id) s)
     (push s stories*)
@@ -1221,12 +1250,13 @@ pre:hover {overflow:auto} "))
 
 (def item-page (user i)
   (with (title (and (cansee user i)
-                    (or i!title (aand (item-text i) 
-                                      (ellipsize (striptags it)))))
+                    (+ (if i!draft "[draft] " "")
+                       (or i!title (aand (item-text i)
+                                         (ellipsize (striptags it))))))
          here (item-url i!id))
     (longpage-csb user (msec) nil nil title here t
       (tab (display-item nil i user here)
-           (when (and (cansee user i) (comments-active i))
+           (when (and (cansee user i) (comments-active i) (no i!draft))
              (spacerow 10)
              (row "" (comment-form i user here))))
       (br2) 
@@ -1276,7 +1306,7 @@ pre:hover {overflow:auto} "))
       idx-hr (until-token text "<hr")
       idx-h1 (until-token text "<h1")
       (<= (len text) preview-maxlen*) text
-      (until-token text "<p>"))))
+      (+ (until-token text "</p>") "</p>"))))
 
 (def display-item-text (s user preview-only)
   (when (and (cansee user s) (astory s))
@@ -1304,20 +1334,22 @@ pre:hover {overflow:auto} "))
    (fn (user s)
      (with (a (admin user)  e (editor user)  x (canedit user s))
        `((string2 title     ,s!title        t ,x)
-         (text    text      ,s!text         t ,x)
+         (pandoc  text      ,s!text         t ,x)
          ,@(standard-item-fields s a e x)))))
 
 (= (fieldfn* 'comment)
    (fn (user c)
      (with (a (admin user)  e (editor user)  x (canedit user c))
-       `((text    text      ,c!text         t ,x)
+       `((pandoc  text      ,c!text         t ,x)
          ,@(standard-item-fields c a e x)))))
 
 (def standard-item-fields (i a e x)
-       `((int     likes     ,(len (itemlikes* i!id)) ,a  nil)
-         (yesno   deleted   ,i!deleted               ,a ,a)
-         (sexpr   keys      ,i!keys                  ,a ,a)
-         (string  ip        ,i!ip                    ,e  nil)))
+  (let fields `((int     likes     ,(len (itemlikes* i!id)) ,a  nil)
+                (yesno   deleted   ,i!deleted               ,a ,a)
+                (sexpr   keys      ,i!keys                  ,a ,a)
+                (string  ip        ,i!ip                    ,e  nil))
+    (if i!draft (+ fields `((yesno draft ,i!draft ,x ,x)))
+        fields)))
 
 ; Should check valid-url etc here too.  In fact make a fn that
 ; does everything that has to happen after submitting a story,
@@ -1326,8 +1358,6 @@ pre:hover {overflow:auto} "))
 (def edit-page (user i)
   (let here (edit-url i)
     (shortpage user nil nil "Edit" here
-      (tab (display-item nil i user here))
-      (br2)
       (vars-form user
                  ((fieldfn* i!type) user i)
                  (fn (name val)
@@ -1339,6 +1369,9 @@ pre:hover {overflow:auto} "))
                         (wipe (comment-cache* i!id))
                         (edit-page user i))
                  "update" nil t)
+      (br2)
+      (tab (tr (tag (td width '100% style 'padding-right:80px)
+                 (tab (display-item nil i user here)))))
       (hook 'edit user i))))
 
  
@@ -1366,13 +1399,20 @@ pre:hover {overflow:auto} "))
   (tarform 1800
            (fn (req)
              (when-umatch/r user req
-               (process-comment user parent (arg req "text") req!ip whence)))
+               (process-comment user parent (arg req "text") req!ip whence
+                                (no (is (arg req "draft") nil)))))
     (textarea "text" 6 60  
       (aif text (prn it)))
     (pr " ")
     (tag (font size -2)
-      (link "formatting help" formatdoc-url* (gray 175)))
+      (tag (a href formatdoc-url* target '_blank)
+        (tag (font color (gray 175)) (pr "formatting help"))))
     (br2)
+    (tag (button type 'submit
+                 name "draft"
+                 value "t"
+                 onclick "needToConfirm = false;")
+      (pr "save draft & preview"))
     (protected-submit (if (acomment parent) "reply" "add comment") t)))
 
 (= comment-threshold* -20)
@@ -1381,19 +1421,19 @@ pre:hover {overflow:auto} "))
 ; instead of just "a\nb".   Maybe should just remove returns from
 ; the vals coming in from any form, e.g. in aform.
 
-(def process-comment (user parent text ip whence)
+(def process-comment (user parent text ip whence draft)
   (if (no user)
        (flink [comment-login-warning parent whence text])
       (empty text)
        (flink [addcomment-page parent (get-user _) whence text retry*])
-       (atlet c (create-comment parent text user ip)
+       (atlet c (create-comment parent text user ip draft)
          (submit-item user c)
          whence)))
 
-(def create-comment (parent text user ip)
+(def create-comment (parent text user ip draft)
   (newslog ip user 'comment (parent 'id))
   (let c (inst 'item 'type 'comment 'id (new-item-id)
-                     'text text 'parent parent!id 'by user 'ip ip)
+                     'text text 'parent parent!id 'by user 'ip ip 'draft draft)
     (save-item c)
     (= (items* c!id) c)
     (push c!id (itemkids* parent!id))
@@ -1405,11 +1445,12 @@ pre:hover {overflow:auto} "))
 
 (def display-comment-tree (c user whence (o indent 0) (o initialpar))
   (when (cansee-descendant user c)
-    (display-1comment c user whence indent initialpar)
+    (display-1comment c user whence indent initialpar t)
     (display-subcomments c user whence (+ indent 1))))
 
-(def display-1comment (c user whence indent showpar)
-  (row (tab (display-comment nil c user whence t indent showpar showpar))))
+(def display-1comment (c user whence indent showpar (o hide-drafts))
+  (if (or (no hide-drafts) (no c!draft))
+    (row (tab (display-comment nil c user whence t indent showpar showpar)))))
 
 (def display-subcomments (c user whence (o indent 0))
   (each k (sort (compare > frontpage-rank) (kids c))
@@ -1418,21 +1459,23 @@ pre:hover {overflow:auto} "))
 (def display-comment (n c user whence (o astree) (o indent 0) 
                                       (o showpar) (o showon)
                                       (o show-immediate-parent))
-  (tr (display-item-number n)
-      (when astree (td (hspace (* indent 40))))
-      (tag (td valign 'top) (votelinks-space))
-      (let parent (item (c 'parent))
-        (if (and show-immediate-parent (cansee user parent))
-          (tag (td width '100% style 'padding-right:80px)
-            (tab
-              (if (is (parent 'type) 'comment)
-                (tr (display-comment-body parent user whence astree indent showpar showon))
-                (display-story nil parent user whence t t)))
-            (tab
-              (spacerow 10)
-              (tr (tag (td width 40) "") (display-comment-body c user whence t indent showpar showon))
-              (spacerow 25)))
-          (display-comment-body c user whence astree indent showpar showon)))))
+  (let parent (item (c 'parent))
+    (if (or (no show-immediate-parent)
+            (and (cansee user parent) (cansee user (superparent c))))
+      (tr (display-item-number n)
+          (when astree (td (hspace (* indent 40))))
+          (tag (td valign 'top) (votelinks-space))
+            (if show-immediate-parent
+              (tag (td width '100% style 'padding-right:80px)
+                (tab
+                  (if (is (parent 'type) 'comment)
+                    (tr (display-comment-body parent user whence astree indent showpar showon))
+                    (display-story nil parent user whence t t)))
+                (tab
+                  (spacerow 10)
+                  (tr (tag (td width 40) "") (display-comment-body c user whence t indent showpar showon))
+                  (spacerow 25)))
+              (display-comment-body c user whence astree indent showpar showon))))))
 
 ; Comment caching doesn't make generation of comments significantly
 ; faster, but may speed up everything else by generating less garbage.
@@ -1505,7 +1548,7 @@ pre:hover {overflow:auto} "))
         (if (~cansee user c)               (pr "[deleted]")
             (nor (live c) (author user c)) (spanclass dead (pr (item-text c)))
                                            (pr (item-text c))))
-      (when (and astree (cansee user c) (live c))
+      (when (and astree (cansee user c) (live c) (no c!draft))
         (para)
         (tag (font size 1)
           (if (and (~mem 'neutered c!keys)
@@ -1532,7 +1575,7 @@ pre:hover {overflow:auto} "))
 (newsop reply (id whence)
   (with (i      (safe-item id)
          whence (or (only.urldecode whence) "news"))
-    (if (only.comments-active i)
+    (if (and (only.comments-active i) (no i!draft))
         (if user
             (addcomment-page i user whence)
             (login-page 'login "You have to be logged in to comment."
@@ -1558,7 +1601,7 @@ pre:hover {overflow:auto} "))
               label (if (is user subject) "my comments" title)
               here  (threads-url subject))
         (longpage-csb user (msec) nil label title here t
-          (awhen (keep [and (cansee user _) (~subcomment _)]
+          (awhen (keep [and (cansee user _) (~subcomment _) (no _!draft)]
                        (comments subject maxend*))
             (display-threads user it label title here))))
       (prn "No such user.")))
@@ -1607,7 +1650,7 @@ pre:hover {overflow:auto} "))
               label (if (is user subject) "my posts" title)
               here  (submitted-url subject))
         (longpage-csb user (msec) nil label label here t
-          (aif (keep [and (astory _) (cansee user _)]
+          (aif (keep [and (astory _) (cansee user _) (no _!draft)]
                      (submissions subject))
                (display-items user it label label here 0 perpage* t t))))
       (pr "No such user.")))
@@ -1690,7 +1733,7 @@ pre:hover {overflow:auto} "))
 (newsop newcomments () (newcomments-page user))
 
 (newscache newcomments-page user 60
-  (listpage user (msec) (visible user (firstn maxend* comments*))
+  (listpage user (msec) (visible user (firstn maxend* comments*) t)
             "comments" "New Comments" "newcomments" nil nil t t))
 
 
@@ -1703,14 +1746,19 @@ pre:hover {overflow:auto} "))
 
 (= formatdoc* 
 "Blank lines separate paragraphs.
+<p> A paragraph beginning with a hash mark (#) is a subheading.
+<p> A paragraph consisting of a single line with three or more
+asterisks (***) will be rendered as a separator.
+<p> The preview for a post consists of everything that appears
+before the first subheading or separator.  If there are no
+subheadings or separators, then the preview the first paragraph
+(for long posts) or the entire post (for short posts).
 <p> Text surrounded by dollar signs is rendered as LaTeX.
 <p> Text after a blank line that is indented by two or more spaces is 
 reproduced verbatim.  (This is intended for code.)
-<p> Text surrounded by asterisks is italicized, if the character after the 
-first asterisk isn't whitespace.
-<p> A paragraph beginning with a hash mark (#) is a subheading (posts only,
-not comments).
-<p> Urls become links, except in the text field of a submission.<br><br>")
+<p> Additional formatting options can be found at the
+<a href=\"http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html\">
+Pandoc markdown documentation</a> page.<br><br>")
 
 
 ; Reset PW
