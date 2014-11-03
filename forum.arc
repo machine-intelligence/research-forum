@@ -1414,7 +1414,7 @@ pre:hover {overflow:auto} "))
                  name "draft"
                  value "t"
                  onclick "needToConfirm = false;")
-      (pr "save draft & preview"))
+      (pr "save comment draft & preview"))
     (protected-submit (if (acomment parent) "reply" "add comment") t)))
 
 (= comment-threshold* -20)
