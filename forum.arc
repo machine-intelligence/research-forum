@@ -220,8 +220,10 @@
   (++ i!version)
   (= i!time (seconds))
   (w/outfile f (item-file i!id i!version "md") (disp i!text f))
-  (system (+ "pandoc --mathjax -S " (item-file i!id i!version "md")
-             " -o "                 (item-file i!id i!version "html")))
+  (system (+ "pandoc --mathjax -S -f markdown-raw_html "
+             (item-file i!id i!version "md")
+             " -o "
+             (item-file i!id i!version "html")))
   (= (itemtext* i!id) (filechars (item-file i!id i!version "html")))
   (save-table i (item-file i!id i!version)))
 
@@ -1304,13 +1306,13 @@ pre:hover {overflow:auto} "))
    (fn (user s)
      (with (a (admin user)  e (editor user)  x (canedit user s))
        `((string2 title     ,s!title        t ,x)
-         (text    text      ,s!text         t ,x)
+         (pandoc  text      ,s!text         t ,x)
          ,@(standard-item-fields s a e x)))))
 
 (= (fieldfn* 'comment)
    (fn (user c)
      (with (a (admin user)  e (editor user)  x (canedit user c))
-       `((text    text      ,c!text         t ,x)
+       `((pandoc  text      ,c!text         t ,x)
          ,@(standard-item-fields c a e x)))))
 
 (def standard-item-fields (i a e x)

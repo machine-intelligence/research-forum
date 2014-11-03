@@ -293,7 +293,7 @@
        (gentag input type 'text name id 
                      value (tostring (map [do (write _) (sp)] val))
                      size formwid*)
-      (in typ 'syms 'text 'doc 'mdtext 'mdtextc 'mdtext2 'lines 'bigtoks)
+      (in typ 'syms 'text 'doc 'mdtext 'mdtextc 'mdtext2 'pandoc 'lines 'bigtoks)
        (let text (if (in typ 'syms 'bigtoks)
                       (tostring (apply prs val))
                      (is typ 'lines)
@@ -346,7 +346,7 @@
       (text-type typ)                       (pr (or val ""))
                                             (pr val)))
 
-(def text-type (typ) (in typ 'string 'string1 'string2 'url 'text 'mdtext 'mdtextc 'mdtext2))
+(def text-type (typ) (in typ 'string 'string1 'string2 'url 'text 'mdtext 'mdtextc 'mdtext2 'pandoc))
 
 ; Newlines in forms come back as /r/n.  Only want the /ns. Currently
 ; remove the /rs in individual cases below.  Could do it in aform or
@@ -372,6 +372,7 @@
     mdtext  (md-from-form str)
     mdtextc (md-from-form str nil t t)                ; for md with no headers (i.e. comments)
     mdtext2 (md-from-form str t)                      ; for md with no links
+    pandoc  str
     sym     (or (sym:car:tokens str) fail)
     syms    (map sym (tokens str))
     sexpr   (errsafe (readall str))
