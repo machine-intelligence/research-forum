@@ -513,6 +513,7 @@ a:visited { color:#555555; text-decoration:none; }
 .comhead a:hover { text-decoration:underline; }
 
 .continue a:link, .subtext a:visited { color:#828282; text-decoration:underline; }
+.doclink a:link { font-weight:bold; text-decoration:underline; }
 
 .default p { margin-top: 8px; margin-bottom: 0px; }
 
@@ -1757,9 +1758,9 @@ subheadings or separators, then the preview the first paragraph
 <p> Text surrounded by dollar signs is rendered as LaTeX.
 <p> Text after a blank line that is indented by four or more spaces is 
 reproduced verbatim.  (This is intended for code.)
-<p> Additional formatting options can be found at the
+<p> See the <span class=\"doclink\">
 <a href=\"http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html\">
-Pandoc markdown documentation</a> page.<br><br>")
+Pandoc markdown documentation</a></span> for additional formatting options.<br><br>")
 
 
 ; Reset PW
