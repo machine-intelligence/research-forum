@@ -850,7 +850,7 @@ pre:hover {overflow:auto} "))
 
 (def display-items (user items label title whence 
                     (o start 0) (o end perpage*) (o number) (o preview-only) (o show-immediate-parent))
-  (zerotable
+  (tag (table width '100%)
     (let n start
       (each i (cut items start end)
         (trtd (tag (table width '100%) (display-item (and number (++ n)) i user whence t preview-only show-immediate-parent)
