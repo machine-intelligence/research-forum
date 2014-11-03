@@ -776,7 +776,7 @@ pre:hover {overflow:auto} "))
 
 ;(newsop index.html () (newspage user))
 
-(def csb-items (user n) (retrieve n [cansee user _] comments*))
+(def csb-items (user n) (retrieve n [and (cansee user _) (no _!draft)] comments*))
 
 (def newspage (user) (newestpage user))
 
