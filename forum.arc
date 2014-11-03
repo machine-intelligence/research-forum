@@ -40,6 +40,7 @@
 (deftem item
   id         nil
   version    0     ; incremented before first save
+  draft      nil
   type       nil
   by         nil
   ip         nil
@@ -313,6 +314,7 @@
 
 (def cansee (user i)
   (if i!deleted   (admin user)
+      i!draft     (author user i)
       (delayed i) (author user i)
       t))
 
@@ -474,6 +476,7 @@ table td.story    { line-height:135%; }
 .admin td   { font-family:Verdana; font-size:10.5pt; color:#000000; }
 .subtext td { font-family:Verdana; font-size:  10pt; color:#828282; }
 
+button   { font-family:Verdana; font-size:11pt; color:#000000; }
 input    { font-family:Courier; font-size:13pt; color:#000000; }
 input[type=\"submit\"] { font-family:Verdana; }
 textarea { font-family:Courier; font-size:13pt; color:#000000; }
@@ -1141,7 +1144,8 @@ pre:hover {overflow:auto} "))
                            (striptags (arg req "t"))
                            showtext
                            (and showtext (arg req "x"))
-                           req!ip)
+                           req!ip
+                           (no (is (arg req "draft") nil)))
       (tab
         (row "title"  (input "t" title 50))
         (tr
@@ -1152,7 +1156,13 @@ pre:hover {overflow:auto} "))
             (tag (font size -2)
               (tag (a href formatdoc-url* target '_blank)
                 (tag (font color (gray 175)) (pr "formatting help"))))))
-        (row "" (protected-submit))))))
+        (row "" (do
+                  (tag (button type 'submit
+                               name "draft"
+                               value "t"
+                               onclick "needToConfirm = false;")
+                    (pr "save draft & preview"))
+                  (protected-submit "publish post")))))))
 
 ; For use by outside code like bookmarklet.
 ; http://news.domain.com/submitlink?u=http://foo.com&t=Foo
@@ -1168,14 +1178,14 @@ pre:hover {overflow:auto} "))
    toolong*     "Please make title < @title-limit* characters."
    blanktext*   "Please fill in the title and the body.")
 
-(def process-story (user title showtext text ip)
+(def process-story (user title showtext text ip draft)
   (if (no user)
        (flink [submit-login-warning title showtext text])
       (or (blank title) (blank text))
        (flink [submit-page user title showtext text blanktext*])
       (len> title title-limit*)
        (flink [submit-page user title showtext text toolong*])
-      (let s (create-story title text user ip)
+      (let s (create-story title text user ip draft)
         (submit-item user s)
         "newest")))
 
@@ -1184,10 +1194,10 @@ pre:hover {overflow:auto} "))
   (save-prof user)
   (astory&adjust-rank i))
 
-(def create-story (title text user ip)
+(def create-story (title text user ip draft)
   (newslog ip user 'create (list title))
   (let s (inst 'item 'type 'story 'id (new-item-id) 
-                     'title title 'text text 'by user 'ip ip)
+                     'title title 'text text 'by user 'ip ip 'draft draft)
     (save-item s)
     (= (items* s!id) s)
     (push s stories*)
@@ -1370,7 +1380,8 @@ pre:hover {overflow:auto} "))
   (tarform 1800
            (fn (req)
              (when-umatch/r user req
-               (process-comment user parent (arg req "text") req!ip whence)))
+               (process-comment user parent (arg req "text") req!ip whence
+                                (no (is (arg req "draft") nil)))))
     (textarea "text" 6 60  
       (aif text (prn it)))
     (pr " ")
@@ -1378,6 +1389,11 @@ pre:hover {overflow:auto} "))
       (tag (a href formatdoc-url* target '_blank)
         (tag (font color (gray 175)) (pr "formatting help"))))
     (br2)
+    (tag (button type 'submit
+                 name "draft"
+                 value "t"
+                 onclick "needToConfirm = false;")
+      (pr "save draft & preview"))
     (protected-submit (if (acomment parent) "reply" "add comment") t)))
 
 (= comment-threshold* -20)
@@ -1386,19 +1402,19 @@ pre:hover {overflow:auto} "))
 ; instead of just "a\nb".   Maybe should just remove returns from
 ; the vals coming in from any form, e.g. in aform.
 
-(def process-comment (user parent text ip whence)
+(def process-comment (user parent text ip whence draft)
   (if (no user)
        (flink [comment-login-warning parent whence text])
       (empty text)
        (flink [addcomment-page parent (get-user _) whence text retry*])
-       (atlet c (create-comment parent text user ip)
+       (atlet c (create-comment parent text user ip draft)
          (submit-item user c)
          whence)))
 
-(def create-comment (parent text user ip)
+(def create-comment (parent text user ip draft)
   (newslog ip user 'comment (parent 'id))
   (let c (inst 'item 'type 'comment 'id (new-item-id)
-                     'text text 'parent parent!id 'by user 'ip ip)
+                     'text text 'parent parent!id 'by user 'ip ip 'draft draft)
     (save-item c)
     (= (items* c!id) c)
     (push c!id (itemkids* parent!id))

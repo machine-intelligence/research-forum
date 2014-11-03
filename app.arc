@@ -417,7 +417,7 @@
                    return \"You have unsaved changes that will be lost if you leave this page.\";
                }
              --></script>")
-        (tag (input type 'submit value val onclick "needToConfirm = false;")))))
+        (tag (button type 'submit value val onclick "needToConfirm = false;") (pr val)))))
 
 (def vars-form (user fields f done (o button "update") (o lasts) (o protect))
   (taform lasts
