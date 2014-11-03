@@ -1,3 +1,4 @@
 *.swp
 *~
 arc/
+.DS_Store
