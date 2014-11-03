@@ -1203,7 +1203,7 @@ pre:hover {overflow:auto} "))
        (flink [submit-page user title showtext text toolong*])
       (let s (create-story title text user ip draft)
         (submit-item user s)
-        "newest")))
+        (if draft "drafts" "newest"))))
 
 (def submit-item (user i)
   (push i!id (uvar user submitted))
@@ -1399,8 +1399,9 @@ pre:hover {overflow:auto} "))
   (tarform 1800
            (fn (req)
              (when-umatch/r user req
-               (process-comment user parent (arg req "text") req!ip whence
-                                (no (is (arg req "draft") nil)))))
+               (let draft (no (is (arg req "draft") nil))
+                 (process-comment user parent (arg req "text") req!ip
+                                  (if draft "drafts" whence) draft))))
     (textarea "text" 6 60  
       (aif text (prn it)))
     (pr " ")
