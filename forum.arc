@@ -1326,8 +1326,6 @@ pre:hover {overflow:auto} "))
 (def edit-page (user i)
   (let here (edit-url i)
     (shortpage user nil nil "Edit" here
-      (tab (display-item nil i user here))
-      (br2)
       (vars-form user
                  ((fieldfn* i!type) user i)
                  (fn (name val)
@@ -1339,6 +1337,9 @@ pre:hover {overflow:auto} "))
                         (wipe (comment-cache* i!id))
                         (edit-page user i))
                  "update" nil t)
+      (br2)
+      (tab (tr (tag (td width '100% style 'padding-right:80px)
+                 (tab (display-item nil i user here)))))
       (hook 'edit user i))))
 
  

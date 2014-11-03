@@ -269,6 +269,8 @@
 
 (= formwid* 60 bigformwid* 80 numwid* 16 formatdoc-url* nil)
 
+(= maxrows* 25)
+
 ; Eventually figure out a way to separate type name from format of 
 ; input field, instead of having e.g. toks and bigtoks
 
@@ -302,7 +304,7 @@
                       ""
                      val)
          (tag (textarea cols (if (is typ 'doc) bigformwid* formwid*) 
-                        rows (needrows text formwid* 4)
+                        rows (min maxrows* (needrows text formwid* 4))
                         wrap 'virtual 
                         style (if (is typ 'doc) "font-size:8.5pt")
                         name id
