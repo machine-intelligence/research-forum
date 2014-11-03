@@ -1418,21 +1418,23 @@ pre:hover {overflow:auto} "))
 (def display-comment (n c user whence (o astree) (o indent 0) 
                                       (o showpar) (o showon)
                                       (o show-immediate-parent))
-  (tr (display-item-number n)
-      (when astree (td (hspace (* indent 40))))
-      (tag (td valign 'top) (votelinks-space))
-      (let parent (item (c 'parent))
-        (if (and show-immediate-parent (cansee user parent))
-          (tag (td width '100% style 'padding-right:80px)
-            (tab
-              (if (is (parent 'type) 'comment)
-                (tr (display-comment-body parent user whence astree indent showpar showon))
-                (display-story nil parent user whence t t)))
-            (tab
-              (spacerow 10)
-              (tr (tag (td width 40) "") (display-comment-body c user whence t indent showpar showon))
-              (spacerow 25)))
-          (display-comment-body c user whence astree indent showpar showon)))))
+  (let parent (item (c 'parent))
+    (if (or (no show-immediate-parent)
+            (and (cansee user parent) (cansee user (superparent c))))
+      (tr (display-item-number n)
+          (when astree (td (hspace (* indent 40))))
+          (tag (td valign 'top) (votelinks-space))
+            (if show-immediate-parent
+              (tag (td width '100% style 'padding-right:80px)
+                (tab
+                  (if (is (parent 'type) 'comment)
+                    (tr (display-comment-body parent user whence astree indent showpar showon))
+                    (display-story nil parent user whence t t)))
+                (tab
+                  (spacerow 10)
+                  (tr (tag (td width 40) "") (display-comment-body c user whence t indent showpar showon))
+                  (spacerow 25)))
+              (display-comment-body c user whence astree indent showpar showon))))))
 
 ; Comment caching doesn't make generation of comments significantly
 ; faster, but may speed up everything else by generating less garbage.
