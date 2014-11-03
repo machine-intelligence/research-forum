@@ -121,6 +121,7 @@
   (save-table cookie->user* cookfile*))
 
 (def create-acct (user pw)
+  (if (no (bound 'hpasswords*)) (load-userinfo))
   (set (dc-usernames* (downcase user)))
   (set-pw user pw))
 
