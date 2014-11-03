@@ -1167,7 +1167,7 @@ pre:hover {overflow:auto} "))
         (tr
           (td "text")
           (td 
-            (textarea "x" 4 50 (only.pr text))
+            (textarea "x" 16 50 (only.pr text))
             (pr " ")
             (tag (font size -2)
               (tag (a href formatdoc-url* target '_blank)
