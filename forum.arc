@@ -326,8 +326,8 @@
              (do (set (mature i!id))
                  nil)))))
 
-(def visible (user is)
-  (keep [cansee user _] is))
+(def visible (user is (o hide-drafts))
+  (keep [and (cansee user _) (or (no hide-drafts) (no _!draft))] is))
 
 (def cansee-descendant (user c)
   (or (cansee user c)
@@ -796,7 +796,7 @@ pre:hover {overflow:auto} "))
             nil t))
 
 (def newstories (user n)
-  (retrieve n [cansee user _] stories*))
+  (retrieve n [and (cansee user _) (no _!draft)] stories*))
 
 
 (newsop best () (bestpage user))
@@ -1432,11 +1432,12 @@ pre:hover {overflow:auto} "))
 
 (def display-comment-tree (c user whence (o indent 0) (o initialpar))
   (when (cansee-descendant user c)
-    (display-1comment c user whence indent initialpar)
+    (display-1comment c user whence indent initialpar t)
     (display-subcomments c user whence (+ indent 1))))
 
-(def display-1comment (c user whence indent showpar)
-  (row (tab (display-comment nil c user whence t indent showpar showpar))))
+(def display-1comment (c user whence indent showpar (o hide-drafts))
+  (if (or (no hide-drafts) (no c!draft))
+    (row (tab (display-comment nil c user whence t indent showpar showpar)))))
 
 (def display-subcomments (c user whence (o indent 0))
   (each k (sort (compare > frontpage-rank) (kids c))
@@ -1587,7 +1588,7 @@ pre:hover {overflow:auto} "))
               label (if (is user subject) "my comments" title)
               here  (threads-url subject))
         (longpage-csb user (msec) nil label title here t
-          (awhen (keep [and (cansee user _) (~subcomment _)]
+          (awhen (keep [and (cansee user _) (~subcomment _) (no _!draft)]
                        (comments subject maxend*))
             (display-threads user it label title here))))
       (prn "No such user.")))
@@ -1636,7 +1637,7 @@ pre:hover {overflow:auto} "))
               label (if (is user subject) "my posts" title)
               here  (submitted-url subject))
         (longpage-csb user (msec) nil label label here t
-          (aif (keep [and (astory _) (cansee user _)]
+          (aif (keep [and (astory _) (cansee user _) (no _!draft)]
                      (submissions subject))
                (display-items user it label label here 0 perpage* t t))))
       (pr "No such user.")))
@@ -1719,7 +1720,7 @@ pre:hover {overflow:auto} "))
 (newsop newcomments () (newcomments-page user))
 
 (newscache newcomments-page user 60
-  (listpage user (msec) (visible user (firstn maxend* comments*))
+  (listpage user (msec) (visible user (firstn maxend* comments*) t)
             "comments" "New Comments" "newcomments" nil nil t t))
 
 
