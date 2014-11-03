@@ -493,7 +493,7 @@ a:visited { color:#555555; text-decoration:none; }
 
 .userlink, .you { font-weight:bold; }
 
-.comment a:link, .comment a:visited { text-decoration:underline; }
+.comment a:link, .comment a:visited, .story a:link, .story a:visited { text-decoration:underline; }
 .dead a:link, .dead a:visited { color:#dddddd; }
 .pagetop a:visited { color:#000000;}
 .topsel a:link, .topsel a:visited { color:#ffffff; }
