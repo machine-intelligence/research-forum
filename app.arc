@@ -344,7 +344,7 @@
       (text-type typ)                       (pr (or val ""))
                                             (pr val)))
 
-(def text-type (typ) (in typ 'string 'string1 'url 'text 'mdtext 'mdtextc 'mdtext2))
+(def text-type (typ) (in typ 'string 'string1 'string2 'url 'text 'mdtext 'mdtextc 'mdtext2))
 
 ; Newlines in forms come back as /r/n.  Only want the /ns. Currently
 ; remove the /rs in individual cases below.  Could do it in aform or
@@ -358,6 +358,7 @@
   (case (carif typ)
     string  (striptags str)
     string1 (if (blank str) fail (striptags str))
+    string2 (if (blank str) fail (striptags str))
     url     (if (blank str) "" (valid-url str) (clean-url str) fail)
     num     (let n (saferead str) (if (number n) n fail))
     int     (let n (saferead str)
