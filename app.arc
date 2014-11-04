@@ -427,21 +427,40 @@
               (fn (req))
               (fn (req)
                 (when-umatch user req
-                  (each (k v) req!args
-                    (let name (sym k)
-                      (awhen (find [is (cadr _) name] fields)
-                        ; added sho to fix bug
-                        (let (typ id val sho mod) it
-                          (when (and mod v)
-                            (let newval (readvar typ v fail*)
-                              (unless (is newval fail*)
-                                (f name newval))))))))
-                  (done))))
-     (tab
-       (showvars fields))
-     (unless (all [no (_ 4)] fields)  ; no modifiable fields
-       (br)
-       (protected-submit button protect))))
+                  (postauth-vars-form req fields f done))))
+    (render-vars-form fields button protect)))
+
+(def render-vars-form (fields button protect)
+  (tab
+    (showvars fields))
+  (unless (all [no (_ 4)] fields)  ; no modifiable fields
+    (br)
+    (protected-submit button protect)))
+
+(def postauth-vars-form (req fields f done)
+  (each (k v) req!args
+    (let name (sym k)
+      (awhen (find [is (cadr _) name] fields)
+        ; added sho to fix bug
+        (let (typ id val sho mod) it
+          (when (and mod v)
+            (let newval (readvar typ v fail*)
+              (unless (is newval fail*)
+                (f name newval))))))))
+  (done))
+  
+(def url-vars-form (user fields url (o extra-info) (o button "update") 
+                         (o protect))
+  (tag (form method 'post action url)
+    (each (k v) (cons `(auth ,(user->cookie* user)) extra-info)
+      (tag (input type 'hidden name k value v)))
+    (render-vars-form fields button protect)))
+
+(def handle-vars-form (req fields f done (o noauth mismatch-message))
+  (let user (get-user req)
+    (if (and user (is (sym:arg req "auth") (user->cookie* user)))
+        (postauth-vars-form req fields f done)
+        (noauth))))
 
 (def showvars (fields (o liveurls))
   (each (typ id val view mod question) fields
