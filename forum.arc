@@ -358,7 +358,6 @@
        (prn "<link rel=\"shortcut icon\" href=\"" favicon-url* "\">")
        (prn "<script src=\"https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML\" type=\"text/javascript\"></script>")
        (tag title (pr ,title)))
-     ,(force-https) ; Remove this if you're testing locally.
      (tag body 
        (center
          (tag (table border 0 cellpadding 0 cellspacing 0 width "85%"
