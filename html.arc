@@ -252,8 +252,13 @@
       (tag (option selected (is i sel))
         (pr i)))))
 
+(def force-https ()
+  '(tag (script) (pr "if (window.location.protocol != \"https:\")
+                          window.location.href = \"https:\" + window.location.href.substring(window.location.protocol.length);")))
+
 (mac whitepage body
   `(tag html 
+     ,(force-https) ; Remove this if you're testing locally.
      (tag (body bgcolor white alink linkblue) ,@body)))
 
 (def errpage args (whitepage (apply prn args)))
