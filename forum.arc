@@ -1056,7 +1056,7 @@ pre:hover {overflow:auto} "))
             (pr "discuss"))))))
 
 (def visible-family (user i)
-  (+ (if (cansee user i) 1 0)
+  (+ (if (and (cansee user i) (no i!draft)) 1 0)
      (sum [visible-family user (item _)] (itemkids* i!id))))
 
 ;(= user-changetime* 120 editor-changetime* 1440)
