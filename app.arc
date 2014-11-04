@@ -457,7 +457,6 @@
 (def url-vars-form (user fields url (o extra-info) (o button "update") 
                          (o protect))
   (authform url user
-    (hidden 'auth (user->cookie* user))
     (each (k v) extra-info (hidden k v))
     (render-vars-form fields button protect)))
 
