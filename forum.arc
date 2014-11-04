@@ -1038,10 +1038,12 @@ pre:hover {overflow:auto} "))
 (def byline (i user)
   (pr " by @(tostring (userlink user i!by)) @(text-age:item-age i) "))
 
+(def strip-underscore (text) (subst " " "_" text))
+
 (def user-url (user) (+ "user?id=" user))
 
 (def userlink (user subject)
-  (clink userlink subject (user-url subject)))
+  (clink userlink (strip-underscore subject) (user-url subject)))
 
 (def userlink-or-you (user subject)
   (if (is user subject) (spanclass you (pr "You")) (userlink user subject)))
