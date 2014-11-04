@@ -1321,6 +1321,15 @@ pre:hover {overflow:auto} "))
 
 (def edit-url (i) (+ "edit?id=" i!id))
 
+(def authentication-failure-msg (req)
+  (pr "<b>AUTHENTICATION FAILURE!</b> Your work has not been saved.
+       (You probably logged out in a different window while you were editing.)
+       <p>Please copy & paste your work somewhere else, then
+          <a href='/'>return to the homepage</a> and try again."
+      "<p>Title: " (esc-tags (arg req "title"))
+      "<p>Text:"
+      "<pre>" (esc-tags (arg req "text")) "</pre>"))
+
 (defop edit req
   (with (user (get-user req) i (only.safe-item (arg req "id")))
     (if (and i 
@@ -1338,16 +1347,11 @@ pre:hover {overflow:auto} "))
                       (astory&adjust-rank i)
                       (wipe (comment-cache* i!id))
                       (edit-page user i))
-               (fn () (pr "AUTHENTICATION FAILURE! Your work has not been saved.
-                           (You probably logged out in a different window
-                           while you were editing.)
-                           Please copy & paste your work somewhere else
-                           and try again."
-                          "<p>Title: " (esc-tags (arg req "title"))
-                          "<p>Text:"
-                          "<pre>" (esc-tags (arg req "text")) "</pre>")))
+               (fn () (authentication-failure-msg req)))
              (edit-page user i))
-        (pr "No such item."))))
+        (if (arg req "auth")
+          (authentication-failure-msg req)
+          (pr "No such item.")))))
 
 (def editable-type (i) (fieldfn* i!type))
 
