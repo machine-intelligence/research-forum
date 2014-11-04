@@ -312,6 +312,9 @@
             (pr " ")
             (but text name)))))
 
+(def hidden (name value)
+  (tag (input type 'hidden name name value value)))
+
 (mac spanrow (n . body)
   `(tr (tag (td colspan ,n) ,@body)))
 

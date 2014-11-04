@@ -448,19 +448,27 @@
               (unless (is newval fail*)
                 (f name newval))))))))
   (done))
-  
+
+(mac authform (action user . body)
+  `(form ,action
+     (hidden 'auth (user->cookie* ,user))
+     ,@body))
+
 (def url-vars-form (user fields url (o extra-info) (o button "update") 
                          (o protect))
-  (tag (form method 'post action url)
-    (each (k v) (cons `(auth ,(user->cookie* user)) extra-info)
-      (tag (input type 'hidden name k value v)))
+  (authform url user
+    (hidden 'auth (user->cookie* user))
+    (each (k v) extra-info (hidden k v))
     (render-vars-form fields button protect)))
 
-(def handle-vars-form (req fields f done (o noauth mismatch-message))
+(def check-auth (req)
   (let user (get-user req)
-    (if (and user (is (sym:arg req "auth") (user->cookie* user)))
-        (postauth-vars-form req fields f done)
-        (noauth))))
+    (and user (is (sym:arg req "auth") (user->cookie* user)))))
+
+(def handle-vars-form (req fields f done (o noauth mismatch-message))
+  (if (check-auth req)
+      (postauth-vars-form req fields f done)
+      (noauth)))
 
 (def showvars (fields (o liveurls))
   (each (typ id val view mod question) fields

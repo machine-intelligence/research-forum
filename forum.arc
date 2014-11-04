@@ -1412,35 +1412,6 @@ pre:hover {overflow:auto} "))
       (spacerow 10)
       (row "" (comment-form parent user whence text)))))
 
-; Comment forms last for 30 min (- cache time)
-
-(def comment-form (parent user whence (o text))
-  (tarform 1800
-           (fn (req)
-             (when-umatch/r user req
-               (let draft (no (is (arg req "draft") nil))
-                 (process-comment user parent (arg req "text") req!ip
-                                  (if draft "drafts" whence) draft))))
-    (textarea "text" 6 60  
-      (aif text (prn it)))
-    (pr " ")
-    (tag (font size -2)
-      (tag (a href formatdoc-url* target '_blank)
-        (tag (font color (gray 175)) (pr "formatting help"))))
-    (br2)
-    (tag (button type 'submit
-                 name "draft"
-                 value "t"
-                 onclick "needToConfirm = false;")
-      (pr "save comment draft & preview"))
-    (protected-submit (if (acomment parent) "reply" "add comment") t)))
-
-(= comment-threshold* -20)
-
-; Have to remove #\returns because a form gives you back "a\r\nb"
-; instead of just "a\nb".   Maybe should just remove returns from
-; the vals coming in from any form, e.g. in aform.
-
 (def process-comment (user parent text ip whence draft)
   (if (no user)
        (flink [comment-login-warning parent whence text])
@@ -1449,6 +1420,42 @@ pre:hover {overflow:auto} "))
        (atlet c (create-comment parent text user ip draft)
          (submit-item user c)
          whence)))
+
+(defop submitcomment req
+  (if (~check-auth req)
+       (authentication-failure-msg req)
+      (empty (arg req "text"))
+       (addcomment-page (safe-item:arg req "parent") (get-user req)
+                        (arg req "whence") (arg req "text") retry*)
+       (atlet c (create-comment (safe-item:arg req "parent")
+                                (arg req "text") (get-user req) req!ip
+                                (arg req "draft"))
+         (submit-item (get-user req) c)
+         (if (arg req "draft")
+             (edit-page (get-user req) c)
+             (pr "<meta http-equiv='refresh' content='0; url="
+                 (esc-tags (arg req "whence")) "' />")))))
+
+(def comment-form (parent user whence (o text))
+  (when user
+    (authform "/submitcomment" user
+      (hidden 'parent parent!id)
+      (hidden 'whence whence)
+      (textarea "text" 6 60  
+        (aif text (prn it)))
+      (pr " ")
+      (tag (font size -2)
+        (tag (a href formatdoc-url* target '_blank)
+          (tag (font color (gray 175)) (pr "formatting help"))))
+      (br2)
+      (tag (button type 'submit
+                   name "draft"
+                   value "t"
+                   onclick "needToConfirm = false;")
+        (pr "save comment draft & preview"))
+      (protected-submit (if (acomment parent) "reply" "add comment") t))))
+
+(= comment-threshold* -20)
 
 (def create-comment (parent text user ip draft)
   (newslog ip user 'comment (parent 'id))
