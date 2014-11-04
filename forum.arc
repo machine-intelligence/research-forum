@@ -1146,24 +1146,23 @@ pre:hover {overflow:auto} "))
 
 (newsop submit ()
   (if user 
-      (submit-page user "" t) 
-      (submit-login-warning "" t)))
+      (submit-page user "") 
+      (submit-login-warning "")))
 
-(def submit-login-warning ((o title) (o showtext) (o text))
+(def submit-login-warning ((o title) (o text))
   (login-page 'login "You have to be logged in to submit."
               (fn (user ip) 
                 (ensure-news-user user)
                 (newslog ip user 'submit-login)
-                (submit-page user title showtext text))))
+                (submit-page user title text))))
 
-(def submit-page (user (o title) (o showtext) (o text "") (o msg))
+(def submit-page (user (o title) (o text "") (o msg))
   (shortpage user nil nil "Submit" "submit"
     (pagemessage msg)
     (urform user req
             (process-story (get-user req)
                            (striptags (arg req "t"))
-                           showtext
-                           (and showtext (arg req "x"))
+                           (arg req "x")
                            req!ip
                            (no (is (arg req "draft") nil)))
       (tab
@@ -1190,21 +1189,21 @@ pre:hover {overflow:auto} "))
 
 (newsop submitlink (u t)
   (if user 
-      (submit-page user u t)
-      (submit-login-warning u t)))
+      (submit-page user u)
+      (submit-login-warning u)))
 
 (= title-limit* 160
    retry*       "Please try again."
    toolong*     "Please make title < @title-limit* characters."
    blanktext*   "Please fill in the title and the body.")
 
-(def process-story (user title showtext text ip draft)
+(def process-story (user title text ip draft)
   (if (no user)
-       (flink [submit-login-warning title showtext text])
+       (flink [submit-login-warning title text])
       (or (blank title) (blank text))
-       (flink [submit-page user title showtext text blanktext*])
+       (flink [submit-page user title text blanktext*])
       (len> title title-limit*)
-       (flink [submit-page user title showtext text toolong*])
+       (flink [submit-page user title text toolong*])
       (let s (create-story title text user ip draft)
         (submit-item user s)
         (if draft (+ "edit?id=" s!id) "newest"))))
