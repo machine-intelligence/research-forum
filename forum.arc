@@ -1156,21 +1156,13 @@ pre:hover {overflow:auto} "))
                 (newslog ip user 'submit-login)
                 (submit-page user title text))))
 
-(def process-story (user title text ip draft)
-  (if (no user)
-       (flink [submit-login-warning title text])
-      (or (blank title) (blank text))
-       (flink [submit-page user title text blanktext*])
-      (len> title title-limit*)
-       (flink [submit-page user title text toolong*])
-      (let s (create-story title text user ip draft)
-        (submit-item user s)
-        (if draft (+ "edit?id=" s!id) "newest"))))
-
 (defop dosubmit req
-  (with (title (or (arg req "title") "") text (or (arg req "title") "")
-         user (get-user req) draft (isnt (arg req "draft") nil))
-    (if (~check-auth req)
+  (with (title (striptags (or (arg req "title") ""))
+         text (or (arg req "text") "") user (get-user req)
+         draft (isnt (arg req "draft") nil))
+    (if (~arg req "auth")
+         (pr "Nothing here.")
+        (~check-auth req)
          (authentication-failure-msg req)
         (or (blank title) (blank text))
          (submit-page user title text blanktext*)
@@ -1179,23 +1171,18 @@ pre:hover {overflow:auto} "))
       (let s (create-story title text user req!ip draft)
         (submit-item user s)
         (if draft (edit-page user s)
-                  (pr "<meta http-equiv='refresh' content='0; url=/newest"))))))
+                  (pr "<meta http-equiv='refresh' content='0; url=/newest'>"))))))
 
 (def submit-page (user (o title) (o text "") (o msg))
   (shortpage user nil nil "Submit" "submit"
     (pagemessage msg)
-    (urform user req
-            (process-story (get-user req)
-                           (striptags (arg req "t"))
-                           (arg req "x")
-                           req!ip
-                           (no (is (arg req "draft") nil)))
+    (authform "/dosubmit" user
       (tab
-        (row "title"  (input "t" title 50))
+        (row "title"  (input "title" title 50))
         (tr
           (td "text")
           (td 
-            (textarea "x" 16 50 (only.pr text))
+            (textarea "text" 16 50 (only.pr text))
             (pr " ")
             (tag (font size -2)
               (tag (a href formatdoc-url* target '_blank)
@@ -1221,17 +1208,6 @@ pre:hover {overflow:auto} "))
    retry*       "Please try again."
    toolong*     "Please make title < @title-limit* characters."
    blanktext*   "Please fill in the title and the body.")
-
-(def process-story (user title text ip draft)
-  (if (no user)
-       (flink [submit-login-warning title text])
-      (or (blank title) (blank text))
-       (flink [submit-page user title text blanktext*])
-      (len> title title-limit*)
-       (flink [submit-page user title text toolong*])
-      (let s (create-story title text user ip draft)
-        (submit-item user s)
-        (if draft (+ "edit?id=" s!id) "newest"))))
 
 (def submit-item (user i)
   (push i!id (uvar user submitted))
