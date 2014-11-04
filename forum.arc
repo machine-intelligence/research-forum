@@ -1056,7 +1056,7 @@ pre:hover {overflow:auto} "))
             (pr "discuss"))))))
 
 (def visible-family (user i)
-  (+ (if (cansee user i) 1 0)
+  (+ (if (and (cansee user i) (no i!draft)) 1 0)
      (sum [visible-family user (item _)] (itemkids* i!id))))
 
 ;(= user-changetime* 120 editor-changetime* 1440)
@@ -1326,7 +1326,7 @@ pre:hover {overflow:auto} "))
        (You probably logged out in a different window while you were editing.)
        <p>Please copy & paste your work somewhere else, then
           <a href='/'>return to the homepage</a> and try again."
-      "<p>Title: " (esc-tags (arg req "title"))
+      (if (is (arg req "title") nil) "" (+ "<p>Title: " (esc-tags (arg req "title"))))
       "<p>Text:"
       "<pre>" (esc-tags (arg req "text")) "</pre>"))
 
