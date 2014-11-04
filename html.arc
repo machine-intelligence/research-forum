@@ -252,6 +252,11 @@
       (tag (option selected (is i sel))
         (pr i)))))
 
+(mac force-https ()
+  '(tag (script) (pr "if (window.location.protocol != \"https:\" &&
+                          window.location.hostname == \"malo2-8080.terminal.com\")
+                          window.location.href = \"https:\" + window.location.href.substring(window.location.protocol.length);")))
+
 (mac whitepage body
   `(tag html 
      (tag (body bgcolor white alink linkblue) ,@body)))

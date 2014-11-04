@@ -150,6 +150,7 @@
 
 (def login-page (switch (o msg nil) (o afterward hello-page))
   (whitepage
+    (force-https)
     (pagemessage msg)
     (when (in switch 'login 'both)
       (login-form "Login" switch login-handler afterward)
