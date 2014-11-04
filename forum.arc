@@ -1145,8 +1145,8 @@ pre:hover {overflow:auto} "))
 ; Story Submission
 
 (newsop submit ()
-  (if user 
-      (submit-page user "") 
+  (if user
+      (submit-page user "")
       (submit-login-warning "")))
 
 (def submit-login-warning ((o title) (o text))
@@ -1155,6 +1155,31 @@ pre:hover {overflow:auto} "))
                 (ensure-news-user user)
                 (newslog ip user 'submit-login)
                 (submit-page user title text))))
+
+(def process-story (user title text ip draft)
+  (if (no user)
+       (flink [submit-login-warning title text])
+      (or (blank title) (blank text))
+       (flink [submit-page user title text blanktext*])
+      (len> title title-limit*)
+       (flink [submit-page user title text toolong*])
+      (let s (create-story title text user ip draft)
+        (submit-item user s)
+        (if draft (+ "edit?id=" s!id) "newest"))))
+
+(defop dosubmit req
+  (with (title (or (arg req "title") "") text (or (arg req "title") "")
+         user (get-user req) draft (isnt (arg req "draft") nil))
+    (if (~check-auth req)
+         (authentication-failure-msg req)
+        (or (blank title) (blank text))
+         (submit-page user title text blanktext*)
+        (len> title title-limit*)
+         (submit-page user title text toolong*)
+      (let s (create-story title text user req!ip draft)
+        (submit-item user s)
+        (if draft (edit-page user s)
+                  (pr "<meta http-equiv='refresh' content='0; url=/newest"))))))
 
 (def submit-page (user (o title) (o text "") (o msg))
   (shortpage user nil nil "Submit" "submit"
