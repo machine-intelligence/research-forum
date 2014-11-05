@@ -38,18 +38,19 @@
   delay      0)
 
 (deftem item
-  id         nil
-  version    0     ; incremented before first save
-  draft      nil
-  type       nil
-  by         nil
-  ip         nil
-  time       nil   ; set on save
-  title      nil
-  text       nil
-  deleted    nil
-  parent     nil
-  keys       nil)
+  id           nil
+  version      0     ; incremented before first save
+  draft        nil
+  type         nil
+  by           nil
+  ip           nil
+  time         nil   ; set on save
+  publish-time nil   ; set on first publish
+  title        nil
+  text         nil
+  deleted      nil
+  parent       nil
+  keys         nil)
 
 
 ; Load and Save
@@ -217,9 +218,11 @@
 
 (def live (i) (no i!deleted))
 
-(def save-item (i)
+(def save-item (i (o publishing))
   (++ i!version)
-  (= i!time (seconds))
+  (let current-time (seconds)
+    (= i!time current-time)
+    (if publishing (= i!publish-time current-time)))
   (w/outfile f (item-file i!id i!version "md") (disp i!text f))
   (system (+ "pandoc --mathjax -S -f markdown-raw_html "
              (item-file i!id i!version "md")
@@ -262,7 +265,9 @@
 
 (def realscore (i) (+ 1 (len (itemlikes* i!id))))
 
-(def item-age (i) (minutes-since i!time))
+(def item-age (i) (if (no i!publish-time)
+                        (minutes-since i!time)
+                        (minutes-since i!publish-time)))
 
 (def user-age (u) (minutes-since (uvar u created)))
 
@@ -1220,7 +1225,7 @@ pre:hover {overflow:auto} "))
   (newslog ip user 'create (list title))
   (let s (inst 'item 'type 'story 'id (new-item-id) 
                      'title title 'text text 'by user 'ip ip 'draft draft)
-    (save-item s)
+    (save-item s (no draft))
     (= (items* s!id) s)
     (push s stories*)
     s))
@@ -1346,7 +1351,7 @@ pre:hover {overflow:auto} "))
                    (unless (and (is name 'title) (len> val title-limit*))
                      (= (i name) val)))
                (fn () (if (admin user) (pushnew 'locked i!keys))
-                      (save-item i)
+                      (save-item i (and (no i!draft) (no i!publish-time)))
                       (astory&adjust-rank i)
                       (wipe (comment-cache* i!id))
                       (edit-page user i))
@@ -1464,7 +1469,7 @@ pre:hover {overflow:auto} "))
   (newslog ip user 'comment (parent 'id))
   (let c (inst 'item 'type 'comment 'id (new-item-id)
                      'text text 'parent parent!id 'by user 'ip ip 'draft draft)
-    (save-item c)
+    (save-item c (no draft))
     (= (items* c!id) c)
     (push c!id (itemkids* parent!id))
     (push c comments*)
