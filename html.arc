@@ -84,6 +84,7 @@
 (attribute a          rel            opstring)
 (attribute a          class          opstring)
 (attribute a          id             opsym)
+(attribute a          name           opstring)
 (attribute a          onclick        opstring)
 (attribute a          target         opstring)
 (attribute body       alink          opcolor)

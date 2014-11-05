@@ -38,18 +38,19 @@
   delay      0)
 
 (deftem item
-  id         nil
-  version    0     ; incremented before first save
-  draft      nil
-  type       nil
-  by         nil
-  ip         nil
-  time       nil   ; set on save
-  title      nil
-  text       nil
-  deleted    nil
-  parent     nil
-  keys       nil)
+  id           nil
+  version      0     ; incremented before first save
+  draft        nil
+  type         nil
+  by           nil
+  ip           nil
+  time         nil   ; set on save
+  publish-time nil   ; set on first publish
+  title        nil
+  text         nil
+  deleted      nil
+  parent       nil
+  keys         nil)
 
 
 ; Load and Save
@@ -193,6 +194,10 @@
   (let i (temload 'item (newest-item-file id))
     (= (itemtext* id) (filechars:item-file id i!version "html"))
     (if i!parent (pushnew id (itemkids* i!parent)))
+    ; Workaround for posts / comments that were published before
+    ; publish-time code was added
+    (if (and (no i!draft) (no i!publish-time))
+        (= i!publish-time i!time))
     (= (items* id) i)))
 
 (def new-item-id ()
@@ -219,7 +224,9 @@
 
 (def save-item (i)
   (++ i!version)
-  (= i!time (seconds))
+  (let current-time (seconds)
+    (= i!time current-time)
+    (if (and (no i!draft) (no i!publish-time)) (= i!publish-time current-time)))
   (w/outfile f (item-file i!id i!version "md") (disp i!text f))
   (system (+ "pandoc --mathjax -S -f markdown-raw_html "
              (item-file i!id i!version "md")
@@ -262,7 +269,9 @@
 
 (def realscore (i) (+ 1 (len (itemlikes* i!id))))
 
-(def item-age (i) (minutes-since i!time))
+(def item-age (i) (if (no i!publish-time)
+                        (minutes-since i!time)
+                        (minutes-since i!publish-time)))
 
 (def user-age (u) (minutes-since (uvar u created)))
 
@@ -493,7 +502,7 @@ a:visited { color:#555555; text-decoration:none; }
 .yclinks     { font-family:Verdana; font-size:  10pt; color:#828282; }
 .pagetop     { font-family:Verdana; font-size:  13pt; color:#222222; }
 .comhead     { font-family:Verdana; font-size:  10pt; color:#828282; }
-.comment     { font-family:Verdana; font-size:  13pt; }
+.comment     { font-family:Verdana; font-size:  13pt; color:#000000; }
 .dead        { font-family:Verdana; font-size:  11pt; color:#dddddd; }
 
 .userlink, .you { font-weight:bold; }
@@ -1051,7 +1060,7 @@ pre:hover {overflow:auto} "))
 (def commentlink (i user)
   (when (and (cansee user i) (no i!draft))
     (pr bar*)
-    (tag (a href (item-url i!id))
+    (tag (a href (+ (item-url i!id) "#comments"))
       (let n (- (visible-family user i) 1)
         (if (> n 0)
             (pr (plural n "comment"))
@@ -1267,6 +1276,7 @@ pre:hover {overflow:auto} "))
              (row "" (comment-form i user here))))
       (br2) 
       (when (and (itemkids* i!id) (commentable i))
+        (tag (a name "comments"))
         (tab (display-subcomments i user here))
         (br2)))))
 
