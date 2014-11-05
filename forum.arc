@@ -408,7 +408,7 @@
        (add-sidebar (link "RECENT COMMENTS" "newcomments")
                     (each c (csb-items ,user csb-count*)
                       (tag (p) (tag (a href (item-url c!id) class 'csb)
-                                 (tag (b) (pr (shortened c!text csb-maxlen*))))
+                                 (tag (b) (pr (eschtml (shortened c!text csb-maxlen*)))))
                                (br)
                                (tab (tr (tag (td class 'csb-subtext)
                                  (pr "by ")
@@ -1719,7 +1719,7 @@ pre:hover {overflow:auto} "))
           (tag author (pr (strip-underscore i!by)))
           (tag description
             (if (astory i) (pr (display-item-text i nil t))
-                (pr (eschtml (shortened i!text csb-maxlen*))))))))))
+                (pr (eschtml (display-item-text i nil t))))))))))
 
 
 ; User Stats
