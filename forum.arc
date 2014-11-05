@@ -1712,9 +1712,14 @@ pre:hover {overflow:auto} "))
       (tag description (pr site-desc*))
       (each i items
         (tag item
-          (tag title    (if (no i!title) (pr (eschtml (shortened i!text csb-maxlen*)))
-                            (pr (eschtml i!title))))
-          (tag link     (pr (+ site-url* (item-url i!id)))))))))
+          (tag title (if (astory i) (pr (eschtml i!title))
+                         (let s (superparent i)
+                           (pr (+ "Comment on " (eschtml s!title))))))
+          (tag link (pr (+ site-url* (item-url i!id))))
+          (tag author (pr (strip-underscore i!by)))
+          (tag description
+            (if (astory i) (pr (eschtml (display-item-text i nil t)))
+                (pr (eschtml (shortened i!text csb-maxlen*))))))))))
 
 
 ; User Stats
