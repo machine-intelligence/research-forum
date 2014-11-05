@@ -1717,7 +1717,7 @@ pre:hover {overflow:auto} "))
                            (pr (+ "Comment on " (eschtml s!title))))))
           (tag link (pr (+ site-url* (item-url i!id))))
           (tag author (pr (strip-underscore i!by)))
-          (tag description (display-item-text i nil t)))))))
+          (tag description (pr (display-item-text i nil t))))))))
 
 
 ; User Stats
