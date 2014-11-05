@@ -1719,7 +1719,7 @@ pre:hover {overflow:auto} "))
           (tag author (pr (strip-underscore i!by)))
           (tag description
             (if (astory i) (pr (display-item-text i nil t))
-                (pr (eschtml (display-item-text i nil t))))))))))
+                (pr (eschtml (preview (item-text i)))))))))))
 
 
 ; User Stats
