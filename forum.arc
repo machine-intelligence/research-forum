@@ -1391,6 +1391,10 @@ pre:hover {overflow:auto} "))
 ; and call it both there and here.
 
 (def edit-page (user i (o msg))
+  ; Workaround for posts / comments that were published before
+  ; publish-time code was added
+  (if (and (no i!draft) (no i!publish-time))
+      (= i!publish-time i!time))
   (let here (edit-url i)
     (shortpage user nil nil "Edit" here
       (pagemessage msg)
