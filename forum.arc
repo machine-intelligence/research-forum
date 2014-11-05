@@ -8,7 +8,7 @@
 (declare 'atstrings t)
 
 (= this-site*    "FAI research forum"
-   site-url*     ""
+   site-url*     "https://malo2-8080.terminal.com/" ; unfortunate, but necessary for rss feed
    parent-url*   ""
    favicon-url*  ""
    site-desc*    "FAI research forum"               ; for rss feed
@@ -408,7 +408,7 @@
        (add-sidebar (link "RECENT COMMENTS" "newcomments")
                     (each c (csb-items ,user csb-count*)
                       (tag (p) (tag (a href (item-url c!id) class 'csb)
-                                 (tag (b) (pr (shortened c!text csb-maxlen*))))
+                                 (tag (b) (pr (eschtml (shortened c!text csb-maxlen*)))))
                                (br)
                                (tab (tr (tag (td class 'csb-subtext)
                                  (pr "by ")
@@ -1325,7 +1325,7 @@ pre:hover {overflow:auto} "))
       (+ (until-token text "</p>") "</p>"))))
 
 (def display-item-text (s user preview-only)
-  (when (and (cansee user s) (astory s))
+  (when (and (cansee user s))
     (if preview-only (preview (item-text s)) (item-text s))))
 
 
@@ -1699,23 +1699,25 @@ pre:hover {overflow:auto} "))
 
 (newsop rss () (rsspage nil))
 
-(newscache rsspage user 90 
-  (rss-stories (retrieve perpage* live ranked-stories*)))
+(newscache rsspage user 90
+  (rss-feed (sort (compare > [if (no _!publish-time) _!time _!publish-time])
+              (+ (retrieve perpage* [and live (no _!draft)] stories*)
+                 (retrieve perpage* [and live (no _!draft)] comments*)))))
 
-(def rss-stories (stories)
+(def rss-feed (items)
   (tag (rss version "2.0")
     (tag channel
       (tag title (pr this-site*))
       (tag link (pr site-url*))
       (tag description (pr site-desc*))
-      (each s stories
+      (each i items
         (tag item
-          (let comurl (+ site-url* (item-url s!id))
-            (tag title    (pr (eschtml s!title)))
-            (tag link     (pr (if (blank s!url) comurl (eschtml s!url))))
-            (tag comments (pr comurl))
-            (tag description
-              (cdata (link "Comments" comurl)))))))))
+          (tag title (if (astory i) (pr (eschtml i!title))
+                         (let s (superparent i)
+                           (pr (+ "Comment on " (eschtml s!title))))))
+          (tag link (pr (+ site-url* (item-url i!id))))
+          (tag author (pr (strip-underscore i!by)))
+          (tag description (pr (display-item-text i nil t))))))))
 
 
 ; User Stats
