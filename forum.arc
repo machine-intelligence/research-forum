@@ -1325,7 +1325,7 @@ pre:hover {overflow:auto} "))
       (+ (until-token text "</p>") "</p>"))))
 
 (def display-item-text (s user preview-only)
-  (when (and (cansee user s) (astory s))
+  (when (and (cansee user s))
     (if preview-only (preview (item-text s)) (item-text s))))
 
 
@@ -1719,7 +1719,7 @@ pre:hover {overflow:auto} "))
           (tag author (pr (strip-underscore i!by)))
           (tag description
             (if (astory i) (pr (display-item-text i nil t))
-                (pr (eschtml (preview (item-text i)))))))))))
+                (pr (eschtml (display-item-text i nil t))))))))))
 
 
 ; User Stats
