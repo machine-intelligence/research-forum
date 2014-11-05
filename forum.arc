@@ -493,7 +493,7 @@ a:visited { color:#555555; text-decoration:none; }
 .yclinks     { font-family:Verdana; font-size:  10pt; color:#828282; }
 .pagetop     { font-family:Verdana; font-size:  13pt; color:#222222; }
 .comhead     { font-family:Verdana; font-size:  10pt; color:#828282; }
-.comment     { font-family:Verdana; font-size:  13pt; }
+.comment     { font-family:Verdana; font-size:  13pt; color:#000000; }
 .dead        { font-family:Verdana; font-size:  11pt; color:#dddddd; }
 
 .userlink, .you { font-weight:bold; }
