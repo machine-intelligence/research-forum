@@ -1718,7 +1718,7 @@ pre:hover {overflow:auto} "))
           (tag link (pr (+ site-url* (item-url i!id))))
           (tag author (pr (strip-underscore i!by)))
           (tag description
-            (if (astory i) (pr (eschtml (display-item-text i nil t)))
+            (if (astory i) (pr (display-item-text i nil t))
                 (pr (eschtml (shortened i!text csb-maxlen*))))))))))
 
 
