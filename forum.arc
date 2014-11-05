@@ -8,7 +8,7 @@
 (declare 'atstrings t)
 
 (= this-site*    "FAI research forum"
-   site-url*     ""
+   site-url*     "https://malo2-8080.terminal.com/" ; unfortunate, but necessary for rss feed
    parent-url*   ""
    favicon-url*  ""
    site-desc*    "FAI research forum"               ; for rss feed
@@ -1699,23 +1699,22 @@ pre:hover {overflow:auto} "))
 
 (newsop rss () (rsspage nil))
 
-(newscache rsspage user 90 
-  (rss-stories (retrieve perpage* live ranked-stories*)))
+(newscache rsspage user 90
+  (rss-feed (sort (compare > [if (no _!publish-time) _!time _!publish-time])
+              (+ (retrieve perpage* [and live (no _!draft)] stories*)
+                 (retrieve perpage* [and live (no _!draft)] comments*)))))
 
-(def rss-stories (stories)
+(def rss-feed (items)
   (tag (rss version "2.0")
     (tag channel
       (tag title (pr this-site*))
       (tag link (pr site-url*))
       (tag description (pr site-desc*))
-      (each s stories
+      (each i items
         (tag item
-          (let comurl (+ site-url* (item-url s!id))
-            (tag title    (pr (eschtml s!title)))
-            (tag link     (pr (if (blank s!url) comurl (eschtml s!url))))
-            (tag comments (pr comurl))
-            (tag description
-              (cdata (link "Comments" comurl)))))))))
+          (tag title    (if (no i!title) (pr (eschtml (shortened i!text csb-maxlen*)))
+                            (pr (eschtml i!title))))
+          (tag link     (pr (+ site-url* (item-url i!id)))))))))
 
 
 ; User Stats
