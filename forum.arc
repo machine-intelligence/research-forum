@@ -500,7 +500,6 @@ a:visited { color:#555555; text-decoration:none; }
 .admin       { font-family:Verdana; font-size:10.5pt; color:#000000; }
 .title       { font-family:Verdana; font-size:  16pt; color:#828282; font-weight:bold; }
 .discussion-title { font-family:Verdana; font-size:13pt; color:#828282; font-weight:bold; }
-.edgemark    { font-size: 13pt; font-style: italic; }
 .adtitle     { font-family:Verdana; font-size:  11pt; color:#828282; }
 .subtext     { font-family:Verdana; font-size:  10pt; color:#828282; }
 .csb-subtext { font-family:Verdana; font-size:   8pt; color:#828282; }
