@@ -42,6 +42,7 @@
   version      0     ; incremented before first save
   draft        nil
   type         nil
+  category     nil   ; for stories: 'Main or 'Discussion
   by           nil
   ip           nil
   time         nil   ; set on save
@@ -198,6 +199,8 @@
     ; publish-time code was added
     (if (and (no i!draft) (no i!publish-time))
         (= i!publish-time i!time))
+    (if (and (is i!type 'story) (no i!category))
+        (= i!category 'Main))
     (= (items* id) i)))
 
 (def new-item-id ()
@@ -496,6 +499,8 @@ a:visited { color:#555555; text-decoration:none; }
 .default     { font-family:Verdana; font-size:  13pt; color:#828282; }
 .admin       { font-family:Verdana; font-size:10.5pt; color:#000000; }
 .title       { font-family:Verdana; font-size:  16pt; color:#828282; font-weight:bold; }
+.discussion-title { font-family:Verdana; font-size:13pt; color:#828282; font-weight:bold; }
+.edgemark    { font-size: 13pt; font-style: italic; }
 .adtitle     { font-family:Verdana; font-size:  11pt; color:#828282; }
 .subtext     { font-family:Verdana; font-size:  10pt; color:#828282; }
 .csb-subtext { font-family:Verdana; font-size:   8pt; color:#828282; }
@@ -885,8 +890,9 @@ pre:hover {overflow:auto} "))
   (tag (table width '100%)
     (let n start
       (each i (cut items start end)
-        (trtd (tag (table width '100%) (display-item (and number (++ n)) i user whence t preview-only show-immediate-parent)
-             (spacerow (if (acomment i) 15 30))))))
+        (trtd (tag (table width '100%)
+                (display-item (and number (++ n)) i user whence t preview-only show-immediate-parent)
+                (spacerow (if (is i!category 'Main) 25 5))))))
     (when end
       (let newend (+ end perpage*)
         (when (and (<= newend maxend*) (< end (len items)))
@@ -933,7 +939,9 @@ pre:hover {overflow:auto} "))
         (tag (td class 'story width '100%)
           (let displayed (display-item-text s user preview-only)
             (pr displayed)
-            (if (and preview-only (no (is displayed (item-text s))))
+            (if (and preview-only
+                     (is s!category 'Main)
+                     (no (is displayed (item-text s))))
               (tag (table style 'border-collapse:collapse width '100%)
                 (tr (tag (td class 'continue)
                   (link "continue reading &raquo;" (item-url s!id)))))))))))
@@ -943,7 +951,7 @@ pre:hover {overflow:auto} "))
             (pr i "."))))
 
 (def titleline (s user whence)
-  (tag (td class 'title)
+  (tag (td class (if (is s!category 'Main) 'title 'discussion-title))
     (if (cansee user s)
         (do (deadmark s user)
             (if s!draft (tag (a href (item-url s!id)
@@ -1022,6 +1030,8 @@ pre:hover {overflow:auto} "))
 
 (def itemline (i user whence)
   (when (cansee user i) 
+    (if (is i!category 'Discussion) (pr " discussion post")
+        (is i!type 'story) (pr " post"))
     (byline i user)
     (and-list [userlink-or-you user _] (likes i user) (pr)
               (pr bar*) (it) (pr " like" (if (or (iso items (list user))
@@ -1170,7 +1180,9 @@ pre:hover {overflow:auto} "))
 (defop dosubmit req
   (with (title (striptags (or (arg req "title") ""))
          text (or (arg req "text") "") user (get-user req)
-         draft (isnt (arg req "draft") nil))
+         draft (isnt (arg req "draft") nil)
+         category (if (is (arg req "category") "Discussion")
+                      'Discussion 'Main))
     (if (~arg req "auth")
          (pr "Nothing here.")
         (~check-auth req)
@@ -1179,7 +1191,7 @@ pre:hover {overflow:auto} "))
          (submit-page user title text blanktext*)
         (len> title title-limit*)
          (submit-page user title text toolong*)
-      (atlet s (create-story title text user req!ip draft)
+      (atlet s (create-story title text user req!ip category draft)
         (submit-item user s)
         (if draft (edit-page user s)
                   (pr "<meta http-equiv='refresh' content='0; url=/newest'>"))))))
@@ -1189,7 +1201,10 @@ pre:hover {overflow:auto} "))
     (pagemessage msg)
     (authform "/dosubmit" user
       (tab
-        (row "title"  (input "title" title 50))
+        (row "title"    (input "title" title 50))
+        (row "category" (do (menu "category" '(Main Discussion) 'Main)
+                            (pr " &nbsp; ")
+                            (underlink "What's this?" "/item?id=43")))
         (tr
           (td "text")
           (td 
@@ -1225,9 +1240,9 @@ pre:hover {overflow:auto} "))
   (save-prof user)
   (astory&adjust-rank i))
 
-(def create-story (title text user ip draft)
+(def create-story (title text user ip category draft)
   (newslog ip user 'create (list title))
-  (let s (inst 'item 'type 'story 'id (new-item-id) 
+  (let s (inst 'item 'type 'story 'id (new-item-id) 'category category
                      'title title 'text text 'by user 'ip ip 'draft draft)
     (save-item s)
     (= (items* s!id) s)
@@ -1326,7 +1341,11 @@ pre:hover {overflow:auto} "))
 
 (def display-item-text (s user preview-only)
   (when (and (cansee user s))
-    (if preview-only (preview (item-text s)) (item-text s))))
+    (if (no preview-only)
+         (item-text s)
+        (is s!category 'Main)
+         (preview (item-text s))
+         "")))
 
 
 ; Edit Item
@@ -1371,9 +1390,11 @@ pre:hover {overflow:auto} "))
 
 (= (fieldfn* 'story)
    (fn (user s)
-     (with (a (admin user)  e (editor user)  x (canedit user s))
+     (with (a (admin user)  e (editor user)  x (canedit user s)
+            cat '(choice sym Main Discussion))
        `((string2 title     ,s!title        t ,x)
          (pandoc  text      ,s!text         t ,x)
+         (,cat    category  ,s!category     t ,x)
          ,@(standard-item-fields s a e x)))))
 
 (= (fieldfn* 'comment)

@@ -140,6 +140,7 @@
 (attribute td         class          opstring)
 (attribute tr         bgcolor        opcolor)
 (attribute hr         color          opcolor)
+(attribute hr         class          opstring)
 (attribute span       class          opstring)
 (attribute span       align          opstring)
 (attribute span       id             opsym)
