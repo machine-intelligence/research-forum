@@ -1203,7 +1203,7 @@ pre:hover {overflow:auto} "))
         (row "title"    (input "title" title 50))
         (row "category" (do (menu "category" '(Main Discussion) 'Main)
                             (pr " &nbsp; ")
-                            (underlink "What's this?" "/item?id=43")))
+                            (underlink "What's this?" "/item?id=52")))
         (tr
           (td "text")
           (td 
