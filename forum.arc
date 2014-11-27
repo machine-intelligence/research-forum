@@ -1546,7 +1546,10 @@ pre:hover {overflow:auto} "))
 
 (= comments-printed* 0 cc-hits* 0)
 
-(= comment-caching* t) 
+; Comment caching turned off for now
+; WARNING: Do not turn back on without fixing "like link" bug!
+
+(= comment-caching* nil)
 
 ; Cache comments generated for nil user that are over an hour old.
 ; Only try to cache most recent 10k items.  But this window moves,
