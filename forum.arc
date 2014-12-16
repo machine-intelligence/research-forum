@@ -398,29 +398,46 @@
                  (hook 'longfoot)
                  (admin-bar ,gu (- (msec) ,gt) ,whence)))))))
 
-(mac add-sidebar (title contents . body)
+(mac add-sidebar (sidebar-contents . body)
   `(tag (table style 'border-collapse:collapse width '100%)
         (tr (tag (td valign 'top class 'contents) ,@body)
-            (tag (td valign 'top class 'csb)
-              (para (tag (h3) (pr ,title))) ,contents))))
+            (tag (td valign 'top class 'sb) ,sidebar-contents))))
 
-(mac longpage-csb (user t1 lid label title whence show-comments . body)
+(mac format-sb-title (title)
+  `(para (tag (h3) (pr ,title))))
+
+(mac format-sb-item (i)
+  `(tag (p) (tag (a href (item-url i!id) class 'sb)
+              (tag (b) (pr (eschtml i!title))))
+            (br)
+            (tab (tr (tag (td class 'sb-subtext)
+              (pr "by ")
+              (userlink user i!by)
+              (pr bar*)
+              (itemscore i))))))
+
+(mac longpage-sb (user t1 lid label title whence show-comments . body)
   `(longpage ,user ,t1 ,lid ,label ,title ,whence
      (if (no ,show-comments) 
        (do ,@body)
-       (add-sidebar (link "RECENT COMMENTS" "newcomments")
-                    (each c (csb-items ,user csb-count*)
-                      (tag (p) (tag (a href (item-url c!id) class 'csb)
-                                 (tag (b) (pr (eschtml (shortened c!text csb-maxlen*)))))
-                               (br)
-                               (tab (tr (tag (td class 'csb-subtext)
-                                 (pr "by ")
-                                 (userlink user c!by)
-                                 (pr " on ")
-                                 (let s (superparent c) 
-                                   (pr (ellipsize s!title 50)))
-                                 (pr bar*)
-                                 (itemscore c))))))
+       (add-sidebar (+
+         (format-sb-title "NEW POSTS")
+         (each i (sb-posts ,user sb-post-count*) (format-sb-item i))
+         (format-sb-title "NEW DISCUSSION POSTS")
+         (each i (sb-discussion-posts ,user sb-discussion-post-count*) (format-sb-item i))
+         (format-sb-title (link "RECENT COMMENTS" "newcomments"))
+         (each c (sb-comments ,user sb-comment-count*)
+           (tag (p) (tag (a href (item-url c!id) class 'sb)
+                      (tag (b) (pr (eschtml (shortened c!text sb-comment-maxlen*)))))
+                    (br)
+                    (tab (tr (tag (td class 'sb-subtext)
+                      (pr "by ")
+                      (userlink user c!by)
+                      (pr " on ")
+                      (let s (superparent c)
+                        (pr (ellipsize s!title 50)))
+                      (pr bar*)
+                      (itemscore c)))))))
          ,@body))))
 
 (def reverse (text)
@@ -480,8 +497,8 @@ hr:after { content:\"*\"; }
 
 td > h1 { font-family:Verdana; font-size:14pt; color:#000000; font-weight:bold; }
 
-table td.csb      { background-color:#e6e6e6; width:300px; padding:8px; font-size:10pt; }
-table td.csb > h3 { font-family:Verdana; font-size:12pt; font-weight:bold; }
+table td.sb       { background-color:#e6e6e6; width:300px; padding:8px; font-size:10pt; }
+table td.sb > h3  { font-family:Verdana; font-size:12pt; font-weight:bold; }
 table td.contents { margin:0; padding-right:80; }
 table td.story    { line-height:135%; }
 
@@ -502,7 +519,7 @@ a:visited { color:#555555; text-decoration:none; }
 .discussion-title { font-family:Verdana; font-size:13pt; color:#828282; font-weight:bold; }
 .adtitle     { font-family:Verdana; font-size:  11pt; color:#828282; }
 .subtext     { font-family:Verdana; font-size:  10pt; color:#828282; }
-.csb-subtext { font-family:Verdana; font-size:   8pt; color:#828282; }
+.sb-subtext  { font-family:Verdana; font-size:   8pt; color:#828282; }
 .yclinks     { font-family:Verdana; font-size:  10pt; color:#828282; }
 .pagetop     { font-family:Verdana; font-size:  13pt; color:#222222; }
 .comhead     { font-family:Verdana; font-size:  10pt; color:#828282; }
@@ -519,8 +536,8 @@ a:visited { color:#555555; text-decoration:none; }
 .subtext a:link, .subtext a:visited { color:#828282; }
 .subtext a:hover { text-decoration:underline; }
 
-.csb a:link, .csb a:visited { color:#828282; }
-.csb a:hover { text-decoration:underline; }
+.sb a:link, .sb a:visited { color:#828282; }
+.sb a:hover { text-decoration:underline; }
 
 .comhead a:link, .subtext a:visited { color:#828282; }
 .comhead a:hover { text-decoration:underline; }
@@ -770,8 +787,12 @@ pre:hover {overflow:auto} "))
 ; remember to set caching to 0 when testing non-logged-in 
 
 (= caching* 1 perpage* 25 threads-perpage* 10 maxend* 500
-   csb-count* 5 csb-maxlen* 30 preview-maxlen* 1000
-   karma-multiplier* 5)
+   preview-maxlen* 1000 karma-multiplier* 5)
+
+(= sb-post-count* 5
+   sb-discussion-post-count* 5
+   sb-comment-count* 15
+   sb-comment-maxlen* 30)
 
 ; Limiting that newscache can't take any arguments except the user.
 ; To allow other arguments, would have to turn the cache from a single 
@@ -793,14 +814,18 @@ pre:hover {overflow:auto} "))
 
 ;(newsop index.html () (newspage user))
 
-(def csb-items (user n) (retrieve n [and (cansee user _) (no _!draft)] comments*))
+(def sb-posts (user n) (retrieve n [and (cansee user _) (no _!draft) (is _!category 'Main)] stories*))
+
+(def sb-discussion-posts (user n) (retrieve n [and (cansee user _) (no _!draft) (is _!category 'Discussion)] stories*))
+
+(def sb-comments (user n) (retrieve n [and (cansee user _) (no _!draft)] comments*))
 
 (def newspage (user) (newestpage user))
 
 (def listpage (user t1 items label title 
                (o url label) (o number t) (o show-comments t) (o preview-only t) (o show-immediate-parent))
   (hook 'listpage user)
-  (longpage-csb user t1 nil label title url show-comments
+  (longpage-sb user t1 nil label title url show-comments
     (display-items user items label title url 0 perpage* number preview-only show-immediate-parent)))
 
 
@@ -839,7 +864,7 @@ pre:hover {overflow:auto} "))
 
 
 (newsop lists () 
-  (longpage-csb user (msec) nil "lists" "Lists" "lists" t
+  (longpage-sb user (msec) nil "lists" "Lists" "lists" t
     (sptab
       (row (link "best")         "Highest voted recent links.")
       (row (link "active")       "Most active current discussions.")
@@ -913,7 +938,7 @@ pre:hover {overflow:auto} "))
                      (with (url  (url-for it)     ; it bound by afnid
                             user (get-user req))
                        (newslog req!ip user 'more label)
-                       (longpage-csb user (msec) nil label title url t
+                       (longpage-sb user (msec) nil label title url t
                          (apply f user items label title url args))))))
           rel 'nofollow)
     (pr "More")))
@@ -1283,7 +1308,7 @@ pre:hover {overflow:auto} "))
                        (or i!title (aand (item-text i)
                                          (ellipsize (striptags it))))))
          here (item-url i!id))
-    (longpage-csb user (msec) nil nil title here t
+    (longpage-sb user (msec) nil nil title here t
       (tab (display-item nil i user here)
            (when (and (cansee user i) (comments-active i) (no i!draft))
              (spacerow 10)
@@ -1662,7 +1687,7 @@ pre:hover {overflow:auto} "))
       (withs (title (+ subject "'s comments")
               label (if (is user subject) "my comments" title)
               here  (threads-url subject))
-        (longpage-csb user (msec) nil label title here t
+        (longpage-sb user (msec) nil label title here t
           (awhen (keep [and (cansee user _) (~subcomment _) (no _!draft)]
                        (comments subject maxend*))
             (display-threads user it label title here))))
@@ -1711,7 +1736,7 @@ pre:hover {overflow:auto} "))
       (withs (title (+ subject "'s posts")
               label (if (is user subject) "my posts" title)
               here  (submitted-url subject))
-        (longpage-csb user (msec) nil label label here t
+        (longpage-sb user (msec) nil label label here t
           (aif (keep [and (astory _) (cansee user _) (no _!draft)]
                      (submissions subject))
                (display-items user it label label here 0 perpage* t t))))
@@ -1748,7 +1773,7 @@ pre:hover {overflow:auto} "))
 (newsop members () (memberspage user))
 
 (newscache memberspage user 1000
-  (longpage-csb user (msec) nil "members" "members" "members" t
+  (longpage-sb user (msec) nil "members" "members" "members" t
     (sptab
       (let i 0
         (each u (sort (compare > [karma _])
@@ -1798,7 +1823,7 @@ pre:hover {overflow:auto} "))
 
 (newscache newcomments-page user 60
   (listpage user (msec) (visible user (firstn maxend* comments*) t)
-            "comments" "New Comments" "newcomments" nil nil t t))
+            "comments" "New Comments" "newcomments" nil t t t))
 
 
 ; Doc
