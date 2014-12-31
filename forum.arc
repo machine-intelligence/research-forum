@@ -489,14 +489,14 @@
 /* forum.css generated version 1.2 */
 
 body {
-background: #eaeaea; 
+background: #eaeaea;
 background-color:#eaeaea !important;
 margin: 0px;
 }
 
-table.frame 
-{ 
-width: 85%; border-left: 1px solid #d2d2d2; 
+table.frame
+{
+width: 85%; border-left: 1px solid #d2d2d2;
 border-right: 1px solid #d2d2d2; background-color: #ffffff;
 -webkit-border-horizontal-spacing: 0px;
 -webkit-border-vertical-spacing: 0px;
