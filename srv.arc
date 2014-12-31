@@ -257,7 +257,7 @@ Connection: close"))
           args
           (and (is type 'post)
                (some (fn (s)
-                       (and (begins s "Content-Length:")
+                       (and (begins s "Content-length:")
                             (errsafe:coerce (cadr (tokens s)) 'int)))
                      (cdr lines)))
           (some (fn (s)
