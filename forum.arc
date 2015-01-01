@@ -12,7 +12,7 @@
    parent-url*   ""
    favicon-url*  ""
    site-desc*    "FAI research forum"               ; for rss feed
-   site-color*   (color 180 180 180)
+   site-color*   (color 40 50 120)
    border-color* (color 180 180 180)
    prefer-url*   t)
 
@@ -354,8 +354,8 @@
 
 ; Page Layout
 
-(= logo-url* "arc.png")
-
+(= logo-url* "miri.png")
+(= favicon-url* "miri.ico")
 (defopr favicon.ico req favicon-url*)
 
 ; redefined later
@@ -372,8 +372,7 @@
        (tag title (pr ,title)))
      (tag body 
        (center
-         (tag (table border 0 cellpadding 0 cellspacing 0 width "85%"
-                     bgcolor sand)
+         (tag (table class "frame")
            ,@body)))))
 
 (= pagefns* nil)
@@ -391,9 +390,7 @@
     `(with (,gu ,user ,gt ,t1 ,gi ,lid)
        (fulltop ,gu ,gi ,label ,title ,whence
          (trtd ,@body)
-         (trtd (vspace 10)
-               (color-stripe site-color*)
-               (br)
+         (trtd 
                (center
                  (hook 'longfoot)
                  (admin-bar ,gu (- (msec) ,gt) ,whence)))))))
@@ -482,14 +479,71 @@
                   (pr msg))))
     (br2)))
 
-(= (max-age* 'forum.css) 86400)   ; cache css in browser for 1 day
+(= (max-age* 'forum.css) 60)   ; cache css in browser for 1 minute
 
 ; turn off server caching via (= caching* 0) or won't see changes
 (= caching* 0)
 
 (defop forum.css req
   (pr "
-body  { font-family:Verdana; font-size:13pt; color:#828282; }
+/* forum.css generated version 1.2 */
+
+body {
+background: #eaeaea;
+background-color:#eaeaea !important;
+margin: 0px;
+}
+
+table.frame
+{
+width: 85%; border-left: 1px solid #d2d2d2;
+border-right: 1px solid #d2d2d2; background-color: #ffffff;
+-webkit-border-horizontal-spacing: 0px;
+-webkit-border-vertical-spacing: 0px;
+}
+
+table.topbar {
+width: 100%;
+padding: 2px;
+background-color: #254e7d;
+}
+.pagetop a:visited {
+color:#ffffff; 
+}
+
+table td.sb {
+background-color: #f8f8f8;
+width: 300px;
+padding: 8px;
+font-size: 10pt;
+}
+
+table td.sb > h3 {
+font-family: Verdana;
+font-size: 12pt;
+font-weight: bold;
+color: #92b437 !important;
+}
+
+
+table td.sb > h3 > a:link {
+font-family: Verdana;
+font-size: 12pt;
+font-weight: bold;
+color: #92b437;
+}
+
+table td.sb > h3 > a:visited {
+font-family: Verdana;
+font-size: 12pt;
+font-weight: bold;
+color: #92b437;
+}
+
+a:visited {
+color: #000000;
+}
+
 td    { font-family:Verdana; font-size:13pt; color:#000000; }
 
 hr       { border:0; text-align:center; }
@@ -497,13 +551,16 @@ hr:after { content:\"*\"; }
 
 td > h1 { font-family:Verdana; font-size:14pt; color:#000000; font-weight:bold; }
 
-table td.sb       { background-color:#e6e6e6; width:300px; padding:8px; font-size:10pt; }
-table td.sb > h3  { font-family:Verdana; font-size:12pt; font-weight:bold; }
+img.logo { width:26; height:18; border:0px #@(hexrep border-color*) solid;}
+
+table.mainsite { width:100%; cellpadding:0; cellspacing:0; border:0; padding:0px; }
+table tr.header   { background-color:#283278; font-color:#ffffff; font-weight:bold; border-radius:15px; }
 table td.contents { margin:0; padding-right:80; }
 table td.story    { line-height:135%; }
 
 .admin td   { font-family:Verdana; font-size:10.5pt; color:#000000; }
 .subtext td { font-family:Verdana; font-size:  10pt; color:#828282; }
+table td.sb > p { font-family:Verdana; font-size:10pt; font-weight:regular; color:#ffffff;}
 
 button   { font-family:Verdana; font-size:11pt; color:#000000; }
 input    { font-family:Courier; font-size:13pt; color:#000000; }
@@ -511,7 +568,6 @@ input[type=\"submit\"] { font-family:Verdana; }
 textarea { font-family:Courier; font-size:13pt; color:#000000; }
 
 a:link    { color:#000000; text-decoration:none; } 
-a:visited { color:#555555; text-decoration:none; }
 
 .default     { font-family:Verdana; font-size:  13pt; color:#828282; }
 .admin       { font-family:Verdana; font-size:10.5pt; color:#000000; }
@@ -521,17 +577,18 @@ a:visited { color:#555555; text-decoration:none; }
 .subtext     { font-family:Verdana; font-size:  10pt; color:#828282; }
 .sb-subtext  { font-family:Verdana; font-size:   8pt; color:#828282; }
 .yclinks     { font-family:Verdana; font-size:  10pt; color:#828282; }
-.pagetop     { font-family:Verdana; font-size:  13pt; color:#222222; }
+.pagetop     { font-family:Verdana; font-size:  13pt; color:#ffffff; }
 .comhead     { font-family:Verdana; font-size:  10pt; color:#828282; }
-.comment     { font-family:Verdana; font-size:  13pt; color:#000000; }
+.comment     { font-family:Verdana; font-size:  12pt; color:#000000; }
 .dead        { font-family:Verdana; font-size:  11pt; color:#dddddd; }
 
 .userlink, .you { font-weight:bold; }
 
 .comment a:link, .comment a:visited, .story a:link, .story a:visited { text-decoration:underline; }
 .dead a:link, .dead a:visited { color:#dddddd; }
-.pagetop a:visited { color:#000000;}
-.topsel a:link, .topsel a:visited { color:#ffffff; }
+.pagetop a:link { color:#ffffff; }
+.pagetop a:visited { color:#ffffff; }
+.topsel a:link, .topsel a:visited { color:#ffc040; }
 
 .subtext a:link, .subtext a:visited { color:#828282; }
 .subtext a:hover { text-decoration:underline; }
@@ -574,13 +631,11 @@ pre:hover {overflow:auto} "))
 
 ; Page top
 
-(= sand (color 246 246 239) textgray (gray 130))
+(= sand (color 240 246 255) textgray (gray 130))
 
 (def pagetop (switch lid label (o title) (o user) (o whence))
-; (tr (tdcolor black (vspace 5)))
-  (tr (tdcolor site-color*
-        (tag (table border 0 cellpadding 0 cellspacing 0 width "100%"
-                    style "padding:2px")
+  (tr (td
+        (tag (table class "topbar")
           (tr (gen-logo)
               (when (is switch 'full)
                 (tag (td style "line-height:12pt; height:10px;")
@@ -594,13 +649,12 @@ pre:hover {overflow:auto} "))
                  (tag (td style "line-height:12pt; height:10px;")
                    (spanclass pagetop (prbold label))))))))
   (map [_ user] pagefns*)
-  (spacerow 10))
+  )
 
 (def gen-logo ()
   (tag (td style "width:18px;padding-right:4px")
     (tag (a href parent-url*)
-      (tag (img src logo-url* width 18 height 18 
-                style "border:1px #@(hexrep border-color*) solid;")))))
+      (tag (img class "logo" src logo-url* )))))
 
 (= toplabels* '(nil "new" "comments" "members" 
                     "my posts" "my comments" "my drafts" "my likes" "*"))
@@ -966,7 +1020,7 @@ pre:hover {overflow:auto} "))
             (if (and preview-only
                      (is s!category 'Main)
                      (no (is displayed (item-text s))))
-              (tag (table style 'border-collapse:collapse width '100%)
+              (tag (table class 'mainsite)
                 (tr (tag (td class 'continue)
                   (link "continue reading &raquo;" (item-url s!id)))))))))))
 

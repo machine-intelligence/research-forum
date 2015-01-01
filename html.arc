@@ -111,6 +111,7 @@
 (attribute img        vspace         opnum)
 (attribute img        hspace         opnum)
 (attribute img        src            opstring)
+(attribute img        class          opstring) ;Brent 17-Dec-2014
 (attribute input      name           opstring)
 (attribute input      size           opnum)
 (attribute input      type           opsym)
@@ -126,6 +127,7 @@
 (attribute table      cellpadding    opnum)
 (attribute table      cellspacing    opnum)
 (attribute table      width          opstring)
+(attribute table      class          opstring) ;Brent 17-Dec-2014
 (attribute textarea   cols           opnum)
 (attribute textarea   name           opstring)
 (attribute textarea   rows           opnum)
