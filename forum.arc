@@ -7,11 +7,11 @@
 
 (declare 'atstrings t)
 
-(= this-site*    "FAI research forum"
+(= this-site*    "Intelligent Agent Foundations Forum"
    site-url*     "https://malo2-8080.terminal.com/" ; unfortunate, but necessary for rss feed
    parent-url*   ""
    favicon-url*  ""
-   site-desc*    "FAI research forum"               ; for rss feed
+   site-desc*    "Intelligent Agent Foundations Forum"               ; for rss feed
    site-color*   (color 40 50 120)
    border-color* (color 180 180 180)
    prefer-url*   t)
