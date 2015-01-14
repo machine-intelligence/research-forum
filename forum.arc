@@ -511,6 +511,52 @@ background-color: #254e7d;
 color:#ffffff; 
 }
 
+/*
+ * begin dropdown menu css
+ */
+
+ul.dropdown {
+  text-align: left;
+  display: inline;
+  margin: 0;
+  padding: 0 0 0 0;
+  list-style: none;
+}
+
+ul.dropdown li {
+  display: inline-block;
+  position: relative;
+  padding: 5px 0px;
+  background: #254e7d;
+}
+
+ul.dropdown li ul {
+  padding: 0;
+  position: absolute;
+  top: 25px;
+  left: -4px;
+  width: 125px;
+  box-shadow: none;
+  display: none;
+  opacity: 0;
+  visibility: hidden;
+}
+
+ul.dropdown li ul li {
+  display: block;
+  padding: 5px 4px;
+}
+
+ul.dropdown li:hover ul {
+  display: block;
+  opacity: 1;
+  visibility: visible;
+}
+
+/*
+ * end dropdown menu css
+ */
+
 table td.sb {
 background-color: #f8f8f8;
 width: 300px;
@@ -524,7 +570,6 @@ font-size: 12pt;
 font-weight: bold;
 color: #92b437 !important;
 }
-
 
 table td.sb > h3 > a:link {
 font-family: Verdana;
@@ -577,7 +622,7 @@ a:link    { color:#000000; text-decoration:none; }
 .subtext     { font-family:Verdana; font-size:  10pt; color:#828282; }
 .sb-subtext  { font-family:Verdana; font-size:   8pt; color:#828282; }
 .yclinks     { font-family:Verdana; font-size:  10pt; color:#828282; }
-.pagetop     { font-family:Verdana; font-size:  13pt; color:#ffffff; }
+.pagetop     { font-family:Verdana; font-size:  11pt; color:#ffffff; }
 .comhead     { font-family:Verdana; font-size:  10pt; color:#828282; }
 .comment     { font-family:Verdana; font-size:  12pt; color:#000000; }
 .dead        { font-family:Verdana; font-size:  11pt; color:#dddddd; }
@@ -588,7 +633,7 @@ a:link    { color:#000000; text-decoration:none; }
 .dead a:link, .dead a:visited { color:#dddddd; }
 .pagetop a:link { color:#ffffff; }
 .pagetop a:visited { color:#ffffff; }
-.topsel a:link, .topsel a:visited { color:#ffc040; }
+.topsel, .topsel a:link, .topsel a:visited { color:#ffc040; }
 
 .subtext a:link, .subtext a:visited { color:#828282; }
 .subtext a:hover { text-decoration:underline; }
@@ -662,24 +707,29 @@ pre:hover {overflow:auto} "))
 ; redefined later
 
 (def toprow (user label)
-  (w/bars 
-    (toplink "new" "newest" label)
-    (toplink "comments" "newcomments" label)
-    (toplink "members"  "members"     label)
-    (when user
-      (w/bars
-        (toplink "my posts" (submitted-url user) label)
-        (toplink "my comments" (threads-url user) label)
-        (toplink "my drafts" "drafts" label)
-        (toplink "my likes" (saved-url user) label)))
-    (hook 'toprow user label)
-    (link "submit")
-    (unless (mem label toplabels*)
-      (fontcolor white (pr label)))))
+  (tag (ul class 'dropdown)
+    (w/bars
+      (toplink "new" "newest" label)
+      (toplink "comments" "newcomments" label)
+      (toplink "members"  "members"     label)
+      (when user
+        (tag li
+          (tag-if (and label (headmatch "my " label)) (span class 'topsel)
+            (pr "my content"))
+          (tag ul
+            (toplink "my posts" (submitted-url user) label)
+            (toplink "my comments" (threads-url user) label)
+            (toplink "my drafts" "drafts" label)
+            (toplink "my likes" (saved-url user) label))))
+      (hook 'toprow user label)
+      (tag li (link "submit"))
+      (unless (mem label toplabels*)
+        (tag li (fontcolor white (pr label)))))))
 
 (def toplink (name dest label)
-  (tag-if (is name label) (span class 'topsel)
-    (link name dest)))
+  (tag li
+    (tag-if (is name label) (span class 'topsel)
+      (link name dest))))
 
 (def topright (user whence (o showkarma t))
   (when user 

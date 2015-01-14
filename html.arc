@@ -141,6 +141,7 @@
 (attribute td         valign         opsym)
 (attribute td         class          opstring)
 (attribute tr         bgcolor        opcolor)
+(attribute ul         class          opstring)
 (attribute hr         color          opcolor)
 (attribute span       class          opstring)
 (attribute span       align          opstring)
