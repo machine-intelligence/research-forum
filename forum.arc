@@ -1428,13 +1428,15 @@ pre:hover {overflow:auto} "))
 ; By default the ability to comment on an item is turned off after 
 ; 45 days, but this can be overriden with commentable key.
 
-(= commentable-threshold* (* 60 24 45))
+; Removing the time limit for now (we may revisit this once
+; the forum is no longer post-by-invitation)
+; (= commentable-threshold* (* 60 24 45))
 
 (def comments-active (i)
   (and (live&commentable i)
-       (live (superparent i))
-       (or (< (item-age i) commentable-threshold*)
-           (mem 'commentable i!keys))))
+       (live (superparent i))))
+       ;(or (< (item-age i) commentable-threshold*)
+       ;    (mem 'commentable i!keys))))
 
 
 (= displayfn* (table))
