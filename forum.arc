@@ -8,7 +8,7 @@
 (declare 'atstrings t)
 
 (= this-site*    "Intelligent Agent Foundations Forum"
-   site-url*     "https://malo2-8080.terminal.com/" ; unfortunate, but necessary for rss feed
+   site-url*     "http://forum.intelligence.org/" ; unfortunate, but necessary for rss feed
    parent-url*   ""
    favicon-url*  ""
    site-desc*    "Intelligent Agent Foundations Forum"               ; for rss feed
@@ -434,7 +434,8 @@
                       (let s (superparent c)
                         (pr (ellipsize s!title 50)))
                       (pr bar*)
-                      (itemscore c)))))))
+                      (itemscore c))))))
+         (format-sb-title (link "RSS" "rss")))
          ,@body))))
 
 (def reverse (text)
