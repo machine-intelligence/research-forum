@@ -1852,9 +1852,7 @@ pre:hover {overflow:auto} "))
 
 ; RSS
 
-(newsop rss () (rsspage nil))
-
-(newscache rsspage user 90
+(newsop rss ()
   (rss-feed (sort (compare > [if (no _!publish-time) _!time _!publish-time])
               (+ (retrieve perpage* [and live (no _!draft)] stories*)
                  (retrieve perpage* [and live (no _!draft)] comments*)))))
