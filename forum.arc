@@ -434,9 +434,8 @@
                       (let s (superparent c)
                         (pr (ellipsize s!title 50)))
                       (pr bar*)
-                      (itemscore c)))))))
-         ; Temporarily disabling RSS (it seems to be causing the site to go down)
-         ;(format-sb-title (link "RSS" "rss")))
+                      (itemscore c))))))
+         (format-sb-title (link "RSS" "rss")))
          ,@body))))
 
 (def reverse (text)
@@ -1852,29 +1851,26 @@ pre:hover {overflow:auto} "))
 
 
 ; RSS
-; Temporarily disabling RSS (it seems to be causing the site to go down)
 
-;(newsop rss () (rsspage nil))
+(newsop rss ()
+  (rss-feed (sort (compare > [if (no _!publish-time) _!time _!publish-time])
+              (+ (retrieve perpage* [and live (no _!draft)] stories*)
+                 (retrieve perpage* [and live (no _!draft)] comments*)))))
 
-;(newscache rsspage user 90
-;  (rss-feed (sort (compare > [if (no _!publish-time) _!time _!publish-time])
-;              (+ (retrieve perpage* [and live (no _!draft)] stories*)
-;                 (retrieve perpage* [and live (no _!draft)] comments*)))))
-;
-;(def rss-feed (items)
-;  (tag (rss version "2.0")
-;    (tag channel
-;      (tag title (pr this-site*))
-;      (tag link (pr site-url*))
-;      (tag description (pr site-desc*))
-;      (each i items
-;        (tag item
-;          (tag title (if (astory i) (pr (eschtml i!title))
-;                         (let s (superparent i)
-;                           (pr (+ "Comment on " (eschtml s!title))))))
-;          (tag link (pr (+ site-url* (item-url i!id))))
-;          (tag author (pr (strip-underscore i!by)))
-;          (tag description (pr (display-item-text i nil t))))))))
+(def rss-feed (items)
+  (tag (rss version "2.0")
+    (tag channel
+      (tag title (pr this-site*))
+      (tag link (pr site-url*))
+      (tag description (pr site-desc*))
+      (each i items
+        (tag item
+          (tag title (if (astory i) (pr (eschtml i!title))
+                         (let s (superparent i)
+                           (pr (+ "Comment on " (eschtml s!title))))))
+          (tag link (pr (+ site-url* (item-url i!id))))
+          (tag author (pr (strip-underscore i!by)))
+          (tag description (pr (display-item-text i nil t))))))))
 
 
 ; User Stats
