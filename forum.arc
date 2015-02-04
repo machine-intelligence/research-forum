@@ -1022,20 +1022,24 @@ pre:hover {overflow:auto} "))
         (trtd (tag (table width '100%)
                 (display-item (and number (++ n)) i user whence t preview-only show-immediate-parent)
                 (spacerow (if (is i!category 'Main) 25 5))))))
-    (when end
-      (let newend (+ end perpage*)
-        (when (and (<= newend maxend*) (< end (len items)))
-          (spacerow 10)
-          (tr (tag (td colspan (if number 2 1)))
-              (td
-                (morelink display-items 
-                          items label title end newend number))))))))
+    (spacerow 10)
+    (tr (tag (td align 'right)
+      (w/bars
+        (when (< 0 start)
+          (let newstart (max 0 (- start perpage*))
+            (navlink "Newer" display-items
+                    items label title newstart start number t)))
+        (when end
+          (let newend (+ end perpage*)
+            (when (and (<= newend maxend*) (< end (len items)))
+              (navlink "Older" display-items
+                      items label title end newend number t)))))))))
 
 ; This code is inevitably complex because the More fn needs to know 
 ; its own fnid in order to supply a correct whence arg to stuff on 
 ; the page it generates, like logout and delete links.
 
-(def morelink (f items label title . args)
+(def navlink (name f items label title . args)
   (tag (a href 
           (url-for
             (afnid (fn (req)
@@ -1046,7 +1050,7 @@ pre:hover {overflow:auto} "))
                        (longpage-sb user (msec) nil label title url t
                          (apply f user items label title url args))))))
           rel 'nofollow)
-    (pr "More")))
+    (pr name)))
 
 (def display-story (i s user whence preview-only (o commentpage))
   (when (or (cansee user s) (itemkids* s!id))
@@ -1802,18 +1806,22 @@ pre:hover {overflow:auto} "))
 
 (def display-threads (user comments label title whence
                       (o start 0) (o end threads-perpage*))
-  (tab 
+  (tag (table width '100%)
     (each c (cut comments start end)
       (display-comment-tree c user whence 0 t))
-    (when end
-      (let newend (+ end threads-perpage*)
-        (when (and (<= newend maxend*) (< end (len comments)))
-          (spacerow 10)
-          (row (tab (tr (td (hspace 0))
-                        (td (hspace votewid*))
-                        (td
-                          (morelink display-threads
-                                    comments label title end newend))))))))))
+    (spacerow 10)
+    (row (tag (table width '100%)
+      (tr (tag (td align 'right)
+      (w/bars
+        (when (< 0 start)
+          (let newstart (max 0 (- start threads-perpage*))
+            (navlink "Newer" display-threads
+                    comments label title newstart start)))
+        (when end
+          (let newend (+ end threads-perpage*)
+            (when (and (<= newend maxend*) (< end (len comments)))
+              (navlink "Older" display-threads
+                      comments label title end newend)))))))))))
 
 (def submissions (user (o limit)) 
   (map item (firstn limit (uvar user submitted))))
