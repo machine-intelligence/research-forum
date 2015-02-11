@@ -42,13 +42,14 @@
   version      0     ; incremented before first save
   draft        nil
   type         nil
-  category     nil   ; for stories: 'Main or 'Discussion
+  category     nil   ; for stories: 'Main, 'Discussion, or 'Link
   by           nil
   ip           nil
   time         nil   ; set on save
   publish-time nil   ; set on first publish
   title        nil
   text         nil
+  url          nil   ; for links (category 'Link) only
   deleted      nil
   parent       nil
   keys         nil)
@@ -724,7 +725,7 @@ pre:hover {overflow:auto} "))
     (tag (a href parent-url*)
       (tag (img class "logo" src logo-url* )))))
 
-(= toplabels* '(nil "new" "comments" "members" 
+(= toplabels* '(nil "new" "comments" "links" "members"
                     "my posts" "my comments" "my drafts" "my likes" "*"))
 
 ; redefined later
@@ -734,7 +735,8 @@ pre:hover {overflow:auto} "))
     (w/bars
       (toplink "new" "newest" label)
       (toplink "comments" "newcomments" label)
-      (toplink "members"  "members"     label)
+      (toplink "links" "links" label)
+      (toplink "members" "members" label)
       (when user
         (tag li
           (tag-if (and label (headmatch "my " label)) (span class 'topsel)
@@ -966,18 +968,27 @@ pre:hover {overflow:auto} "))
 ; Note: deleted items will persist for the remaining life of the 
 ; cached page.  If this were a prob, could make deletion clear caches.
 
+(newsop links () (linkspage user))
+
+(newscache linkspage user 40
+  (listpage user (msec) (newlinks user maxend*) "links" "New Links" "links"
+            nil t))
+
+(def newlinks (user n)
+  (retrieve n [and (cansee user _) (is _!category 'Link) (no _!draft)] stories*))
+
 (newscache newestpage user 40
-  (listpage user (msec) (newstories user maxend*) "new" "New Links" "newest" 
+  (listpage user (msec) (newstories user maxend*) "new" "New Stories" "newest"
             nil t))
 
 (def newstories (user n)
-  (retrieve n [and (cansee user _) (no _!draft)] stories*))
+  (retrieve n [and (cansee user _) (no (is _!category 'Link)) (no _!draft)] stories*))
 
 
 (newsop best () (bestpage user))
 
 (newscache bestpage user 1000
-  (listpage user (msec) (beststories user maxend*) "best" "Top Links"))
+  (listpage user (msec) (beststories user maxend*) "best" "Top Stories"))
 
 ; As no of stories gets huge, could test visibility in fn sent to best.
 
@@ -1110,14 +1121,17 @@ pre:hover {overflow:auto} "))
   (when i (tag (td align 'right valign 'top class 'title)
             (pr i "."))))
 
+; TODO: add a td class for the 'Link category?
 (def titleline (s user whence)
-  (tag (td class (if (is s!category 'Main) 'title 'discussion-title))
+  (tag (td class (if (is s!category 'Main) 'title
+                     (is s!category 'Discussion) 'discussion-title))
     (if (cansee user s)
         (do (deadmark s user)
             (if s!draft (tag (a href (item-url s!id)
                                 style 'font-style:italic)
                           (pr (+ "[draft] " s!title)))
-                (link s!title (item-url s!id))))
+                (if (is s!category 'Link) (link s!title s!url)
+                  (link s!title (item-url s!id)))))
         (pr "[deleted]"))))
 
 (def deadmark (i user)
@@ -1191,6 +1205,7 @@ pre:hover {overflow:auto} "))
 (def itemline (i user whence)
   (when (cansee user i) 
     (if (is i!category 'Discussion) (pr " discussion post")
+        (is i!category 'Link) (pr " link")
         (is i!type 'story) (pr " post"))
     (byline i user)
     (and-list [userlink-or-you user _] (likes i user) (pr)
@@ -1327,44 +1342,50 @@ pre:hover {overflow:auto} "))
 
 (newsop submit ()
   (if user
-      (submit-page user "")
-      (submit-login-warning "")))
-
-(def submit-login-warning ((o title) (o text))
-  (login-page 'login "You have to be logged in to submit."
-              (fn (user ip) 
-                (ensure-news-user user)
-                (newslog ip user 'submit-login)
-                (submit-page user title text))))
+      (submit-page user)
+      (login-page 'login "You have to be logged in to submit."
+                  (fn (user ip)
+                    (ensure-news-user user)
+                    (newslog ip user 'submit-login)
+                    (submit-page user)))))
 
 (defop dosubmit req
-  (with (title (striptags (or (arg req "title") ""))
-         text (or (arg req "text") "") user (get-user req)
+  (with (user (get-user req)
+         url (or (arg req "url") "")
+         title (striptags (or (arg req "title") ""))
+         text (or (arg req "text") "")
          draft (isnt (arg req "draft") nil)
-         category (if (is (arg req "category") "Discussion")
-                      'Discussion 'Main))
+         category (if (is (arg req "category") "Main") 'Main
+                      (is (arg req "category") "Discussion") 'Discussion
+                      'Link))
     (if (~arg req "auth")
          (pr "Nothing here.")
         (~check-auth req)
          (authentication-failure-msg req)
-        (or (blank title) (blank text))
-         (submit-page user title text blanktext*)
+        (or (blank title) (and (is category 'Link) (blank url)))
+         (submit-page user url title text category blankurl*)
+        (or (blank title) (and (no (is category 'Link)) (blank text)))
+         (submit-page user url title text category blanktext*)
         (len> title title-limit*)
-         (submit-page user title text toolong*)
-      (atlet s (create-story title text user req!ip category draft)
+         (submit-page user url title text category toolong*)
+      (atlet s (create-story title url text user req!ip category draft)
         (submit-item user s)
         (if draft (edit-page user s)
-                  (pr "<meta http-equiv='refresh' content='0; url=/newest'>"))))))
+            (is category 'Link) (pr "<meta http-equiv='refresh' content='0; url=/links'>")
+            (pr "<meta http-equiv='refresh' content='0; url=/newest'>"))))))
 
-(def submit-page (user (o title) (o text "") (o msg))
+(def submit-page (user (o url "") (o title "") (o text "") (o category) (o msg))
   (shortpage user nil nil "Submit" "submit"
     (pagemessage msg)
     (authform "/dosubmit" user
       (tab
         (row "title"    (input "title" title 50))
-        (row "category" (do (menu "category" '(Main Discussion) 'Main)
+        (row "category" (do (menu "category" '(Main Discussion Link) (or category 'Main))
                             (pr " &nbsp; ")
                             (underlink "What's this?" "/item?id=52")))
+        (tr
+          (td "url")
+          (td (input "url" url 50)))
         (tr
           (td "text")
           (td 
@@ -1385,25 +1406,29 @@ pre:hover {overflow:auto} "))
 ; http://news.domain.com/submitlink?u=http://foo.com&t=Foo
 ; Added a confirm step to avoid xss hacks.
 
-(newsop submitlink (u t)
-  (if user 
-      (submit-page user u)
-      (submit-login-warning u)))
+; (newsop submitlink (u t)
+;  (if user
+;      (submit-page user u)
+;      (submit-login-warning u)))
 
 (= title-limit* 160
    retry*       "Please try again."
    toolong*     "Please make title < @title-limit* characters."
-   blanktext*   "Please fill in the title and the body.")
+   blanktext*   "Please fill in the title and the body."
+   blankurl*    "Please fill in the title and the URL.")
 
 (def submit-item (user i)
   (push i!id (uvar user submitted))
   (save-prof user)
   (astory&adjust-rank i))
 
-(def create-story (title text user ip category draft)
+(def create-story (title url text user ip category draft)
   (newslog ip user 'create (list title))
+  (if (is category 'Link) (= text "")
+      (= url ""))
+  (if (and url (no (begins url "http"))) (= url (+ "http://" url)))
   (let s (inst 'item 'type 'story 'id (new-item-id) 'category category
-                     'title title 'text text 'by user 'ip ip 'draft draft)
+                     'title title 'url url 'text text 'by user 'ip ip 'draft draft)
     (save-item s)
     (= (items* s!id) s)
     (push s stories*)
@@ -1502,12 +1527,15 @@ pre:hover {overflow:auto} "))
       (+ (until-token text "</p>") "</p>"))))
 
 (def display-item-text (s user preview-only)
-  (when (and (cansee user s))
-    (if (no preview-only)
-         (item-text s)
-        (is s!category 'Main)
-         (preview (item-text s))
-         "")))
+  (if
+    (no (cansee user s)) nil
+    (is s!category 'Main) (if
+                            preview-only (preview (item-text s))
+                            (item-text s))
+    (is s!category 'Discussion) (if
+                                  preview-only ""
+                                  (item-text s))
+    (is s!category 'Link) ""))
 
 
 ; Edit Item
@@ -1553,8 +1581,9 @@ pre:hover {overflow:auto} "))
 (= (fieldfn* 'story)
    (fn (user s)
      (with (a (admin user)  e (editor user)  x (canedit user s)
-            cat '(choice sym Main Discussion))
+            cat '(choice sym Main Discussion Link))
        `((string2 title     ,s!title        t ,x)
+         (string2 url       ,s!url          t ,x)
          (pandoc  text      ,s!text         t ,x)
          (,cat    category  ,s!category     t ,x)
          ,@(standard-item-fields s a e x)))))
