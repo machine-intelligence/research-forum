@@ -363,7 +363,7 @@
 (def gen-css-url ()
   (prn "<link rel=\"stylesheet\" type=\"text/css\" href=\"forum.css\">"))
 
-(mac npage (title . body)
+(mac npage (notify title . body)
   `(tag html 
      (tag head 
        (gen-css-url)
@@ -372,6 +372,12 @@
        (tag title (pr ,title)))
      (tag body 
        (center
+         (if ,notify
+           (tag (table class "notify")
+             (tr (td
+               (pr "Welcome to the Intelligent Agent Foundations Forum!  New users, please ")
+               (link "read this first" "welcome")
+               (pr ".")))))
          (tag (table class "frame")
            ,@body)))))
 
@@ -380,7 +386,7 @@
 (mac fulltop (user lid label title whence . body)
   (w/uniq (gu gi gl gt gw)
     `(with (,gu ,user ,gi ,lid ,gl ,label ,gt ,title ,gw ,whence)
-       (npage (+ this-site* (if ,gt (+ bar* ,gt) ""))
+       (npage (no user) (+ this-site* (if ,gt (+ bar* ,gt) ""))
          (do (pagetop 'full ,gi ,gl ,gt ,gu ,gw)
              (hook 'page ,gu ,gl)
              ,@body)))))
@@ -468,7 +474,7 @@
      (trtd ,@body)))
 
 (mac minipage (label . body)
-  `(npage (+ this-site* bar* ,label)
+  `(npage nil (+ this-site* bar* ,label)
      (pagetop nil nil ,label)
      (trtd ,@body)))
 
@@ -495,6 +501,21 @@ background-color:#eaeaea !important;
 margin: 0px;
 }
 
+table.notify
+{
+width: 100%; background-color: #f8f8f8;
+padding: 5px; text-align: center;
+}
+
+.notify td {
+    font-size: 12pt;
+    color: 254e7d;
+}
+
+.notify a:link {
+    text-decoration: underline;
+}
+
 table.frame
 {
 width: 85%; border-left: 1px solid #d2d2d2;
@@ -502,6 +523,7 @@ border-right: 1px solid #d2d2d2; background-color: #ffffff;
 -webkit-border-horizontal-spacing: 0px;
 -webkit-border-vertical-spacing: 0px;
 }
+
 
 table.topbar {
 width: 100%;
@@ -825,6 +847,11 @@ pre:hover {overflow:auto} "))
                    ))
                (fn () (newsadmin-page user)))))
 
+
+(newsop welcome (user)
+  (longpage-sb user (msec) nil nil "Welcome" "welcome" t
+    (tag (table cellpadding 10)
+      (tr (td (pr "Welcome!  Please replace this with something more suitable."))))))
 
 ; Users
 
