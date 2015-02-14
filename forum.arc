@@ -30,6 +30,7 @@
   auth       0
   member     nil
   submitted  nil
+  contributor-only nil
   karma      1
   weight     .5
   email      nil
@@ -121,7 +122,7 @@
 
 (def init-user (u)
   (= (votes* u) (table) 
-     (profs* u) (inst 'profile 'id u))
+     (profs* u) (inst 'profile 'id u 'contributor-only t))
   (save-votes u)
   (save-prof u)
   u)
@@ -767,7 +768,7 @@ pre:hover {overflow:auto} "))
           (logout-user user)
           whence))
       (onlink "login"
-        (login-page 'login nil
+        (login-page 'both nil
                     (list (fn (u ip) 
                             (ensure-news-user u)
                             (newslog ip u 'top-login))
@@ -780,7 +781,7 @@ pre:hover {overflow:auto} "))
   `(defop ,name ,parm
      (if (,test (get-user ,parm))
          (do ,@body)
-         (login-page 'login (+ "Please log in" ,msg ".")
+         (login-page 'both (+ "Please log in" ,msg ".")
                      (list (fn (u ip) (ensure-news-user u))
                            (string ',name (reassemble-args ,parm)))))))
 
@@ -897,7 +898,7 @@ pre:hover {overflow:auto} "))
       (string  password   ,(resetpw-link)                          ,w   nil)
       (string  saved      ,(saved-link user subject)               ,u   nil)
       (int     auth       ,(p 'auth)                               ,e  ,a)
-      (yesno   member     ,(p 'member)                             ,a  ,a)
+      (yesno   contributor-only ,(p 'contributor-only)             ,a  ,a)
       (posint  karma      ,(* karma-multiplier* (p 'karma))         t  ,a)
       (num     weight     ,(p 'weight)                             ,a  ,a)
       (mdtext  about      ,(p 'about)                               t  ,u)
@@ -1176,7 +1177,7 @@ pre:hover {overflow:auto} "))
         (and by (or (isnt by user) (isnt (sym auth) (user->cookie* user))))
          (pr "User mismatch.")
         (no user)
-         (login-page 'login "You have to be logged in to vote."
+         (login-page 'login "You have to be logged in as a full member to vote."
                      (list (fn (u ip)
                              (ensure-news-user u)
                              (newslog ip u 'vote-login)
@@ -1343,7 +1344,7 @@ pre:hover {overflow:auto} "))
 (newsop submit ()
   (if user
       (submit-page user)
-      (login-page 'login "You have to be logged in to submit."
+      (login-page 'both "You have to be logged in to submit."
                   (fn (user ip)
                     (ensure-news-user user)
                     (newslog ip user 'submit-login)
@@ -1621,7 +1622,7 @@ pre:hover {overflow:auto} "))
 ; Comment Submission
 
 (def comment-login-warning (parent whence (o text))
-  (login-page 'login "You have to be logged in to comment."
+  (login-page 'both "You have to be logged in to comment."
               (fn (u ip)
                 (ensure-news-user u)
                 (newslog ip u 'comment-login)
@@ -1832,7 +1833,7 @@ pre:hover {overflow:auto} "))
     (if (and (only.comments-active i) (no i!draft))
         (if user
             (addcomment-page i user whence)
-            (login-page 'login "You have to be logged in to comment."
+            (login-page 'both "You have to be logged in to comment."
                         (fn (u ip)
                           (ensure-news-user u)
                           (newslog ip u 'comment-login)

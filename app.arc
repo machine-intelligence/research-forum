@@ -157,7 +157,7 @@
       (hook 'login-form afterward)
       (br2))
     (when (in switch 'register 'both)
-      (login-form "Create Account" switch create-handler afterward))))
+      (login-form "Create Contributor Account" switch create-handler afterward))))
 
 (def login-form (label switch handler afterward)
   (prbold label)
