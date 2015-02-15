@@ -1364,6 +1364,10 @@ pre:hover {overflow:auto} "))
                       'Link))
     (if (~arg req "auth")
          (pr "Nothing here.")
+        (and (no (full-member user)) (no (is category 'Link)))
+         (pr "Contributors can only submit links.")
+        (and (is category 'Link) (isnt draft nil))
+         (submit-page user url title text category nolinkdraft*)
         (~check-auth req)
          (authentication-failure-msg req)
         (or (blank title) (and (is category 'Link) (blank url)))
@@ -1384,27 +1388,31 @@ pre:hover {overflow:auto} "))
     (authform "/dosubmit" user
       (tab
         (row "title"    (input "title" title 50))
-        (row "category" (do (menu "category" '(Main Discussion Link) (or category 'Main))
-                            (pr " &nbsp; ")
-                            (underlink "What's this?" "/item?id=52")))
+        (if (full-member user)
+          (row "category" (do (menu "category" '(Main Discussion Link) (or category 'Main))
+                              (pr " &nbsp; ")
+                              (underlink "What's this?" "/item?id=52"))))
         (tr
           (td "url")
           (td (input "url" url 50)))
-        (tr
-          (td "text")
-          (td 
-            (textarea "text" 16 50 (only.pr text))
-            (pr " ")
-            (tag (font size -2)
-              (tag (a href formatdoc-url* target '_blank)
-                (tag (font color (gray 175)) (pr "formatting help"))))))
-        (row "" (do
-                  (tag (button type 'submit
-                               name "draft"
-                               value "t"
-                               onclick "needToConfirm = false;")
-                    (pr "save draft & preview"))
-                  (protected-submit "publish post")))))))
+        (if (full-member user)
+          (tr
+            (td "text")
+            (td
+              (textarea "text" 16 50 (only.pr text))
+              (pr " ")
+              (tag (font size -2)
+                (tag (a href formatdoc-url* target '_blank)
+                  (tag (font color (gray 175)) (pr "formatting help")))))))
+        (row "" (if (full-member user)
+                  (do
+                    (tag (button type 'submit
+                                 name "draft"
+                                 value "t"
+                                 onclick "needToConfirm = false;")
+                      (pr "save draft & preview"))
+                    (protected-submit "publish post"))
+                  (protected-submit "submit link")))))))
 
 ; For use by outside code like bookmarklet.
 ; http://news.domain.com/submitlink?u=http://foo.com&t=Foo
@@ -1419,8 +1427,8 @@ pre:hover {overflow:auto} "))
    retry*       "Please try again."
    toolong*     "Please make title < @title-limit* characters."
    blanktext*   "Please fill in the title and the body."
-   blankurl*    "Please fill in the title and the URL.")
-
+   blankurl*    "Please fill in the title and the URL."
+   nolinkdraft* "Link submissions cannot be saved as drafts.")
 (def submit-item (user i)
   (push i!id (uvar user submitted))
   (save-prof user)
@@ -1584,21 +1592,21 @@ pre:hover {overflow:auto} "))
 
 (= (fieldfn* 'story)
    (fn (user s)
-     (with (a (admin user)  e (editor user)  x (canedit user s)
+     (with (a (admin user)  e (editor user)  x (canedit user s) m (full-member user)
             cat '(choice sym Main Discussion Link))
        `((string2 title     ,s!title        t ,x)
-         (string2 url       ,s!url          t ,x)
-         (pandoc  text      ,s!text         t ,x)
-         (,cat    category  ,s!category     t ,x)
-         ,@(standard-item-fields s a e x)))))
+         (string2 url       ,s!url          ,(or m (is s!category 'Link)) ,x)
+         (pandoc  text      ,s!text         ,m ,(and x m))
+         (,cat    category  ,s!category     ,m ,(and x m))
+         ,@(standard-item-fields s a e x m)))))
 
 (= (fieldfn* 'comment)
    (fn (user c)
-     (with (a (admin user)  e (editor user)  x (canedit user c))
+     (with (a (admin user)  e (editor user)  x (canedit user c) m (full-member user))
        `((pandoc  text      ,c!text         t ,x)
-         ,@(standard-item-fields c a e x)))))
+         ,@(standard-item-fields c a e x m)))))
 
-(def standard-item-fields (i a e x)
+(def standard-item-fields (i a e x m)
   (let fields `((int     likes     ,(len (itemlikes* i!id)) ,a  nil)
                 (yesno   deleted   ,i!deleted               ,a ,a)
                 (sexpr   keys      ,i!keys                  ,a ,a)
