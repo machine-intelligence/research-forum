@@ -143,7 +143,8 @@
 
 (mac karma   (u) `(uvar ,u karma))
 
-(mac full-member (u) `(no (uvar ,u contributor-only)))
+(def full-member (u)
+  (and u (no ((profile u) 'contributor-only))))
 
 ; Note that users will now only consider currently loaded users.
 
@@ -327,11 +328,20 @@
             ranked-stories*))
 
 (= max-delay* 10)
+(= invisible-threshold* 2)
 
 (def cansee (user i)
-  (if i!deleted   (admin user)
-      i!draft     (author user i)
-      (delayed i) (author user i)
+  (if i!deleted
+       (admin user)
+      i!draft
+       (author user i)
+      (delayed i)
+       (author user i)
+      (no (full-member i!by))
+       (or
+         (author user i)
+         (full-member user)
+         (>= (len (itemlikes* i!id)) invisible-threshold*))
       t))
 
 (let mature (table)
