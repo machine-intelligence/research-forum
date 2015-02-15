@@ -143,6 +143,8 @@
 
 (mac karma   (u) `(uvar ,u karma))
 
+(mac full-member (u) `(no (uvar ,u contributor-only)))
+
 ; Note that users will now only consider currently loaded users.
 
 (def users ((o f idfn)) 
@@ -1155,6 +1157,7 @@ pre:hover {overflow:auto} "))
 
 (def canvote (user i dir)
   (and user
+       (full-member user)
        (news-type&live i)
        (~author user i)
        (in dir 'like nil)
