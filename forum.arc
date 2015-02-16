@@ -328,7 +328,22 @@
             ranked-stories*))
 
 (= max-delay* 10)
+(= canreply-threshold* 1)
 (= invisible-threshold* 2)
+
+; Assumes 'cansee' check is performed elsewhere
+(def cancomment (user i)
+  (if
+    (astory i)
+     t
+    (canreply user i)))
+
+(def canreply (user i)
+  (if (full-member i!by)
+       t
+      (full-member user)
+       (>= (len (itemlikes* i!id)) canreply-threshold*)
+      t))
 
 (def cansee (user i)
   (if i!deleted
@@ -424,7 +439,10 @@
   `(para (tag (h3) (pr ,title))))
 
 (mac format-sb-item (i)
-  `(tag (p) (tag (a href (item-url i!id) class 'sb)
+  `(tag (p) (tag (a href
+                   (if (is i!category 'Link) i!url
+                       (item-url i!id))
+                   class 'sb)
               (tag (b) (pr (eschtml i!title))))
             (br)
             (tab (tr (tag (td class 'sb-subtext)
@@ -438,6 +456,8 @@
      (if (no ,show-comments) 
        (do ,@body)
        (add-sidebar (+
+         (format-sb-title (link "NEW LINKS" "links"))
+         (each i (sb-links ,user sb-link-count*) (format-sb-item i))
          (format-sb-title "NEW POSTS")
          (each i (sb-posts ,user sb-post-count*) (format-sb-item i))
          (format-sb-title "NEW DISCUSSION POSTS")
@@ -936,7 +956,8 @@ pre:hover {overflow:auto} "))
 (= caching* 1 perpage* 25 threads-perpage* 10 maxend* 500
    preview-maxlen* 1000 karma-multiplier* 5)
 
-(= sb-post-count* 5
+(= sb-link-count* 5
+   sb-post-count* 5
    sb-discussion-post-count* 5
    sb-comment-count* 15
    sb-comment-maxlen* 30)
@@ -960,6 +981,8 @@ pre:hover {overflow:auto} "))
 (newsop ||   () (newspage user))
 
 ;(newsop index.html () (newspage user))
+
+(def sb-links (user n) (retrieve n [and (cansee user _) (no _!draft) (is _!category 'Link)] stories*))
 
 (def sb-posts (user n) (retrieve n [and (cansee user _) (no _!draft) (is _!category 'Main)] stories*))
 
@@ -1683,7 +1706,7 @@ pre:hover {overflow:auto} "))
                  (esc-tags (arg req "whence")) "' />")))))
 
 (def comment-form (parent user whence (o text))
-  (when user
+  (when (and user (cancomment user parent))
     (authform "/submitcomment" user
       (hidden 'parent parent!id)
       (hidden 'whence whence)
@@ -1830,7 +1853,7 @@ pre:hover {overflow:auto} "))
           (if (and (~mem 'neutered c!keys)
                    (replyable c indent)
                    (comments-active c))
-              (underline (replylink c whence))
+              (if (canreply user c) (underline (replylink c whence)))
               (fontcolor sand (pr "-----"))))))))
 
 ; For really deeply nested comments, caching could add another reply 
@@ -1851,7 +1874,7 @@ pre:hover {overflow:auto} "))
 (newsop reply (id whence)
   (with (i      (safe-item id)
          whence (or (only.urldecode whence) "news"))
-    (if (and (only.comments-active i) (no i!draft))
+    (if (and (only.comments-active i) (no i!draft) (canreply user))
         (if user
             (addcomment-page i user whence)
             (login-page 'both "You have to be logged in to comment."
