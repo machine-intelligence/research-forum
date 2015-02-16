@@ -569,6 +569,49 @@ color:#ffffff;
 }
 
 /*
+ * begin collapsible comment css
+ */
+
+.toggle-box {
+  display: none;
+}
+
+.toggle-box + label {
+  cursor: pointer;
+  display: block;
+  line-height: 21px;
+  margin-bottom: 5px;
+}
+
+.toggle-box + label + div {
+  display: none;
+  margin-bottom: 10px;
+}
+
+.toggle-box:checked + label + div {
+  display: block;
+}
+
+.toggle-box + label:before {
+  content: \"+\";
+  display: block;
+  float: left;
+  height: 20px;
+  line-height: 20px;
+  margin-right: 5px;
+  text-align: center;
+  width: 20px;
+}
+
+.toggle-box:checked + label:before {
+  content: \"\\2212\";
+}
+
+/*
+ * end collapsible comment css
+ */
+
+/*
  * begin dropdown menu css
  */
 
@@ -1843,10 +1886,13 @@ pre:hover {overflow:auto} "))
               (link (ellipsize s!title 50) (item-url s!id))))))
       (when (or parent (cansee user c))
         (br))
-      (spanclass comment
+      (when (no (cansee nil c))
+        (gentag input class 'toggle-box type 'checkbox id (+ "collapse" c!id))
+        (tag (label for (+ "collapse" c!id)) (pr "New comment by contributor.")))
+      (tag div (spanclass comment
         (if (~cansee user c)               (pr "[deleted]")
             (nor (live c) (author user c)) (spanclass dead (pr (item-text c)))
-                                           (pr (item-text c))))
+                                           (pr (item-text c)))))
       (when (and astree (cansee user c) (live c) (no c!draft))
         (para)
         (tag (font size 1)
