@@ -537,7 +537,7 @@ margin: 0px;
 
 table.notify
 {
-width: 100%; background-color: #f8f8f8;
+width: 100%; background-color: #eaeaea;
 padding: 5px; text-align: center;
 }
 

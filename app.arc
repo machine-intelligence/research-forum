@@ -235,9 +235,9 @@
   (dc-usernames* (downcase user)))
 
 (def bad-newacct (user pw)
-  (if (no (goodname user 2 15))
+  (if (no (goodname user 2 20))
        "Usernames can only contain letters, digits, dashes and 
-        underscores, and should be between 2 and 15 characters long.  
+        underscores, and should be between 2 and 20 characters long.
         Please choose another."
       (username-taken user)
        "That username is taken. Please choose another."
