@@ -1990,8 +1990,9 @@ pre:hover {overflow:auto} "))
   (longpage-sb user (msec) nil "members" "members" "members" t
     (sptab
       (let i 0
-        (each u (sort (compare > [karma _])
-                      (keep [pos [cansee nil _] (submissions _)] (users)))
+        (each u (keep [full-member _]
+                  (sort (compare > [karma _])
+                    (keep [pos [cansee nil _] (submissions _)] (users))))
           (tr (tdr:pr (++ i) ".")
               (td (userlink user u))
               (tdr:pr (* karma-multiplier* (karma u))))
