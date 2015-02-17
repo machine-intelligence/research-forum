@@ -926,7 +926,7 @@ pre:hover {overflow:auto} "))
                (fn () (newsadmin-page user)))))
 
 
-(newsop welcome (user)
+(newsop welcome ()
   (longpage-sb user (msec) nil nil "Welcome" "welcome" t
     (tag (table cellpadding 10)
       (tr (td (pr "Welcome!  Please replace this with something more suitable."))))))
