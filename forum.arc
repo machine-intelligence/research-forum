@@ -341,7 +341,7 @@
 (def canreply (user i)
   (if (full-member i!by)
        t
-      (full-member user)
+      (or (full-member user) (author user i))
        (>= (len (itemlikes* i!id)) canreply-threshold*)
       t))
 
@@ -1903,7 +1903,7 @@ pre:hover {overflow:auto} "))
 (newsop reply (id whence)
   (with (i      (safe-item id)
          whence (or (only.urldecode whence) "news"))
-    (if (and (only.comments-active i) (no i!draft) (canreply user))
+    (if (and (only.comments-active i) (no i!draft) (canreply user i))
         (if user
             (addcomment-page i user whence)
             (login-page 'both "You have to be logged in to comment."
