@@ -1886,7 +1886,7 @@ pre:hover {overflow:auto} "))
               (link (ellipsize s!title 50) (item-url s!id))))))
       (when (or parent (cansee user c))
         (br))
-      (when (no (cansee nil c))
+      (when (and (no (author user c)) (no (cansee nil c)))
         (gentag input class 'toggle-box type 'checkbox id (+ "collapse" c!id))
         (tag (label for (+ "collapse" c!id)) (pr "New comment by contributor.")))
       (tag div (spanclass comment
