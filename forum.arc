@@ -392,12 +392,32 @@
 (def gen-css-url ()
   (prn "<link rel=\"stylesheet\" type=\"text/css\" href=\"forum.css\">"))
 
+(def gen-collapse-script(c)
+  (let template "
+<script type='text/javascript'>
+$(window).load(function() {
+  $(\".toggle-{{1}}\").click(function() {
+    var val = $(this).text();
+    if (val == \"[+] Expand\") {
+      $(\"div.comment-{{1}}\").css('display', 'block');
+      $(this).text(\"[-] Collapse\");
+    } else {
+      $(\"div.comment-{{1}}\").css('display', 'none');
+      $(this).text(\"[+] Expand\");
+    }
+    return false;
+  });
+});
+</script>"
+    (subst c!id "{{1}}" template)))
+
 (mac npage (notify title . body)
   `(tag html 
      (tag head 
        (gen-css-url)
        (prn "<link rel=\"shortcut icon\" href=\"" favicon-url* "\">")
        (prn "<script src=\"https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML\" type=\"text/javascript\"></script>")
+       (prn "<script type='text/javascript' src='https://code.jquery.com/jquery-1.11.2.min.js'></script>")
        (tag title (pr ,title)))
      (tag body 
        (center
@@ -567,49 +587,6 @@ background-color: #254e7d;
 .pagetop a:visited {
 color:#ffffff; 
 }
-
-/*
- * begin collapsible comment css
- */
-
-.toggle-box {
-  display: none;
-}
-
-.toggle-box + label {
-  cursor: pointer;
-  display: block;
-  line-height: 21px;
-  margin-bottom: 5px;
-}
-
-.toggle-box + label + div {
-  display: none;
-  margin-bottom: 10px;
-}
-
-.toggle-box:checked + label + div {
-  display: block;
-}
-
-.toggle-box + label:before {
-  content: \"+\";
-  display: block;
-  float: left;
-  height: 20px;
-  line-height: 20px;
-  margin-right: 5px;
-  text-align: center;
-  width: 20px;
-}
-
-.toggle-box:checked + label:before {
-  content: \"\\2212\";
-}
-
-/*
- * end collapsible comment css
- */
 
 /*
  * begin dropdown menu css
@@ -1867,6 +1844,9 @@ pre:hover {overflow:auto} "))
                (* (+ (trunc (/ age  3600)) 1)  3600)
                (* (+ (trunc (/ age 86400)) 1) 86400)))))
 
+(def should-collapse (c user)
+  (and (no (author user c)) (no (cansee nil c))))
+
 (def gen-comment-body (c user whence astree indent showpar showon)
   (tag (td class 'default)
     (let parent (and (or (no astree) showpar) (c 'parent))
@@ -1886,13 +1866,16 @@ pre:hover {overflow:auto} "))
               (link (ellipsize s!title 50) (item-url s!id))))))
       (when (or parent (cansee user c))
         (br))
-      (when (and (no (author user c)) (no (cansee nil c)))
-        (gentag input class 'toggle-box type 'checkbox id (+ "collapse" c!id))
-        (tag (label for (+ "collapse" c!id)) (pr "New comment by contributor.")))
-      (tag div (spanclass comment
-        (if (~cansee user c)               (pr "[deleted]")
-            (nor (live c) (author user c)) (spanclass dead (pr (item-text c)))
-                                           (pr (item-text c)))))
+      (when (should-collapse c user)
+        (pr (gen-collapse-script c))
+        (tag (a href "" class (+ "toggle-" c!id) style "font-size:11pt; color:#828282")
+          (pr "[+] Expand")))
+      (tag (div class (+ "comment-" c!id) style
+             (if (should-collapse c user) "display:none" ""))
+        (spanclass comment
+          (if (~cansee user c)               (pr "[deleted]")
+              (nor (live c) (author user c)) (spanclass dead (pr (item-text c)))
+                                             (pr (item-text c)))))
       (when (and astree (cansee user c) (live c) (no c!draft))
         (para)
         (tag (font size 1)
