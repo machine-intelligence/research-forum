@@ -459,10 +459,7 @@ $(window).load(function() {
   `(para (tag (h3) (pr ,title))))
 
 (mac format-sb-item (i)
-  `(tag (p) (tag (a href
-                   (if (is i!category 'Link) i!url
-                       (item-url i!id))
-                   class 'sb)
+  `(tag (p) (tag (a href (item-url i!id) class 'sb)
               (tag (b) (pr (eschtml i!title))))
             (br)
             (tab (tr (tag (td class 'sb-subtext)
