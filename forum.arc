@@ -775,7 +775,7 @@ pre:hover {overflow:auto} "))
     (tag (a href parent-url*)
       (tag (img class "logo" src logo-url* )))))
 
-(= toplabels* '(nil "new" "comments" "links" "members"
+(= toplabels* '(nil "new" "comments" "links" "full members" "contributors"
                     "my posts" "my comments" "my drafts" "my likes" "*"))
 
 ; redefined later
@@ -786,7 +786,15 @@ pre:hover {overflow:auto} "))
       (toplink "new" "newest" label)
       (toplink "comments" "newcomments" label)
       (toplink "links" "links" label)
-      (toplink "members" "members" label)
+      (tag li
+        (tag-if (or
+                  (is label "full members")
+                  (is label "contributors"))
+                (span class 'topsel)
+          (pr "members"))
+        (tag ul
+          (toplink "full members" "members" label)
+          (toplink "contributors" "contributors" label)))
       (when user
         (tag li
           (tag-if (and label (headmatch "my " label)) (span class 'topsel)
@@ -2013,12 +2021,26 @@ pre:hover {overflow:auto} "))
 (newsop members () (memberspage user))
 
 (newscache memberspage user 1000
-  (longpage-sb user (msec) nil "members" "members" "members" t
+  (longpage-sb user (msec) nil "full members" "members" "members" t
     (sptab
       (let i 0
         (each u (keep [full-member _]
                   (sort (compare > [karma _])
                     (keep [pos [cansee nil _] (submissions _)] (users))))
+          (tr (tdr:pr (++ i) ".")
+              (td (userlink user u))
+              (tdr:pr (* karma-multiplier* (karma u))))
+          (if (is i 10) (spacerow 30)))))))
+
+(newsop contributors () (contributorspage user))
+
+(newscache contributorspage user 1000
+  (longpage-sb user (msec) nil "contributors" "contributors" "contributors" t
+    (sptab
+      (let i 0
+        (each u (keep [no (full-member _)]
+                  (sort (compare > [karma _])
+                    (keep [pos [cansee user _] (submissions _)] (users))))
           (tr (tdr:pr (++ i) ".")
               (td (userlink user u))
               (tdr:pr (* karma-multiplier* (karma u))))
