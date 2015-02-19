@@ -406,18 +406,18 @@
 $(window).load(function() {
   $(\".toggle-{{1}}\").click(function() {
     var val = $(this).text();
-    if (val == \"[+] Expand\") {
-      $(\"div.comment-{{1}}\").css('display', 'block');
-      $(this).text(\"[-] Collapse\");
+    if (val.indexOf('[+]') == 0) {
+      $(\"td.comment-{{1}}\").css('display', 'block');
+      $(this).text(\"[-] Collapse comment by {{2}}\");
     } else {
-      $(\"div.comment-{{1}}\").css('display', 'none');
-      $(this).text(\"[+] Expand\");
+      $(\"td.comment-{{1}}\").css('display', 'none');
+      $(this).text(\"[+] Expand comment by {{2}}\");
     }
     return false;
   });
 });
 </script>"
-    (subst identifier "{{1}}" template)))
+    (multisubst `(("{{1}}" ,identifier) ("{{2}}" ,(strip-underscore c!by))) template)))
 
 (mac npage (notify title . body)
   `(tag html 
@@ -1785,8 +1785,17 @@ pre:hover {overflow:auto} "))
 
 (def display-comment-tree (c user whence (o indent 0) (o initialpar))
   (when (cansee-descendant user c)
-    (display-1comment c user whence indent initialpar t)
-    (display-subcomments c user whence (+ indent 1))))
+    (let identifier c!id ; use (rand-id) if a comment can appear more than once on a page
+      (when (should-collapse c user)
+        (pr (gen-collapse-script c identifier))
+        (tr (td (hspace (+ 27 (* indent 40)))
+          (tag (a href "" class (+ "toggle-" identifier) style "font-size:11pt; color:#828282")
+            (pr (+ "[+] Expand comment by " (strip-underscore c!by)))))))
+      (tr (tag (td class (+ "comment-" identifier)
+                   style (if (should-collapse c user) "display:none" ""))
+                 (tab
+                   (display-1comment c user whence indent initialpar t)
+                   (display-subcomments c user whence (+ indent 1))))))))
 
 (def display-1comment (c user whence indent showpar (o hide-drafts))
   (if (or (no hide-drafts) (no c!draft))
@@ -1890,25 +1899,18 @@ pre:hover {overflow:auto} "))
               (link (ellipsize s!title 50) (item-url s!id))))))
       (when (or parent (cansee user c))
         (br))
-      (let identifier (rand-id)
-        (when (should-collapse c user)
-          (pr (gen-collapse-script c identifier))
-          (tag (a href "" class (+ "toggle-" identifier) style "font-size:11pt; color:#828282")
-            (pr "[+] Expand")))
-        (tag (div class (+ "comment-" identifier) style
-               (if (should-collapse c user) "display:none" ""))
-          (spanclass comment
-            (if (~cansee user c)               (pr "[deleted]")
-                (nor (live c) (author user c)) (spanclass dead (pr (item-text c)))
-                                               (pr (item-text c))))))
-      (when (and astree (cansee user c) (live c) (no c!draft))
-        (para)
-        (tag (font size 1)
-          (if (and (~mem 'neutered c!keys)
-                   (replyable c indent)
-                   (comments-active c))
-              (if (canreply user c) (underline (replylink c whence)))
-              (fontcolor sand (pr "-----"))))))))
+      (spanclass comment
+        (if (~cansee user c)               (pr "[deleted]")
+            (nor (live c) (author user c)) (spanclass dead (pr (item-text c)))
+                                           (pr (item-text c)))))
+    (when (and astree (cansee user c) (live c) (no c!draft))
+      (para)
+      (tag (font size 1)
+        (if (and (~mem 'neutered c!keys)
+                 (replyable c indent)
+                 (comments-active c))
+          (if (canreply user c) (underline (replylink c whence)))
+            (fontcolor sand (pr "-----")))))))
 
 ; For really deeply nested comments, caching could add another reply 
 ; delay, but that's ok.
