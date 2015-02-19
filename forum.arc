@@ -397,7 +397,10 @@
 (def gen-css-url ()
   (prn "<link rel=\"stylesheet\" type=\"text/css\" href=\"forum.css\">"))
 
-(def gen-collapse-script(c)
+(def rand-id ()
+  (round (* (rand) 1e16)))
+
+(def gen-collapse-script(c identifier)
   (let template "
 <script type='text/javascript'>
 $(window).load(function() {
@@ -414,7 +417,7 @@ $(window).load(function() {
   });
 });
 </script>"
-    (subst c!id "{{1}}" template)))
+    (subst identifier "{{1}}" template)))
 
 (mac npage (notify title . body)
   `(tag html 
@@ -1887,16 +1890,17 @@ pre:hover {overflow:auto} "))
               (link (ellipsize s!title 50) (item-url s!id))))))
       (when (or parent (cansee user c))
         (br))
-      (when (should-collapse c user)
-        (pr (gen-collapse-script c))
-        (tag (a href "" class (+ "toggle-" c!id) style "font-size:11pt; color:#828282")
-          (pr "[+] Expand")))
-      (tag (div class (+ "comment-" c!id) style
-             (if (should-collapse c user) "display:none" ""))
-        (spanclass comment
-          (if (~cansee user c)               (pr "[deleted]")
-              (nor (live c) (author user c)) (spanclass dead (pr (item-text c)))
-                                             (pr (item-text c)))))
+      (let identifier (rand-id)
+        (when (should-collapse c user)
+          (pr (gen-collapse-script c identifier))
+          (tag (a href "" class (+ "toggle-" identifier) style "font-size:11pt; color:#828282")
+            (pr "[+] Expand")))
+        (tag (div class (+ "comment-" identifier) style
+               (if (should-collapse c user) "display:none" ""))
+          (spanclass comment
+            (if (~cansee user c)               (pr "[deleted]")
+                (nor (live c) (author user c)) (spanclass dead (pr (item-text c)))
+                                               (pr (item-text c))))))
       (when (and astree (cansee user c) (live c) (no c!draft))
         (para)
         (tag (font size 1)
