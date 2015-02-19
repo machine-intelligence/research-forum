@@ -345,6 +345,11 @@
        (>= (len (itemlikes* i!id)) canreply-threshold*)
       t))
 
+(def invisible (i)
+  (and
+    (no (full-member i!by))
+    (< (len (itemlikes* i!id)) invisible-threshold*)))
+
 (def cansee (user i)
   (if i!deleted
        (admin user)
@@ -459,10 +464,10 @@ $(window).load(function() {
   `(para (tag (h3) (pr ,title))))
 
 (mac format-sb-item (i)
-  `(tag (p) (tag (a href (item-url i!id) class 'sb)
+  `(tag (p) (tag (a href (item-url i!id) class (if (invisible i) 'sb-invisible 'sb))
               (tag (b) (pr (eschtml i!title))))
             (br)
-            (tab (tr (tag (td class 'sb-subtext)
+            (tab (tr (tag (td class (if (invisible i) 'sb-invisible-subtext 'sb-subtext))
               (pr "by ")
               (userlink user i!by)
               (pr bar*)
@@ -679,6 +684,8 @@ table td.story    { line-height:135%; }
 
 .admin td   { font-family:Verdana; font-size:10.5pt; color:#000000; }
 .subtext td { font-family:Verdana; font-size:  10pt; color:#828282; }
+.subtext-invisible td { font-family:Verdana; font-size:  10pt; color:#bbbbbb; }
+
 table td.sb > p { font-family:Verdana; font-size:10pt; font-weight:regular; color:#ffffff;}
 
 button   { font-family:Verdana; font-size:11pt; color:#000000; }
@@ -694,7 +701,9 @@ a:link    { color:#000000; text-decoration:none; }
 .discussion-title { font-family:Verdana; font-size:13pt; color:#828282; font-weight:bold; }
 .adtitle     { font-family:Verdana; font-size:  11pt; color:#828282; }
 .subtext     { font-family:Verdana; font-size:  10pt; color:#828282; }
+.subtext-invisible { font-family:Verdana; font-size: 10pt; color:#bbbbbb; }
 .sb-subtext  { font-family:Verdana; font-size:   8pt; color:#828282; }
+.sb-invisible-subtext  { font-family:Verdana; font-size: 8pt; color:#bbbbbb; }
 .yclinks     { font-family:Verdana; font-size:  10pt; color:#828282; }
 .pagetop     { font-family:Verdana; font-size:  11pt; color:#ffffff; }
 .comhead     { font-family:Verdana; font-size:  10pt; color:#828282; }
@@ -712,8 +721,14 @@ a:link    { color:#000000; text-decoration:none; }
 .subtext a:link, .subtext a:visited { color:#828282; }
 .subtext a:hover { text-decoration:underline; }
 
+.subtext-invisible a:link, .subtext-invisible a:visited { color:#bbbbbb; }
+.subtext-invisible a:hover { text-decoration:underline; }
+
 .sb a:link, .sb a:visited { color:#828282; }
 .sb a:hover { text-decoration:underline; }
+
+a.sb-invisible:link, a.sb-invisible:visited { color:#bbbbbb; }
+.sb-invisible-subtext a:link, .sb-invisible-subtext a:visited {color:#bbbbbb; }
 
 .comhead a:link, .subtext a:visited { color:#828282; }
 .comhead a:hover { text-decoration:underline; }
@@ -1159,7 +1174,7 @@ pre:hover {overflow:auto} "))
         (titleline s user whence))
     (tr (when (no commentpage)
           (tag (td colspan (if i 2 1))))
-        (tag (td class 'subtext)
+        (tag (td class (if (invisible s) 'subtext-invisible 'subtext))
           (hook 'itemline s user)
           (itemline s user whence)
           (when (astory s) (commentlink s user))
@@ -1185,13 +1200,14 @@ pre:hover {overflow:auto} "))
 ; TODO: add a td class for the 'Link category?
 (def titleline (s user whence)
   (tag (td class (if (is s!category 'Main) 'title
-                     (is s!category 'Discussion) 'discussion-title))
+                     (or (is s!category 'Discussion) (is s!category 'Link)) 'discussion-title))
     (if (cansee user s)
         (do (deadmark s user)
             (if s!draft (tag (a href (item-url s!id)
                                 style 'font-style:italic)
                           (pr (+ "[draft] " s!title)))
-                (if (is s!category 'Link) (link s!title s!url)
+                (if (is s!category 'Link)
+                  (if (invisible s) (tag (a href s!url style 'color:#bbbbbb) (pr s!title)) (link s!title s!url))
                   (link s!title (item-url s!id)))))
         (pr "[deleted]"))))
 
