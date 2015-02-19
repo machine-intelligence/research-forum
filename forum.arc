@@ -2019,8 +2019,8 @@ pre:hover {overflow:auto} "))
 
 (newsop rss ()
   (rss-feed (sort (compare > [if (no _!publish-time) _!time _!publish-time])
-              (+ (retrieve perpage* [and live (no _!draft)] stories*)
-                 (retrieve perpage* [and live (no _!draft)] comments*)))))
+              (+ (retrieve perpage* [and live (no _!draft) (no (invisible _))] stories*)
+                 (retrieve perpage* [and live (no _!draft) (no (invisible _))] comments*)))))
 
 (def rss-feed (items)
   (tag (rss version "2.0")
