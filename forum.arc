@@ -1,9 +1,5 @@
-; News.  2 Sep 06.
-
-; to run news: (nsv), then go to http://localhost:8080
-; put usernames of admins, separated by whitespace, in arc/admins
-
 ; bug: somehow (+ votedir* nil) is getting evaluated.
+;! (seconds) uses "platform-specific starting date" ?!
 
 (declare 'atstrings t)
 
@@ -11,7 +7,7 @@
    site-url*     "http://forum.intelligence.org/" ; unfortunate, but necessary for rss feed
    parent-url*   ""
    favicon-url*  ""
-   site-desc*    "Intelligent Agent Foundations Forum"               ; for rss feed
+   site-desc*    "Intelligent Agent Foundations Forum" ; for rss feed
    site-color*   (color 40 50 120)
    border-color* (color 180 180 180)
    prefer-url*   t)
@@ -132,8 +128,7 @@
 ; See the admin op in app.arc.  So all calls to login-page from the 
 ; news app need to call this in the after-login fn.
 
-(def ensure-news-user (u)
-  (if (profile u) u (init-user u)))
+(def ensure-news-user (u) (if (profile u) u (init-user u)))
 
 (def save-votes (u) (save-table (votes* u) (+ votedir* u)))
 
@@ -141,7 +136,7 @@
 
 (mac uvar (u k) `((profile ,u) ',k))
 
-(mac karma   (u) `(uvar ,u karma))
+(mac karma (u) `(uvar ,u karma))
 
 (def full-member (u)
   (and u (no ((profile u) 'contributor-only))))
@@ -151,8 +146,7 @@
 (def users ((o f idfn)) 
   (keep f (keys profs*)))
 
-(def check-key (u k)
-  (and u (mem k (uvar u keys))))
+(def check-key (u k) (and u (mem k (uvar u keys))))
 
 (def author (u i) (is u i!by))
 
@@ -365,12 +359,12 @@
       t))
 
 (let mature (table)
-  (def delayed (i)
-    (and (no (mature i!id))
-         (acomment i)
-         (or (< (item-age i) (min max-delay* (uvar i!by delay)))
-             (do (set (mature i!id))
-                 nil)))))
+(def delayed (i)
+  (and (no (mature i!id))
+       (acomment i)
+       (or (< (item-age i) (min max-delay* (uvar i!by delay)))
+           (do (set (mature i!id))
+               nil)))))
 
 (def visible (user is (o hide-drafts))
   (keep [and (cansee user _) (or (no hide-drafts) (no _!draft))] is))
@@ -379,11 +373,9 @@
   (or (cansee user c)
       (some [cansee-descendant user _] (kids c))))
   
-(def editor (u) 
-  (and u (or (admin u) (> (uvar u auth) 0))))
+(def editor (u) (and u (or (admin u) (> (uvar u auth) 0))))
 
-(def member (u) 
-  (and u (or (admin u) (uvar u member))))
+(def member (u) (and u (or (admin u) (uvar u member))))
 
 
 ; Page Layout
@@ -976,7 +968,7 @@ pre:hover {overflow:auto} "))
       (yesno   contributor-only ,(p 'contributor-only)             ,a  ,a)
       (posint  karma      ,(* karma-multiplier* (p 'karma))         t  ,a)
       (num     weight     ,(p 'weight)                             ,a  ,a)
-      (mdtext  about      ,(p 'about)                               t  ,u)
+      (pandoc  about      ,(p 'about)                               t  ,u)
       (string  email      ,(p 'email)                              ,u  ,u)
       (sexpr   keys       ,(p 'keys)                               ,a  ,a)
       (int     delay      ,(p 'delay)                              ,u  ,u))))

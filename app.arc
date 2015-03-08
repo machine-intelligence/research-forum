@@ -1,4 +1,5 @@
 ; Application Server.  Layer inserted 2 Sep 06.
+; built on top of srv.arc?
 
 ; ideas: 
 ; def a general notion of apps of which prompt is one, news another
@@ -7,7 +8,7 @@
 ; A user is simply a string: "pg". Use /whoami to test user cookie.
 
 (= hpwfile*   "arc/hpw"
-   oidfile*   "arc/openids"
+   ; oidfile*   "arc/openids"
    adminfile* "arc/admins"
    cookfile*  "arc/cooks")
 
@@ -17,7 +18,7 @@
 
 (def load-userinfo ()
   (= hpasswords*   (safe-load-table hpwfile*)
-     openids*      (safe-load-table oidfile*)
+     ; openids*      (safe-load-table oidfile*)
      admins*       (map string (errsafe (readfile adminfile*)))
      cookie->user* (safe-load-table cookfile*))
   (maptable (fn (k v) (= (user->cookie* v) k))
@@ -37,8 +38,7 @@
        (do ,@body)
        (mismatch-message)))
 
-(def mismatch-message () 
-  (prn "Dead link: users don't match."))
+(def mismatch-message () (prn "Dead link: users don't match."))
 
 (mac when-umatch/r (user req . body)
   `(if (is ,user (get-user ,req))
@@ -125,16 +125,16 @@
   (set (dc-usernames* (downcase user)))
   (set-pw user pw))
 
-(def disable-acct (user)
-  (set-pw user (rand-string 20))
-  (logout-user user))
+; unused by forum
+; (def disable-acct (user)
+;   (set-pw user (rand-string 20))
+;   (logout-user user))
   
 (def set-pw (user pw)
   (= (hpasswords* user) (and pw (hash-password pw)))
   (save-table hpasswords* hpwfile*))
 
-(def hello-page (user ip)
-  (whitepage (prs "hello" user "at" ip)))
+(def hello-page (user ip) (whitepage (prs "hello" user "at" ip)))
 
 (defop login req (login-page 'login))
 
@@ -172,17 +172,21 @@
        (login it req!ip (user->cookie* it) afterward)
        (failed-login switch "Bad login." afterward)))
 
-(def create-handler (req switch afterward)
-  (logout-user (get-user req))
-  (with (user (arg req "u") pw (arg req "p"))
-    (aif (bad-newacct user pw)
-         (failed-login switch it afterward)
-         (do (create-acct user pw)
-             (login user req!ip (cook-user user) afterward)))))
+; unused by forum
+; (def create-handler (req switch afterward)
+;   (logout-user (get-user req))
+;   (with (user (arg req "u") pw (arg req "p"))
+;     (aif (bad-newacct user pw)
+;          (failed-login switch it afterward)
+;          (do (create-acct user pw)
+;              (login user req!ip (cook-user user) afterward)))))
 
 (def login (user ip cookie afterward)
   (= (logins* user) ip)
-  (prcookie cookie)
+  ; (prcookie cookie) [inlined]
+  ; (def prcookie (cook)
+  ;   (prn "Set-Cookie: user=" cook "; expires=Sun, 17-Jan-2038 19:14:07 GMT"))
+  (prn "Set-Cookie: user=" cookie "; expires=Sun, 17-Jan-2038 19:14:07 GMT")
   (if (acons afterward)
       (let (f url) afterward
         (f user ip)
@@ -195,9 +199,6 @@
       (flink (fn ignore (login-page switch msg afterward)))
       (do (prn)
           (login-page switch msg afterward))))
-
-(def prcookie (cook)
-  (prn "Set-Cookie: user=" cook "; expires=Sun, 17-Jan-2038 19:14:07 GMT"))
 
 (def pwfields ((o label "login"))
   (inputs u username 20 nil
@@ -295,13 +296,14 @@
        (gentag input type 'text name id 
                      value (tostring (map [do (write _) (sp)] val))
                      size formwid*)
-      (in typ 'syms 'text 'doc 'mdtext 'mdtextc 'mdtext2 'pandoc 'lines 'bigtoks)
+      (in typ 'syms 'text 'doc 'pandoc 'lines 'bigtoks)
+      ; (in typ 'syms 'text 'doc 'mdtext 'mdtextc 'mdtext2 'pandoc 'lines 'bigtoks)
        (let text (if (in typ 'syms 'bigtoks)
                       (tostring (apply prs val))
                      (is typ 'lines)
                       (tostring (apply pr (intersperse #\newline val)))
-                     (in typ 'mdtext 'mdtextc 'mdtext2)
-                      (unmarkdown val)
+                     ; (in typ 'mdtext 'mdtextc 'mdtext2)
+                     ;  (unmarkdown val)
                      (no val)
                       ""
                      val)
@@ -314,7 +316,8 @@
                         onkeyup "needToConfirm = true;")
            (prn) ; needed or 1 initial newline gets chopped off
            (pr text))
-         (when (and formatdoc-url* (in typ 'mdtext 'mdtextc 'mdtext2 'pandoc))
+         (when (and formatdoc-url* (in typ 'pandoc))
+         ; (when (and formatdoc-url* (in typ 'mdtext 'mdtextc 'mdtext2 'pandoc))
            (pr " ")
            (tag (font size -2)
              (tag (a href formatdoc-url* target '_blank)
@@ -349,7 +352,8 @@
       (text-type typ)                       (pr (or val ""))
                                             (pr val)))
 
-(def text-type (typ) (in typ 'string 'string1 'string2 'url 'text 'mdtext 'mdtextc 'mdtext2 'pandoc))
+; (def text-type (typ) (in typ 'string 'string1 'string2 'url 'text 'mdtext 'mdtextc 'mdtext2 'pandoc))
+(def text-type (typ) (in typ 'string 'string1 'string2 'url 'text 'pandoc))
 
 ; Newlines in forms come back as /r/n.  Only want the /ns. Currently
 ; remove the /rs in individual cases below.  Could do it in aform or
@@ -372,9 +376,9 @@
               (if (and (number n) (> n 0)) (round n) fail))
     text    (striptags str)
     doc     (striptags str)
-    mdtext  (md-from-form str)
-    mdtextc (md-from-form str nil t t)                ; for md with no headers (i.e. comments)
-    mdtext2 (md-from-form str t)                      ; for md with no links
+    ; mdtext  (md-from-form str)
+    ; mdtextc (md-from-form str nil t t) ; for md with no headers (i.e. comments)
+    ; mdtext2 (md-from-form str t)       ; for md with no links
     pandoc  str
     sym     (or (sym:car:tokens str) fail)
     syms    (map sym (tokens str))
@@ -480,56 +484,55 @@
                   (varline  typ id val liveurls))))
       (prn))))
 
+; unused by forum
 ; http://daringfireball.net/projects/markdown/syntax
-
-(def md-from-form (str (o nolinks) (o latex t) (o noheading))
-  (markdown (trim (rem #\return (esc-tags str)) 'end) 60 nolinks latex noheading))
-
-(def markdown (s (o maxurl) (o nolinks) (o latex t) (o noheading))
-  (with (ital nil heading nil)
-    (tostring
-      (forlen i s
-        (iflet (newi spaces) (indented-code s i (if (is i 0) 2 0))
-               (do (pr  "<p><pre><code>")
-                 (let cb (code-block s (- newi spaces 1))
-                   (pr cb)
-                   (= i (+ (- newi spaces 1) (len cb))))
-                 (pr "</code></pre>"))
-               (iflet newi (or (parabreak s i (if (is i 0) 1 0))
-                               (and (is i 0) (and (no noheading) (is (s 0) #\#)i) 0))
-                      (do (if heading (do (pr "</h1>") (= heading nil)))
-                          (= i (- newi 1))
-                          (if (and (< newi (len s))
-                                   (and (no noheading) (is #\# (s newi))))
-                               (do (= heading t) (++ i) (pr "<h1>"))
-                              (isnt i 0)
-                               (pr "<p>")))
-                      (and (is (s i) #\*)
-                           (or ital 
-                               (atend i s) 
-                               (and (~whitec (s (+ i 1)))
-                                    (pos #\* s (+ i 1)))))
-                       (do (pr (if ital "</i>" "<i>"))
-                           (= ital (no ital)))
-                      (and latex (is (s i) #\$))
-                       (iflet newi (pos #\$ s (+ i 1))
-                              (do (pr "<img src='http://www.codecogs.com/"
-                                      "png.latex?" 
-                                      (urlencode
-                                        (unesc-tags (cut s (+ i 1) newi)))
-                                      "'>")
-                                  (= i newi))
-                              (pr "$"))
-                      (and (no nolinks)
-                           (or (litmatch "http://" s i) 
-                               (litmatch "https://" s i)))
-                       (withs (n   (urlend s i)
-                               url (clean-url (cut s i n)))
-                         (tag (a href url rel 'nofollow)
-                           (pr (if (no maxurl) url (ellipsize url maxurl))))
-                         (= i (- n 1)))
-                       (writec (s i)))))
-      (if heading (pr "</h1>")))))
+; (def md-from-form (str (o nolinks) (o latex t) (o noheading))
+;   (markdown (trim (rem #\return (esc-tags str)) 'end) 60 nolinks latex noheading))
+; (def markdown (s (o maxurl) (o nolinks) (o latex t) (o noheading))
+  ; (with (ital nil heading nil)
+  ;   (tostring
+  ;     (forlen i s
+  ;       (iflet (newi spaces) (indented-code s i (if (is i 0) 2 0))
+  ;              (do (pr  "<p><pre><code>")
+  ;                (let cb (code-block s (- newi spaces 1))
+  ;                  (pr cb)
+  ;                  (= i (+ (- newi spaces 1) (len cb))))
+  ;                (pr "</code></pre>"))
+  ;              (iflet newi (or (parabreak s i (if (is i 0) 1 0))
+  ;                              (and (is i 0) (and (no noheading) (is (s 0) #\#)i) 0))
+  ;                     (do (if heading (do (pr "</h1>") (= heading nil)))
+  ;                         (= i (- newi 1))
+  ;                         (if (and (< newi (len s))
+  ;                                  (and (no noheading) (is #\# (s newi))))
+  ;                              (do (= heading t) (++ i) (pr "<h1>"))
+  ;                             (isnt i 0)
+  ;                              (pr "<p>")))
+  ;                     (and (is (s i) #\*)
+  ;                          (or ital 
+  ;                              (atend i s) 
+  ;                              (and (~whitec (s (+ i 1)))
+  ;                                   (pos #\* s (+ i 1)))))
+  ;                      (do (pr (if ital "</i>" "<i>"))
+  ;                          (= ital (no ital)))
+  ;                     (and latex (is (s i) #\$))
+  ;                      (iflet newi (pos #\$ s (+ i 1))
+  ;                             (do (pr "<img src='http://www.codecogs.com/"
+  ;                                     "png.latex?" 
+  ;                                     (urlencode
+  ;                                       (unesc-tags (cut s (+ i 1) newi)))
+  ;                                     "'>")
+  ;                                 (= i newi))
+  ;                             (pr "$"))
+  ;                     (and (no nolinks)
+  ;                          (or (litmatch "http://" s i) 
+  ;                              (litmatch "https://" s i)))
+  ;                      (withs (n   (urlend s i)
+  ;                              url (clean-url (cut s i n)))
+  ;                        (tag (a href url rel 'nofollow)
+  ;                          (pr (if (no maxurl) url (ellipsize url maxurl))))
+  ;                        (= i (- n 1)))
+  ;                      (writec (s i)))))
+  ;     (if heading (pr "</h1>")))))
 
 (def indented-code (s i (o newlines 0) (o spaces 0))
   (let c (s i)
@@ -611,39 +614,40 @@
                       (nonwhite (s (+ i 2))))))
      (writec (s (++ i))))))
 
-(def unmarkdown (s (o latex t))
-  (tostring
-    (forlen i s
-      (if (litmatch "<p>" s i)
-           (do (++ i 2) 
-               (unless (is i 2) (pr "\n\n")))
-          (litmatch "<h1>" s i)
-           (do (++ i 3)
-               (unless (is i 3) (pr "\n\n"))
-               (pr "#"))
-          (litmatch "</h1>" s i)
-           (++ i 4)
-          (litmatch "<i>" s i)
-           (do (++ i 2) (pr #\*))
-          (litmatch "</i>" s i)
-           (do (++ i 3) (pr #\*))
-          (litmatch "<a href=" s i)
-           (let endurl (posmatch [in _ #\> #\space] s (+ i 9))
-             (if endurl
-                 (do (pr (cut s (+ i 9) (- endurl 1)))
-                     (= i (aif (posmatch "</a>" s endurl)
-                               (+ it 3)
-                               endurl)))
-                 (writec (s i))))
-          (litmatch "<pre><code>" s i)
-           (awhen (and latex (findsubseq "</code></pre>" s (+ i 12)))
-             (pr (cut s (+ i 11) it))
-             (= i (+ it 12)))
-          (litmatch "<img src='http://www.codecogs.com/png.latex?" s i)
-            (awhen (findsubseq "'>" s (+ i 45))
-             (pr "$" (urldecode (cut s (+ i 44) it)) "$")
-             (= i (+ it 1)))
-          (writec (s i))))))
+; unused by forum
+; (def unmarkdown (s (o latex t))
+  ; (tostring
+  ;   (forlen i s
+  ;     (if (litmatch "<p>" s i)
+  ;          (do (++ i 2) 
+  ;              (unless (is i 2) (pr "\n\n")))
+  ;         (litmatch "<h1>" s i)
+  ;          (do (++ i 3)
+  ;              (unless (is i 3) (pr "\n\n"))
+  ;              (pr "#"))
+  ;         (litmatch "</h1>" s i)
+  ;          (++ i 4)
+  ;         (litmatch "<i>" s i)
+  ;          (do (++ i 2) (pr #\*))
+  ;         (litmatch "</i>" s i)
+  ;          (do (++ i 3) (pr #\*))
+  ;         (litmatch "<a href=" s i)
+  ;          (let endurl (posmatch [in _ #\> #\space] s (+ i 9))
+  ;            (if endurl
+  ;                (do (pr (cut s (+ i 9) (- endurl 1)))
+  ;                    (= i (aif (posmatch "</a>" s endurl)
+  ;                              (+ it 3)
+  ;                              endurl)))
+  ;                (writec (s i))))
+  ;         (litmatch "<pre><code>" s i)
+  ;          (awhen (and latex (findsubseq "</code></pre>" s (+ i 12)))
+  ;            (pr (cut s (+ i 11) it))
+  ;            (= i (+ it 12)))
+  ;         (litmatch "<img src='http://www.codecogs.com/png.latex?" s i)
+  ;           (awhen (findsubseq "'>" s (+ i 45))
+  ;            (pr "$" (urldecode (cut s (+ i 44) it)) "$")
+  ;            (= i (+ it 1)))
+  ;         (writec (s i))))))
 
 
 (def english-time (min)
