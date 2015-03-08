@@ -16,21 +16,20 @@
   (load-userinfo)
   (serve port))
 
+; idea: a bidirectional table, so don't need two vars (and sets)
+(= cookie->user* (table) user->cookie* (table))
+; (= logins* (table)) ; logins* appears to never be accessed
 (def load-userinfo ()
   (= hpasswords*   (safe-load-table hpwfile*)
      ; openids*      (safe-load-table oidfile*)
      admins*       (map string (errsafe (readfile adminfile*)))
      cookie->user* (safe-load-table cookfile*))
-  (maptable (fn (k v) (= (user->cookie* v) k))
-            cookie->user*))
-
-; idea: a bidirectional table, so don't need two vars (and sets)
-
-(= cookie->user* (table) user->cookie* (table) logins* (table))
+  (maptable (fn (k v) (= (user->cookie* v) k)) cookie->user*)
+  )
 
 (def get-user (req) 
   (let u (aand (alref req!cooks "user") (cookie->user* (sym it)))
-    (when u (= (logins* u) req!ip))
+    ; (when u (= (logins* u) req!ip)) ; logins* appears to never be accessed
     u))
 
 (mac when-umatch (user req . body)
@@ -116,7 +115,7 @@
     (if (cookie->user* id) (new-user-cookie) id)))
 
 (def logout-user (user)
-  (wipe (logins* user))
+  ; (wipe (logins* user)) ; logins* appears to never be accessed
   (wipe (cookie->user* (user->cookie* user)) (user->cookie* user))
   (save-table cookie->user* cookfile*))
 
@@ -182,7 +181,7 @@
 ;              (login user req!ip (cook-user user) afterward)))))
 
 (def login (user ip cookie afterward)
-  (= (logins* user) ip)
+  ; (= (logins* user) ip) ; logins* appears to never be accessed
   ; (prcookie cookie) [inlined]
   ; (def prcookie (cook)
   ;   (prn "Set-Cookie: user=" cook "; expires=Sun, 17-Jan-2038 19:14:07 GMT"))
