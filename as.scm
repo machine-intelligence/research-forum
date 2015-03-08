@@ -1,3 +1,5 @@
+#!/usr/bin/env mzscheme -f
+
 ; mzscheme -m -f as.scm
 ; (tl)
 ; (asv)
