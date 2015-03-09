@@ -8,7 +8,7 @@
    parent-url*   ""
    favicon-url*  ""
    site-desc*    "Intelligent Agent Foundations Forum" ; for rss feed
-   site-color*   (color 40 50 120)
+   ; site-color*   (color 40 50 120) ; not even used
    border-color* (color 180 180 180)
    prefer-url*   t)
 
@@ -416,10 +416,10 @@ $(window).load(function() {
      (tag head 
        (gen-css-url)
        (prn "<link rel=\"shortcut icon\" href=\"" favicon-url* "\">")
-       (prn "<script src=\"https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML\" type=\"text/javascript\"></script>")
-       (prn "<script type='text/javascript' src='https://code.jquery.com/jquery-1.11.2.min.js'></script>")
+       (prn script-mathjax)
+       (prn script-jquery)
        (tag title (pr ,title)))
-     (tag body 
+     (tag body
        (center
          (if ,notify
            (tag (table class "notify")

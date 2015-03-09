@@ -107,12 +107,8 @@
        (user->cookie* user)   id)
     (save-table cookie->user* cookfile*)
     id))
-
-; Unique-ids are only unique per server invocation.
-
-(def new-user-cookie ()
-  (let id (unique-id)
-    (if (cookie->user* id) (new-user-cookie) id)))
+; used by cook-user only
+(def new-user-cookie () (let id (unique-id) (if (cookie->user* id) (new-user-cookie) id)))
 
 (def logout-user (user)
   ; (wipe (logins* user)) ; logins* appears to never be accessed
@@ -128,7 +124,7 @@
 ; (def disable-acct (user)
 ;   (set-pw user (rand-string 20))
 ;   (logout-user user))
-  
+
 (def set-pw (user pw)
   (= (hpasswords* user) (and pw (hash-password pw)))
   (save-table hpasswords* hpwfile*))
@@ -190,14 +186,12 @@
       (let (f url) afterward
         (f user ip)
         url)
-      (do (prn)
-          (afterward user ip))))
+      (do (prn) (afterward user ip))))
 
 (def failed-login (switch msg afterward)
   (if (acons afterward)
       (flink (fn ignore (login-page switch msg afterward)))
-      (do (prn)
-          (login-page switch msg afterward))))
+      (do (prn) (login-page switch msg afterward))))
 
 (def pwfields ((o label "login"))
   (inputs u username 20 nil
@@ -210,21 +204,16 @@
 (def good-login (user pw ip)
   (let record (list (seconds) ip user)
     (if (and user pw (aand (hpasswords* user) (verify-password pw it)))
-        (do (unless (user->cookie* user) (cook-user user))
+        (do (unless (user->cookie* user) (cook-user user) )
             (enq-limit record good-logins*)
             user)
         (do (enq-limit record bad-logins*)
             nil))))
 
-; Create a file in case people have quote chars in their pws.  I can't 
-; believe there's no way to just send the chars.
-
 (def hash-password (pw)
-  (tostring (system (+ "python hash.py '" (urlencode pw) "'"))))
-
+  (tostring (system (+ "python hash.py '" (urlencode pw) "'"))) )
 (def verify-password (pw hash)
-  (is "True" (tostring (system (+ "python verify.py '" (urlencode pw) 
-                                  "' '" hash "'")))))
+  (is "True" (tostring (system (+ "python verify.py '" (urlencode pw) "' '" hash "'")))) )
 
 (= dc-usernames* (table))
 
@@ -752,3 +741,5 @@
                      (list (fn (u ip))
                            (string ',name (reassemble-args ,parm)))))))
 
+(= script-mathjax "<script src='https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>")
+(= script-jquery "<script src='https://code.jquery.com/jquery-1.11.2.min.js'></script>")
