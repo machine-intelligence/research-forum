@@ -113,8 +113,7 @@
       (aand (file-exists (+ votedir* u))
             (= (votes* u) (load-table it)))))
 
-(def vote (user item)
-  (votes.user item!id))
+(def vote (user item) (votes.user item!id))
 
 (def init-user (u)
   (= (votes* u) (table) 
@@ -143,8 +142,7 @@
 
 ; Note that users will now only consider currently loaded users.
 
-(def users ((o f idfn)) 
-  (keep f (keys profs*)))
+(def users ((o f idfn)) (keep f (keys profs*)))
 
 (def check-key (u k) (and u (mem k (uvar u keys))))
 
@@ -202,11 +200,11 @@
         (= i!category 'Main))
     (= (items* id) i)))
 
-(def new-item-id ()
-  (evtil (++ maxid*) [~file-exists (+ storydir* _ "v1")]))
+(= newuserid* 0)
+(def new-user-id () (string (evtil (++ newuserid*) [no (profs* (string _))])))
+(def new-item-id () (evtil (++ maxid*) [~file-exists (+ storydir* _ "v1")]))
 
-(def item (id)
-  (or (items* id) (errsafe:load-item id)))
+(def item (id) (or (items* id) (errsafe:load-item id)))
 
 (def kids (i) (map item (itemkids* i!id)))
 
@@ -409,7 +407,7 @@ $(window).load(function() {
   });
 });
 </script>"
-    (multisubst `(("{{1}}" ,identifier) ("{{2}}" ,(strip-underscore c!by))) template)))
+    (multisubst `(("{{1}}" ,identifier) ("{{2}}" ,(get-user-display-name c!by))) template)))
 
 (mac npage (notify title . body)
   `(tag html 
@@ -825,21 +823,22 @@ pre:hover {overflow:auto} "))
       (link name dest))))
 
 (def topright (user whence (o showkarma t))
-  (when user 
+  (if user (do
     (userlink user user)
     (when showkarma (pr  "&nbsp;(@(* karma-multiplier* (karma user)))"))
-    (pr "&nbsp;|&nbsp;"))
-  (if user
-      (rlinkf 'logout (req)
-        (when-umatch/r user req
-          (logout-user user)
-          whence))
-      (onlink "login"
-        (login-page 'both nil
-                    (list (fn (u ip) 
-                            (ensure-news-user u)
-                            (newslog ip u 'top-login))
-                          whence)))))
+    (pr "&nbsp;|&nbsp;")
+    (rlinkf 'logout (req)
+      (when-umatch/r user req
+        (logout-user user)
+        whence))
+  ) (do
+    (onlink "sign up / login"
+      (login-page 'login+fb nil
+                  (list (fn (u ip) 
+                          (ensure-news-user u)
+                          (newslog ip u 'top-login))
+                        whence)))
+  )))
 
 
 ; News-Specific Defop Variants
@@ -848,7 +847,7 @@ pre:hover {overflow:auto} "))
   `(defop ,name ,parm
      (if (,test (get-user ,parm))
          (do ,@body)
-         (login-page 'both (+ "Please log in" ,msg ".")
+         (login-page 'login+fb (+ "Please log in" ,msg ".")
                      (list (fn (u ip) (ensure-news-user u))
                            (string ',name (reassemble-args ,parm)))))))
 
@@ -1109,7 +1108,7 @@ pre:hover {overflow:auto} "))
 
 (newsop drafts ()
   (if user (draftspage user)
-    (login-page 'login "You have to be logged in to view your drafts."
+    (login-page 'login+fb "You have to be logged in to view your drafts."
                 (fn (user ip)
                   (ensure-news-user user)
                   (newslog ip user 'submit-login)
@@ -1249,7 +1248,7 @@ pre:hover {overflow:auto} "))
         (and by (or (isnt by user) (isnt (sym auth) (user->cookie* user))))
          (pr "User mismatch.")
         (no user)
-         (login-page 'login "You have to be logged in as a full member to vote."
+         (login-page 'login+fb "You have to be logged in as a full member to vote."
                      (list (fn (u ip)
                              (ensure-news-user u)
                              (newslog ip u 'vote-login)
@@ -1302,15 +1301,15 @@ pre:hover {overflow:auto} "))
     (pr (plural (len (likes i user)) "like")))
   (hook 'itemscore i user))
 
-(def byline (i user)
-  (pr " by @(tostring (userlink user i!by)) @(text-age:item-age i) "))
+(def byline (i user) (pr " by @(tostring (userlink user i!by)) @(text-age:item-age i) "))
 
-(def strip-underscore (text) (subst " " "_" text))
+(def get-user-display-name (userid)
+  (let t (uvar userid name) (if (blank t) (subst " " "_" userid) t)))
 
 (def user-url (user) (+ "user?id=" user))
 
-(def userlink (user subject)
-  (clink userlink (strip-underscore subject) (user-url subject)))
+(def userlink (user subject) ; user: authenticated user, subject: target user id
+  (clink userlink (get-user-display-name subject) (user-url subject)))
 
 (def userlink-or-you (user subject)
   (if (is user subject) (spanclass you (pr "You")) (userlink user subject)))
@@ -1416,7 +1415,7 @@ pre:hover {overflow:auto} "))
 (newsop submit ()
   (if user
       (submit-page user)
-      (login-page 'both "You have to be logged in to submit."
+      (login-page 'login+fb "You have to be logged in to submit."
                   (fn (user ip)
                     (ensure-news-user user)
                     (newslog ip user 'submit-login)
@@ -1702,7 +1701,7 @@ pre:hover {overflow:auto} "))
 ; Comment Submission
 
 (def comment-login-warning (parent whence (o text))
-  (login-page 'both "You have to be logged in to comment."
+  (login-page 'login+fb "You have to be logged in to comment."
               (fn (u ip)
                 (ensure-news-user u)
                 (newslog ip u 'comment-login)
@@ -1782,7 +1781,7 @@ pre:hover {overflow:auto} "))
         (pr (gen-collapse-script c identifier))
         (tr (td (hspace (+ 27 (* indent 40)))
           (tag (a href "" class (+ "toggle-" identifier) style "font-size:11pt; color:#828282")
-            (pr (+ "[+] Expand comment by " (strip-underscore c!by)))))))
+            (pr (+ "[+] Expand comment by " (get-user-display-name c!by)))))))
       (tr (tag (td class (+ "comment-" identifier)
                    style (if (should-collapse c user) "display:none" ""))
                  (tab
@@ -1925,7 +1924,7 @@ pre:hover {overflow:auto} "))
     (if (and (only.comments-active i) (no i!draft) (canreply user i))
         (if user
             (addcomment-page i user whence)
-            (login-page 'both "You have to be logged in to comment."
+            (login-page 'login+fb "You have to be logged in to comment."
                         (fn (u ip)
                           (ensure-news-user u)
                           (newslog ip u 'comment-login)
@@ -2026,7 +2025,7 @@ pre:hover {overflow:auto} "))
                          (let s (superparent i)
                            (pr (+ "Comment on " (eschtml s!title))))))
           (tag link (pr (+ site-url* (item-url i!id))))
-          (tag author (pr (strip-underscore i!by)))
+          (tag author (pr (get-user-display-name i!by)))
           (tag description (pr (display-item-text i nil t))))))))
 
 

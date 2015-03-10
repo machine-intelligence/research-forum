@@ -16,7 +16,7 @@ var auth = JSON.parse(fs.readFileSync(authf))
 
 switch (arg.cmd) {default: err("bad command:",arg.cmd)
 break; case 'verify':
-	FB.api('debug_token', {
+	FB.api('/debug_token', {
 		access_token: auth.id+'|'+auth.secret,
 		input_token: arg.token,
 		}, function(res){
@@ -24,6 +24,13 @@ break; case 'verify':
 			if (!res.data.is_valid) err("invalid access token")
 			if (res.data.app_id !== auth.id) err("invalid app id:",res.data.app_id,"!=",auth.id)
 			if (res.data.user_id !== arg.user_id) err("invalid user id:",res.data.user_id,"!=",arg.user_id)
+		})
+break; case 'get-name':
+	FB.api('/me', {
+		access_token: arg.token,
+		}, function(res){
+			if (!res || res.error || (res.data&&res.data.error)) err("api error:",(res&&res.error)||(res&&res.data&&res.data.error))
+			process.stdout.write(res.name)
 		})
 // turns out we don't actually need to do this, since we're just using the access token as a password
 // break; case 'extend':

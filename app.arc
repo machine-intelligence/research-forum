@@ -18,13 +18,16 @@
 
 ; idea: a bidirectional table, so don't need two vars (and sets)
 (= cookie->user* (table) user->cookie* (table))
+(= hpw->user* (table))
 ; (= logins* (table)) ; logins* appears to never be accessed
 (def load-userinfo ()
   (= hpasswords*   (safe-load-table hpwfile*)
      ; openids*      (safe-load-table oidfile*)
      admins*       (map string (errsafe (readfile adminfile*)))
-     cookie->user* (safe-load-table cookfile*))
+     cookie->user* (safe-load-table cookfile*)
+     )
   (maptable (fn (k v) (= (user->cookie* v) k)) cookie->user*)
+  (maptable (fn (k v) (= (hpw->user* v) k)) hpasswords*)
   )
 
 (def get-user (req) 
@@ -73,7 +76,7 @@
 (def admin-gate (u)
   (if (admin u)
       (admin-page u)
-      (login-page 'login nil
+      (login-page 'login+fb nil
                   (fn (u ip)  (admin-gate u)))))
 
 (def admin (u) (and u (mem u admins*)))
@@ -119,6 +122,14 @@
   (if (no (bound 'hpasswords*)) (load-userinfo))
   (set (dc-usernames* (downcase user)))
   (set-pw user pw))
+(def create-acct-fb (id token)
+  (if (no (bound 'hpasswords*)) (load-userinfo))
+  (with (user (new-user-id) name (generate-fb-display-name id token))
+    (set (dc-usernames* (downcase user)))
+    (set-pw-fb user id)
+    (init-user user)
+    (do (= ((profile user) 'name) name) (save-prof user))
+    user))
 
 ; unused by forum
 ; (def disable-acct (user)
@@ -127,11 +138,16 @@
 
 (def set-pw (user pw)
   (= (hpasswords* user) (and pw (hash-password pw)))
+  (= (hpw->user* (and pw (hash-password pw))) user) ; not actually needed
+  (save-table hpasswords* hpwfile*))
+(def set-pw-fb (userid fbid)
+  (= (hpasswords* userid) (+ "FBID::" fbid))
+  (= (hpw->user* (+ "FBID::" fbid)) userid)
   (save-table hpasswords* hpwfile*))
 
 (def hello-page (user ip) (whitepage (prs "hello" user "at" ip)))
 
-(defop login req (login-page 'login))
+(defop login req (login-page 'login+fb))
 
 ; switch is one of: register, login, both
 
@@ -144,21 +160,65 @@
 ; via a continuation rather than going to a new page.
 
 (def login-page (switch (o msg nil) (o afterward hello-page))
-  (whitepage
-    (force-https)
-    (pagemessage msg)
-    (when (in switch 'login 'both)
-      (login-form "Login" switch login-handler afterward)
-      (hook 'login-form afterward)
-      (br2))
-    (when (in switch 'register 'both)
-      (login-form "Create Contributor Account" switch create-handler afterward))))
+  (when (no (in switch 'login+fb))
+    (err "research-forum only uses (login-page 'login+fb)"))
+  (tag html
+    (tag head
+      (prn "<link rel=\"shortcut icon\" href=\"" favicon-url* "\">")
+      (prn script-jquery)
+      (tag title (pr "log in")))
+    (tag (body bgcolor white alink linkblue)
+      (prn "
+        <div id='fb-root'></div>
+        <script>
+          window.fbAsyncInit = function() {
+            FB.init({appId: '343502792506554', xfbml: true, version: 'v2.2', cookie: true})
+          }
+          ;(function(d, s, id){
+             var js, fjs = d.getElementsByTagName(s)[0];
+             if (d.getElementById(id)) {return;}
+             js = d.createElement(s); js.id = id;
+             js.src = '//connect.facebook.net/en_US/sdk.js';
+             fjs.parentNode.insertBefore(js, fjs);
+           }(document, 'script', 'facebook-jssdk'));
+
+          window.login_button_cb = function() {
+            FB.getLoginStatus(function(v){
+              if (v.status !== 'connected') {
+                alert('oh no! could not connect to facebook - try again?')
+              } else {
+                $('input[name=\"fbid\"]').val(v.authResponse.userID)
+                $('input[name=\"fbtoken\"]').val(v.authResponse.accessToken)
+                $('#login-form').parent().submit()
+              }
+              }) }
+        </script>
+        ")
+      (force-https)
+      (pagemessage msg)
+      ; login-form adapted for facebook
+      (prbold "Log in or sign up with Facebook")
+      (br2)
+      (fnform
+        (fn (req) (loginfb-handler req afterward))
+        (fn ()
+          (prn "<div class='fb-login-button' data-size='large' onlogin='login_button_cb();'></div>")
+          (prn "<div id='login-form' style='display:none'>")
+            (prn "<input type='hidden' name='fbtoken'>")
+            (prn "<input type='hidden' name='fbid'>")
+            (submit "login")
+          (prn "</div>")
+          )
+        (acons afterward))
+      (login-form "Log in with username/password" switch login-handler afterward)
+    )))
+
 
 (def login-form (label switch handler afterward)
   (prbold label)
   (br2)
   (fnform (fn (req) (handler req switch afterward))
-          (fn () (pwfields (downcase label)))
+          (fn () (pwfields))
           (acons afterward)))
 
 (def login-handler (req switch afterward)
@@ -166,6 +226,18 @@
   (aif (good-login (arg req "u") (arg req "p") req!ip)
        (login it req!ip (user->cookie* it) afterward)
        (failed-login switch "Bad login." afterward)))
+
+(def loginfb-handler (req afterward)
+  (logout-user (get-user req))
+  (with (token (arg req "fbtoken") id (arg req "fbid"))
+    (if (hpw->user* (+ "FBID::" id))
+      (aif (good-login-fb token id req!ip)
+        (login it req!ip (user->cookie* it) afterward)
+        (failed-login 'login+fb "Bad login." afterward))
+      (if (no (verify-token token id))
+        (failed-login 'login+fb it afterward)
+        (let user (create-acct-fb id token)
+          (login user req!ip (cook-user user) afterward) )))))
 
 ; unused by forum
 ; (def create-handler (req switch afterward)
@@ -209,11 +281,25 @@
             user)
         (do (enq-limit record bad-logins*)
             nil))))
+(def good-login-fb (token id ip)
+  (let user (hpw->user* (+ "FBID::" id)) (let record (list (seconds) ip user)
+    (if (verify-token token id)
+    ; (if (and user pw (aand (hpasswords* user) (verify-password pw it)))
+        (do
+          (unless (user->cookie* user) (cook-user user))
+          (enq-limit record good-logins*)
+          user)
+        (do (enq-limit record bad-logins*)
+            nil)))))
 
 (def hash-password (pw)
   (tostring (system (+ "python hash.py '" (urlencode pw) "'"))) )
 (def verify-password (pw hash)
   (is "True" (tostring (system (+ "python verify.py '" (urlencode pw) "' '" hash "'")))) )
+(def verify-token (token id)
+  (no (is (tostring (system (+ "fb-sdk/index.js verify " token " " id))) "ERROR")) )
+(def generate-fb-display-name (id token)
+  (tostring (system (+ "fb-sdk/index.js get-name " token " " id))) )
 
 (= dc-usernames* (table))
 
@@ -254,7 +340,7 @@
   (aif (get-user req)
        (prs it 'at req!ip)
        (do (pr "You are not logged in. ")
-           (w/link (login-page 'both) (pr "Log in"))
+           (w/link (login-page 'login+fb) (pr "Log in"))
            (pr "."))))
 
 
@@ -736,7 +822,7 @@
   `(defop ,name ,parm
      (if (get-user ,parm)
          (do ,@body) 
-         (login-page 'both
+         (login-page 'login+fb
                      "You need to be logged in to do that."
                      (list (fn (u ip))
                            (string ',name (reassemble-args ,parm)))))))
