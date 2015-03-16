@@ -379,8 +379,8 @@
 ; Page Layout
 
 (= logo-url* "miri.png")
-(= favicon-url* "miri.ico")
-(defopr favicon.ico req favicon-url*)
+(= favicon-url* "favicon.png")
+; (defopr favicon.ico req favicon-url*)
 
 ; redefined later
 
