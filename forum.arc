@@ -511,7 +511,7 @@
       (pr (len items*) "/" maxid* " loaded")
       (pr (round (/ (memory) 1000000)) " mb")
       (pr elapsed " msec")
-      (link "settings" "newsadmin")
+      (link "settings" "forum-admin")
       (hook 'admin-bar user whence))))
 
 (def color-stripe (c)
@@ -892,10 +892,10 @@
 
 ; News Admin
 
-(defopa newsadmin req 
+(defopa forum-admin req 
   (let user (get-user req)
-    (newslog req!ip user 'newsadmin)
-    (newsadmin-page user)))
+    (newslog req!ip user 'forumadmin)
+    (forumadmin-page user)))
 
 ; Note that caching* is reset to val in source when restart server.
 
@@ -905,8 +905,8 @@
 ; Need a util like vars-form for a collection of variables.
 ; Or could generalize vars-form to think of places (in the setf sense).
 
-(def newsadmin-page (user)
-  (shortpage user nil nil "newsadmin" "newsadmin"
+(def forumadmin-page (user)
+  (shortpage user nil nil "forum-admin" "forum-admin"
     (para (onlink "Create Account" (admin-page user)))
     (vars-form user 
                (nad-fields)
@@ -914,7 +914,7 @@
                  (case name
                    caching            (= caching* val)
                    ))
-               (fn () (newsadmin-page user)))))
+               (fn () (forumadmin-page user)))))
 
 
 (newsop how-to-contribute ()
