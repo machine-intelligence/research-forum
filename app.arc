@@ -128,7 +128,7 @@
     (set (dc-usernames* (downcase user)))
     (set-pw-fb user id)
     (init-user user)
-    (do (= ((profile user) 'name) name) (save-prof user))
+    (when (no (blank name)) (= ((profile user) 'name) name) (save-prof user))
     user))
 
 ; unused by forum

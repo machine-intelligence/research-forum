@@ -30,7 +30,7 @@ break; case 'get-name':
 		access_token: arg.token,
 		}, function(res){
 			if (!res || res.error || (res.data&&res.data.error)) err("api error:",(res&&res.error)||(res&&res.data&&res.data.error))
-			process.stdout.write(res.name)
+			process.stdout.write(res.name||"")
 		})
 // turns out we don't actually need to do this, since we're just using the access token as a password
 // break; case 'extend':
