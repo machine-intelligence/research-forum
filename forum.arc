@@ -767,7 +767,7 @@
               (when (is switch 'full)
                 (tag (td style "line-height:12pt; height:10px;")
                   (spanclass pagetop
-                    (tag b (link this-site* "news"))
+                    (tag b (link this-site* "/"))
                     (hspace 10)
                     (toprow user label))))
              (if (is switch 'full)
@@ -791,7 +791,7 @@
 (def toprow (user label)
   (tag (ul class 'dropdown)
     (w/bars
-      (toplink "new" "newest" label)
+      (toplink "new" "/" label)
       (toplink "comments" "newcomments" label)
       (toplink "links" "links" label)
       (tag li
@@ -1020,11 +1020,9 @@
              (pr (,gc)))))))
 
 
-(newsop news () (newspage user))
-
 (newsop ||   () (newspage user))
-
-;(newsop index.html () (newspage user))
+(newsop news () (newspage user)) ; deprecated link
+(newsop newest () (newestpage user)) ; deprecated link
 
 (def sb-links (user n) (retrieve n [and (cansee user _) (no _!draft) (is _!category 'Link)] stories*))
 
@@ -1034,15 +1032,10 @@
 
 (def sb-comments (user n) (retrieve n [and (cansee user _) (no _!draft)] comments*))
 
-(def newspage (user) (newestpage user))
-
 (def listpage (user t1 items label title (o url label) (o number t) (o show-comments t) (o preview-only t) (o show-immediate-parent))
   (hook 'listpage user)
   (longpage-sb user t1 nil label title url show-comments
     (display-items user items label title url 0 perpage* number preview-only show-immediate-parent)))
-
-
-(newsop newest () (newestpage user))
 
 ; Note: deleted items will persist for the remaining life of the 
 ; cached page.  If this were a prob, could make deletion clear caches.
@@ -1057,7 +1050,7 @@
   (retrieve n [and (cansee user _) (is _!category 'Link) (no _!draft)] stories*))
 
 (newscache newestpage user 40
-  (listpage user (msec) (newstories user maxend*) "new" "New Stories" "newest"
+  (listpage user (msec) (newstories user maxend*) "new" "New Stories" "/"
             nil t))
 
 (def newstories (user n)
@@ -1245,7 +1238,7 @@
 (newsop vote (by for dir auth whence)
   (with (i      (safe-item for)
          dir    (saferead dir)
-         whence (if whence (urldecode whence) "news"))
+         whence (if whence (urldecode whence) "/"))
     (if (no i)
          (pr "No such item.")
         (no (in dir 'like nil))
@@ -1455,7 +1448,7 @@
         (submit-item user s)
         (if draft (edit-page user s)
             (is category 'Link) (pr "<meta http-equiv='refresh' content='0; url=/links'>")
-            (pr "<meta http-equiv='refresh' content='0; url=/newest'>"))))))
+            (pr "<meta http-equiv='refresh' content='0; url=/'>"))))))
 
 (def submit-page (user (o url "") (o title "") (o text "") (o category) (o msg))
   (shortpage user nil nil "Submit" "submit"
@@ -1936,7 +1929,7 @@
 
 (newsop reply (id whence)
   (with (i      (safe-item id)
-         whence (or (only.urldecode whence) "news"))
+         whence (or (only.urldecode whence) "/"))
     (if (and (only.comments-active i) (no i!draft) (canreply user i))
         (if user
             (addcomment-page i user whence)
@@ -2253,7 +2246,7 @@ Pandoc markdown documentation</a></span> for additional formatting options.</p>"
       (resetpw-page user "Passwords should be a least 4 characters long.  
                           Please choose another.")
       (do (set-pw user newpw)
-          (newspage user))))
+          (newestpage user))))
 
 
 
