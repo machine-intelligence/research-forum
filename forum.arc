@@ -390,21 +390,21 @@
 
 (def gen-collapse-script(c identifier)
   (let template "
-<script type='text/javascript'>
-$(window).load(function() {
-  $(\".toggle-{{1}}\").click(function() {
-    var val = $(this).text();
-    if (val.indexOf('[+]') == 0) {
-      $(\"td.comment-{{1}}\").css('display', 'block');
-      $(this).text(\"[-] Collapse comment by {{2}}\");
-    } else {
-      $(\"td.comment-{{1}}\").css('display', 'none');
-      $(this).text(\"[+] Expand comment by {{2}}\");
-    }
-    return false;
-  });
-});
-</script>"
+    <script type='text/javascript'>
+    $(window).load(function() {
+      $(\".toggle-{{1}}\").click(function() {
+        var val = $(this).text();
+        if (val.indexOf('[+]') == 0) {
+          $(\"td.comment-{{1}}\").css('display', 'block');
+          $(this).text(\"[-] Collapse comment by {{2}}\");
+        } else {
+          $(\"td.comment-{{1}}\").css('display', 'none');
+          $(this).text(\"[+] Expand comment by {{2}}\");
+        }
+        return false;
+      });
+    });
+    </script>"
     (multisubst `(("{{1}}" ,identifier) ("{{2}}" ,(get-user-display-name c!by))) template)))
 
 (mac npage (notify title . body) ; alice@2015-03-16 note: 'notify gets ignored
@@ -540,204 +540,204 @@ $(window).load(function() {
 ; turn off server caching via (= caching* 0) or won't see changes
 (= caching* 0)
 
-(defop forum.css req
-  (pr "
-/* forum.css generated version 1.2 */
+(defop forum.css req (pr "
+  /* forum.css generated version 1.2 */
 
-body {
-background: #eaeaea;
-background-color:#eaeaea !important;
-margin: 0px;
-}
+  body {
+  background: #eaeaea;
+  background-color:#eaeaea !important;
+  margin: 0px;
+  }
 
-table.notify
-{
-width: 100%; background-color: #eaeaea;
-padding: 5px; text-align: center;
-}
+  table.notify
+  {
+  width: 100%; background-color: #eaeaea;
+  padding: 5px; text-align: center;
+  }
 
-.notify td {
-    font-size: 12pt;
-    color: 254e7d;
-}
+  .notify td {
+      font-size: 12pt;
+      color: 254e7d;
+  }
 
-.notify a:link {
-    text-decoration: underline;
-}
+  .notify a:link {
+      text-decoration: underline;
+  }
 
-table.frame
-{
-width: 85%; border-left: 1px solid #d2d2d2;
-border-right: 1px solid #d2d2d2; background-color: #ffffff;
--webkit-border-horizontal-spacing: 0px;
--webkit-border-vertical-spacing: 0px;
-}
+  table.frame
+  {
+  width: 85%; border-left: 1px solid #d2d2d2;
+  border-right: 1px solid #d2d2d2; background-color: #ffffff;
+  -webkit-border-horizontal-spacing: 0px;
+  -webkit-border-vertical-spacing: 0px;
+  }
 
 
-table.topbar {
-width: 100%;
-padding: 2px;
-background-color: #254e7d;
-}
-.pagetop a:visited {
-color:#ffffff; 
-}
+  table.topbar {
+  width: 100%;
+  padding: 2px;
+  background-color: #254e7d;
+  }
+  .pagetop a:visited {
+  color:#ffffff; 
+  }
 
-/*
- * begin dropdown menu css
- */
+  /*
+   * begin dropdown menu css
+   */
 
-ul.dropdown {
-  text-align: left;
-  display: inline;
-  margin: 0;
-  padding: 0 0 0 0;
-  list-style: none;
-}
+  ul.dropdown {
+    text-align: left;
+    display: inline;
+    margin: 0;
+    padding: 0 0 0 0;
+    list-style: none;
+  }
 
-ul.dropdown li {
-  display: inline-block;
-  position: relative;
-  padding: 5px 0px;
-  background: #254e7d;
-}
+  ul.dropdown li {
+    display: inline-block;
+    position: relative;
+    padding: 5px 0px;
+    background: #254e7d;
+  }
 
-ul.dropdown li ul {
-  padding: 0;
-  position: absolute;
-  top: 25px;
-  left: -4px;
-  width: 125px;
-  box-shadow: none;
-  display: none;
-  opacity: 0;
-  visibility: hidden;
-}
+  ul.dropdown li ul {
+    padding: 0;
+    position: absolute;
+    top: 25px;
+    left: -4px;
+    width: 125px;
+    box-shadow: none;
+    display: none;
+    opacity: 0;
+    visibility: hidden;
+  }
 
-ul.dropdown li ul li {
-  display: block;
-  padding: 5px 4px;
-}
+  ul.dropdown li ul li {
+    display: block;
+    padding: 5px 4px;
+  }
 
-ul.dropdown li:hover ul {
-  display: block;
-  opacity: 1;
-  visibility: visible;
-}
+  ul.dropdown li:hover ul {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+  }
 
-/*
- * end dropdown menu css
- */
+  /*
+   * end dropdown menu css
+   */
 
-table td.sb {
-background-color: #f8f8f8;
-width: 300px;
-padding: 8px;
-font-size: 10pt;
-}
+  table td.sb {
+  background-color: #f8f8f8;
+  width: 300px;
+  padding: 8px;
+  font-size: 10pt;
+  }
 
-table td.sb > h3 {
-font-family: Verdana;
-font-size: 12pt;
-font-weight: bold;
-color: #92b437 !important;
-}
+  table td.sb > h3 {
+  font-family: Verdana;
+  font-size: 12pt;
+  font-weight: bold;
+  color: #92b437 !important;
+  }
 
-table td.sb > h3 > a:link {
-font-family: Verdana;
-font-size: 12pt;
-font-weight: bold;
-color: #92b437;
-}
+  table td.sb > h3 > a:link {
+  font-family: Verdana;
+  font-size: 12pt;
+  font-weight: bold;
+  color: #92b437;
+  }
 
-table td.sb > h3 > a:visited {
-font-family: Verdana;
-font-size: 12pt;
-font-weight: bold;
-color: #92b437;
-}
+  table td.sb > h3 > a:visited {
+  font-family: Verdana;
+  font-size: 12pt;
+  font-weight: bold;
+  color: #92b437;
+  }
 
-a:visited {
-color: #000000;
-}
+  a:visited {
+  color: #000000;
+  }
 
-td    { font-family:Verdana; font-size:13pt; color:#000000; }
+  td    { font-family:Verdana; font-size:13pt; color:#000000; }
 
-hr       { border:0; text-align:center; }
-hr:after { content:\"*\"; }
+  hr       { border:0; text-align:center; }
+  hr:after { content:\"*\"; }
 
-td > h1 { font-family:Verdana; font-size:14pt; color:#000000; font-weight:bold; }
+  td > h1 { font-family:Verdana; font-size:14pt; color:#000000; font-weight:bold; }
 
-img.logo { width:26; height:18; border:0px #@(hexrep border-color*) solid;}
+  img.logo { width:26; height:18; border:0px #@(hexrep border-color*) solid;}
 
-table.mainsite { width:100%; cellpadding:0; cellspacing:0; border:0; padding:0px; }
-table tr.header   { background-color:#283278; font-color:#ffffff; font-weight:bold; border-radius:15px; }
-table td.contents { margin:0; padding-right:80; }
-table td.story    { line-height:135%; }
+  table.mainsite { width:100%; cellpadding:0; cellspacing:0; border:0; padding:0px; }
+  table tr.header   { background-color:#283278; font-color:#ffffff; font-weight:bold; border-radius:15px; }
+  table td.contents { margin:0; padding-right:80; }
+  table td.story    { line-height:135%; }
 
-.admin td   { font-family:Verdana; font-size:10.5pt; color:#000000; }
-.subtext td { font-family:Verdana; font-size:  10pt; color:#828282; }
-.subtext-invisible td { font-family:Verdana; font-size:  10pt; color:#bbbbbb; }
+  .admin td   { font-family:Verdana; font-size:10.5pt; color:#000000; }
+  .subtext td { font-family:Verdana; font-size:  10pt; color:#828282; }
+  .subtext-invisible td { font-family:Verdana; font-size:  10pt; color:#bbbbbb; }
 
-table td.sb > p { font-family:Verdana; font-size:10pt; font-weight:regular; color:#ffffff;}
+  table td.sb > p { font-family:Verdana; font-size:10pt; font-weight:regular; color:#ffffff;}
 
-button   { font-family:Verdana; font-size:11pt; color:#000000; }
-input    { font-family:Courier; font-size:13pt; color:#000000; }
-input[type=\"submit\"] { font-family:Verdana; }
-textarea { font-family:Courier; font-size:13pt; color:#000000; }
+  button   { font-family:Verdana; font-size:11pt; color:#000000; }
+  input    { font-family:Courier; font-size:13pt; color:#000000; }
+  input[type=\"submit\"] { font-family:Verdana; }
+  textarea { font-family:Courier; font-size:13pt; color:#000000; }
 
-a:link    { color:#000000; text-decoration:none; } 
+  a:link    { color:#000000; text-decoration:none; } 
 
-.default     { font-family:Verdana; font-size:  13pt; color:#828282; }
-.admin       { font-family:Verdana; font-size:10.5pt; color:#000000; }
-.title       { font-family:Verdana; font-size:  16pt; color:#828282; font-weight:bold; }
-.discussion-title { font-family:Verdana; font-size:13pt; color:#828282; font-weight:bold; }
-.adtitle     { font-family:Verdana; font-size:  11pt; color:#828282; }
-.subtext     { font-family:Verdana; font-size:  10pt; color:#828282; }
-.subtext-invisible { font-family:Verdana; font-size: 10pt; color:#bbbbbb; }
-.sb-subtext  { font-family:Verdana; font-size:   8pt; color:#828282; }
-.sb-invisible-subtext  { font-family:Verdana; font-size: 8pt; color:#bbbbbb; }
-.yclinks     { font-family:Verdana; font-size:  10pt; color:#828282; }
-.pagetop     { font-family:Verdana; font-size:  11pt; color:#ffffff; }
-.comhead     { font-family:Verdana; font-size:  10pt; color:#828282; }
-.comment     { font-family:Verdana; font-size:  12pt; color:#000000; }
-.dead        { font-family:Verdana; font-size:  11pt; color:#dddddd; }
+  .default     { font-family:Verdana; font-size:  13pt; color:#828282; }
+  .admin       { font-family:Verdana; font-size:10.5pt; color:#000000; }
+  .title       { font-family:Verdana; font-size:  16pt; color:#828282; font-weight:bold; }
+  .discussion-title { font-family:Verdana; font-size:13pt; color:#828282; font-weight:bold; }
+  .adtitle     { font-family:Verdana; font-size:  11pt; color:#828282; }
+  .subtext     { font-family:Verdana; font-size:  10pt; color:#828282; }
+  .subtext-invisible { font-family:Verdana; font-size: 10pt; color:#bbbbbb; }
+  .sb-subtext  { font-family:Verdana; font-size:   8pt; color:#828282; }
+  .sb-invisible-subtext  { font-family:Verdana; font-size: 8pt; color:#bbbbbb; }
+  .yclinks     { font-family:Verdana; font-size:  10pt; color:#828282; }
+  .pagetop     { font-family:Verdana; font-size:  11pt; color:#ffffff; }
+  .comhead     { font-family:Verdana; font-size:  10pt; color:#828282; }
+  .comment     { font-family:Verdana; font-size:  12pt; color:#000000; }
+  .dead        { font-family:Verdana; font-size:  11pt; color:#dddddd; }
 
-.userlink, .you { font-weight:bold; }
+  .userlink, .you { font-weight:bold; }
 
-.comment a:link, .comment a:visited, .story a:link, .story a:visited { text-decoration:underline; }
-.dead a:link, .dead a:visited { color:#dddddd; }
-.pagetop a:link { color:#ffffff; }
-.pagetop a:visited { color:#ffffff; }
-.topsel, .topsel a:link, .topsel a:visited { color:#ffc040; }
+  .comment a:link, .comment a:visited, .story a:link, .story a:visited { text-decoration:underline; }
+  .dead a:link, .dead a:visited { color:#dddddd; }
+  .pagetop a:link { color:#ffffff; }
+  .pagetop a:visited { color:#ffffff; }
+  .topsel, .topsel a:link, .topsel a:visited { color:#ffc040; }
 
-.subtext a:link, .subtext a:visited { color:#828282; }
-.subtext a:hover { text-decoration:underline; }
+  .subtext a:link, .subtext a:visited { color:#828282; }
+  .subtext a:hover { text-decoration:underline; }
 
-.subtext-invisible a:link, .subtext-invisible a:visited { color:#bbbbbb; }
-.subtext-invisible a:hover { text-decoration:underline; }
+  .subtext-invisible a:link, .subtext-invisible a:visited { color:#bbbbbb; }
+  .subtext-invisible a:hover { text-decoration:underline; }
 
-.sb a:link, .sb a:visited { color:#828282; }
-.sb a:hover { text-decoration:underline; }
+  .sb a:link, .sb a:visited { color:#828282; }
+  .sb a:hover { text-decoration:underline; }
 
-a.sb-invisible:link, a.sb-invisible:visited { color:#bbbbbb; }
-.sb-invisible-subtext a:link, .sb-invisible-subtext a:visited {color:#bbbbbb; }
+  a.sb-invisible:link, a.sb-invisible:visited { color:#bbbbbb; }
+  .sb-invisible-subtext a:link, .sb-invisible-subtext a:visited {color:#bbbbbb; }
 
-.comhead a:link, .subtext a:visited { color:#828282; }
-.comhead a:hover { text-decoration:underline; }
+  .comhead a:link, .subtext a:visited { color:#828282; }
+  .comhead a:hover { text-decoration:underline; }
 
-.continue a:link, .subtext a:visited { color:#828282; text-decoration:underline; }
-.doclink a:link { font-weight:bold; text-decoration:underline; }
+  .continue a:link, .subtext a:visited { color:#828282; text-decoration:underline; }
+  .doclink a:link { font-weight:bold; text-decoration:underline; }
 
-.default p { margin-top: 8px; margin-bottom: 0px; }
+  .default p { margin-top: 8px; margin-bottom: 0px; }
 
-.example-raw      { margin:20px; background-color:white; }
-.example-rendered { margin:20px; }
+  .example-raw      { margin:20px; background-color:white; }
+  .example-rendered { margin:20px; }
 
-.pagebreak {page-break-before:always}
+  .pagebreak {page-break-before:always}
 
-pre { overflow: auto; padding: 2px; max-width:600px; }
-pre:hover {overflow:auto} "))
+  pre { overflow: auto; padding: 2px; max-width:600px; }
+  pre:hover {overflow:auto}
+  "))
 
 ; only need pre padding because of a bug in Mac Firefox
 
@@ -2264,3 +2264,22 @@ Pandoc markdown documentation</a></span> for additional formatting options.</p>"
               (tdr:prt n)
               (tdr:prt (and n (round (/ (* n ms) 1000))))))))))
 
+;! need to make the how-to-contribute message less crazy
+; <tr><td>
+;   <table width='100%' style='width: 100%; background-color: #eaeaea;'><tbody>
+;     <tr style='height:5px'></tr>
+;     <tr><td><img src='s.gif' height='1' width='14'></td></tr>
+;     <tr>
+;       <td colspan='1'></td>
+;       <td class='story' width='100%' style='text-align:left; font-size: 12pt; color: 254e7d;'>
+;         <p>
+;           This is a publicly visible discussion forum for foundational mathematical research in \"robust and beneficial\" artificial intelligence, as discussed in the Future of Life Institute's <a href='http://futureoflife.org/misc/open_letter' class='continue' style='text-decoration: underline;'>research priorities letter</a> and the Machine Intelligence Research Institute's <a href='https://intelligence.org/technical-agenda/' class='continue' style='text-decoration: underline;'>technical agenda</a>.
+;         </p><p>
+;           If you'd like to participate in the conversations here, see our <a href='/how-to-contribute' class='continue' style='text-decoration: underline;'>How to Contribute page »</a>
+;         </p>
+;       </td>
+;     </tr>
+;     <tr style='height:12px'></tr>
+;   </tbody></table>
+; </td></tr>
+; <tr style='height:10px'></tr>
