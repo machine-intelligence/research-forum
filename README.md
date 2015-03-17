@@ -49,6 +49,8 @@ db format
 
 #### Terminal documentation
 
-production: `su - forum; cd ~/research-forum; ./run.sh` -> http://agentfoundations.org/
+production: `su forum; cd ~/research-forum; ./run.sh` -> http://agentfoundations.org/
 
-staging: `su - forum; cd ~/staging/research-forum; ./run.sh 9001` -> http://malo2-9001.terminal.com/
+staging: `su forum; cd ~/staging/research-forum; ./run.sh 9001` -> http://malo2-9001.terminal.com/
+
+hack to fix urls to the wrong domain: `cd arc; cp -r news news.bak; cd news; find text story -type f -exec sed -r -i 's/https?:\/\/(malo2-8080\.terminal\.com|forum\.intelligence\.org)//g' {} +`

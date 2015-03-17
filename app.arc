@@ -197,7 +197,7 @@
       (force-https)
       (pagemessage msg)
       ; login-form adapted for facebook
-      (prbold "Log in or sign up with Facebook")
+      (prbold "Log in with Facebook")
       (br2)
       (fnform
         (fn (req) (loginfb-handler req afterward))
@@ -210,7 +210,7 @@
           (prn "</div>")
           )
         (acons afterward))
-      (login-form "Log in with username/password" switch login-handler afterward)
+      (login-form "Log in with password" switch login-handler afterward)
     )))
 
 
