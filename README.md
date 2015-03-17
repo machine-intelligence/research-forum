@@ -35,12 +35,7 @@ part of arc but modified by us
 * app.arc (heavily modified)
 * forum.arc (heavily modified)
 
-new entirely
-
-* .gitignore, README.md, run.sh
-* hash.py, verify.py: tiny shim to use the python library passlib
-* fb-sdk/: tiny shim to use the javascript facebook sdk
-* static/miri.*
+other files are new entirely.
 
 db format
 
@@ -49,8 +44,6 @@ db format
 
 #### Terminal documentation
 
-production: `su forum; cd ~/research-forum; ./run.sh` -> http://agentfoundations.org/
-
-staging: `su forum; cd ~/staging/research-forum; ./run.sh 9001` -> http://malo2-9001.terminal.com/
+production: `su forum; cd ~/research-forum; ./run.sh` -> https://agentfoundations.org/
 
 hack to fix urls to the wrong domain: `cd arc; cp -r news news.bak; cd news; find text story -type f -exec sed -r -i 's/https?:\/\/(malo2-8080\.terminal\.com|forum\.intelligence\.org)//g' {} +`

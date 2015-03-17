@@ -990,8 +990,7 @@
     (tostring (underlink (+ (string n) " liked " (if (is n 1) "story" "stories"))
                          (saved-url subject)))))
 
-(def resetpw-link ()
-  (tostring (underlink "reset password" "resetpw")))
+(def resetpw-link () (tostring (underlink "reset password" "resetpw")))
 
 
 ; Main Operators
