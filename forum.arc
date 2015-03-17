@@ -407,7 +407,7 @@ $(window).load(function() {
 </script>"
     (multisubst `(("{{1}}" ,identifier) ("{{2}}" ,(get-user-display-name c!by))) template)))
 
-(mac npage (notify title . body)
+(mac npage (notify title . body) ; alice@2015-03-16 note: 'notify gets ignored
   `(tag html 
      (tag head 
        (gen-css-url)
@@ -417,21 +417,24 @@ $(window).load(function() {
        (tag title (pr ,title)))
      (tag body
        (center
-         (if ,notify
-           (tag (table class "notify")
-             (tr (td
-               (pr "Welcome to the Intelligent Agent Foundations Forum!  New users, please ")
-               (link "read this first" "welcome")
-               (pr ".")))))
+         ; (if ,notify
+         ;   (tag (table class "notify")
+         ;     (tr (td
+         ;       (pr "Welcome to the Intelligent Agent Foundations Forum!  New users, please ")
+         ;       (link "read this first" "welcome")
+         ;       (pr ".")))))
          (tag (table class "frame")
-           ,@body)))))
+           ,@body))
+       (prn "<script>$(function(){if (/^\\/(news|newest|)$/.test(location.pathname)) $('body > center > table > tbody > tr:nth-child(2) > td > table > tbody > tr > td.contents > table > tbody').prepend(\"<tr><td><table width='100%' style='width: 100%; background-color: #eaeaea;'><tbody><tr style='height:5px'></tr><tr><td><img src='s.gif' height='1' width='14'></td></tr><tr><td colspan='1'></td><td class='story' width='100%' style='text-align:left; font-size: 12pt; color: 254e7d;'><p>This is a publicly visible discussion forum for foundational mathematical research in \\\"robust and beneficial\\\" artificial intelligence, as discussed in the Future of Life Institute's research priorities letter and the Machine Intelligence Research Institute's technical agenda.</p><p>If you'd like to participate in the conversations here, see our <a href='/welcome' class='continue' style='text-decoration: underline;'>How to Contribute page »</a></p></td></tr><tr style='height:12px'></tr></tbody></table></td></tr><tr style='height:10px'></tr>\")})</script>")
+       )))
 
 (= pagefns* nil)
 
 (mac fulltop (user lid label title whence . body)
   (w/uniq (gu gi gl gt gw)
     `(with (,gu ,user ,gi ,lid ,gl ,label ,gt ,title ,gw ,whence)
-       (npage (no user) (+ this-site* (if ,gt (+ bar* ,gt) ""))
+       (npage nil (+ this-site* (if ,gt (+ bar* ,gt) "")) ; alice@2015-03-16 we don't care about user-ness
+       ; (npage (no user) (+ this-site* (if ,gt (+ bar* ,gt) ""))
          (do (pagetop 'full ,gi ,gl ,gt ,gu ,gw)
              (hook 'page ,gu ,gl)
              ,@body)))))
@@ -914,10 +917,20 @@ pre:hover {overflow:auto} "))
                (fn () (newsadmin-page user)))))
 
 
-(newsop welcome ()
-  (longpage-sb user (msec) nil nil "Welcome" "welcome" t
-    (tag (table cellpadding 10)
-      (tr (td (pr "Welcome!  Please replace this with something more suitable."))))))
+(newsop how-to-contribute ()
+  (longpage-sb user (msec) nil nil "How to contribute" "how-to-contribute" t
+    (pr "<div class='story' style='padding:20px;'>")
+    (pr "
+      This is a publicly visible discussion forum for foundational mathematical research in artificial intelligence. The goal of this forum is to move toward a more formal and general understanding of \"robust and beneficial\" AI systems, as discussed in the Future of Life Institute's <a href='http://futureoflife.org/misc/open_letter'>research priorities letter</a> and the Machine Intelligence Research Institute's <a href='https://intelligence.org/technical-agenda/'>technical agenda</a>.
+      <br><br>
+      Like <a href='http://mathoverflow.net/help/privileges'>Math Overflow</a>, the Intelligent Agent Foundations Forum has a tiered system for becoming a full contributor. If you make an account with a Facebook login, you can post a link to an off-site contribution, e.g., on <a href='http://medium.com/'>Medium.com</a> or on a personal blog. These links will be visible to full forum contributors. If your link acquires enough Likes from full contributors, it will get promoted to visibility by all site visitors.
+      <br><br>
+      If you link to some good original content that you have written, the administrators will give you permissions to make posts and comments, and to Like others' contributions. The details of this system are still being worked out, and will change as we get a larger community of users.
+      <br><br>
+      Contact us at <a href='mailto:forum&#64;intelligence.org'>forum&#64;intelligence.org</a> with any questions.
+      ")
+    (pr "</div>")
+    ))
 
 ; Users
 
