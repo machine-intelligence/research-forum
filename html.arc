@@ -258,9 +258,9 @@
         (pr i)))))
 
 (mac force-https ()
-  '(tag (script) (pr "if (window.location.protocol != \"https:\" &&
-                          window.location.hostname == \"malo2-8080.terminal.com\")
-                          window.location.href = \"https:\" + window.location.href.substring(window.location.protocol.length);")))
+  '(tag (script) (pr "if (location.protocol != \"https:\" &&
+                          location.host.match(/^malo.-....\.terminal\.com$/))
+                          location.href = \"https:\" + window.location.href.substring(window.location.protocol.length);")))
 
 (mac whitepage body
   `(tag html 
