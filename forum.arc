@@ -425,7 +425,7 @@ $(window).load(function() {
          ;       (pr ".")))))
          (tag (table class "frame")
            ,@body))
-       (prn "<script>$(function(){if (/^\\/(news|newest|)$/.test(location.pathname)) $('body > center > table > tbody > tr:nth-child(2) > td > table > tbody > tr > td.contents > table > tbody').prepend(\"<tr><td><table width='100%' style='width: 100%; background-color: #eaeaea;'><tbody><tr style='height:5px'></tr><tr><td><img src='s.gif' height='1' width='14'></td></tr><tr><td colspan='1'></td><td class='story' width='100%' style='text-align:left; font-size: 12pt; color: 254e7d;'><p>This is a publicly visible discussion forum for foundational mathematical research in \\\"robust and beneficial\\\" artificial intelligence, as discussed in the Future of Life Institute's research priorities letter and the Machine Intelligence Research Institute's technical agenda.</p><p>If you'd like to participate in the conversations here, see our <a href='/how-to-contribute' class='continue' style='text-decoration: underline;'>How to Contribute page »</a></p></td></tr><tr style='height:12px'></tr></tbody></table></td></tr><tr style='height:10px'></tr>\")})</script>")
+       (prn "<script>$(function(){if (/^\\/(news|newest|)$/.test(location.pathname)) $('body > center > table > tbody > tr:nth-child(2) > td > table > tbody > tr > td.contents > table > tbody').prepend(\"<tr><td><table width='100%' style='width: 100%; background-color: #eaeaea;'><tbody><tr style='height:5px'></tr><tr><td><img src='s.gif' height='1' width='14'></td></tr><tr><td colspan='1'></td><td class='story' width='100%' style='text-align:left; font-size: 12pt; color: 254e7d;'><p>This is a publicly visible discussion forum for foundational mathematical research in \\\"robust and beneficial\\\" artificial intelligence, as discussed in the Future of Life Institute's <a href='http://futureoflife.org/misc/open_letter' class='continue' style='text-decoration: underline;'>research priorities letter</a> and the Machine Intelligence Research Institute's <a href='https://intelligence.org/technical-agenda/' class='continue' style='text-decoration: underline;'>technical agenda</a>.</p><p>If you'd like to participate in the conversations here, see our <a href='/how-to-contribute' class='continue' style='text-decoration: underline;'>How to Contribute page »</a></p></td></tr><tr style='height:12px'></tr></tbody></table></td></tr><tr style='height:10px'></tr>\")})</script>")
        )))
 
 (= pagefns* nil)
@@ -920,6 +920,7 @@ pre:hover {overflow:auto} "))
 (newsop how-to-contribute ()
   (longpage-sb user (msec) nil nil "How to contribute" "how-to-contribute" t
     (pr "<div class='story' style='padding:20px;'>")
+    (pr "<h2 style='margin-top:0;'>How to contribute</h2>")
     (pr "
       This is a publicly visible discussion forum for foundational mathematical research in artificial intelligence. The goal of this forum is to move toward a more formal and general understanding of \"robust and beneficial\" AI systems, as discussed in the Future of Life Institute's <a href='http://futureoflife.org/misc/open_letter'>research priorities letter</a> and the Machine Intelligence Research Institute's <a href='https://intelligence.org/technical-agenda/'>technical agenda</a>.
       <br><br>

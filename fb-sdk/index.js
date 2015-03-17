@@ -11,7 +11,7 @@ var arg = {
 var err = function(){console.error.apply(console.error,arguments); process.stdout.write('ERROR'); process.exit(1)}
 
 var authf = 'arc/fb_auth.json'
-if (!fs.existsSync(authf)) err("did not find auth file")
+if (!fs.existsSync(authf)) err("[fb-sdk] did not find auth file "+authf)
 var auth = JSON.parse(fs.readFileSync(authf))
 
 switch (arg.cmd) {default: err("bad command:",arg.cmd)
