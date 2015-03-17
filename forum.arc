@@ -384,11 +384,9 @@
 
 ; redefined later
 
-(def gen-css-url ()
-  (prn "<link rel=\"stylesheet\" type=\"text/css\" href=\"forum.css\">"))
+(def gen-css-url () (prn "<link rel=\"stylesheet\" type=\"text/css\" href=\"forum.css\">"))
 
-(def rand-id ()
-  (round (* (rand) 1e16)))
+(def rand-id () (round (* (rand) 1e16)))
 
 (def gen-collapse-script(c identifier)
   (let template "
@@ -493,8 +491,7 @@ $(window).load(function() {
          (format-sb-title (link "RSS" "rss")))
          ,@body))))
 
-(def reverse (text)
-  (coerce (rev (coerce text 'cons)) 'string))
+(def reverse (text) (coerce (rev (coerce text 'cons)) 'string))
 
 (def word-boundary (text)
   (if (is (len (halve text)) 1) text
@@ -1026,8 +1023,7 @@ pre:hover {overflow:auto} "))
 
 (def newspage (user) (newestpage user))
 
-(def listpage (user t1 items label title 
-               (o url label) (o number t) (o show-comments t) (o preview-only t) (o show-immediate-parent))
+(def listpage (user t1 items label title (o url label) (o number t) (o show-comments t) (o preview-only t) (o show-immediate-parent))
   (hook 'listpage user)
   (longpage-sb user t1 nil label title url show-comments
     (display-items user items label title url 0 perpage* number preview-only show-immediate-parent)))
@@ -1062,8 +1058,7 @@ pre:hover {overflow:auto} "))
 
 ; As no of stories gets huge, could test visibility in fn sent to best.
 
-(def beststories (user n)
-  (bestn n (compare > realscore) (visible user stories*)))
+(def beststories (user n) (bestn n (compare > realscore) (visible user stories*)))
 
 
 (newsop bestcomments () (bestcpage user))
@@ -1117,8 +1112,7 @@ pre:hover {overflow:auto} "))
 (def draftspage (user)
   (listpage user (msec) (drafts user) "my drafts" "My Drafts" "drafts" nil t t t))
 
-(def drafts (user)
-  (keep [and (cansee user _) _!draft] (submissions user)))
+(def drafts (user) (keep [and (cansee user _) _!draft] (submissions user)))
 
 ; Story Display
 
