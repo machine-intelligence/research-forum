@@ -1461,6 +1461,15 @@
 (def submit-page (user (o url "") (o title "") (o text "") (o category) (o msg))
   (shortpage user nil nil "Submit" "submit"
     (pagemessage msg)
+    (pr "<script>$(function(){if ($('[name=category]').length) {
+      var t = function(){
+        var t = $('[name=category]').val() === 'Link'
+        ;(t? $('[name=text]') : $('[name=url]')).closest('tr').hide()
+        ;(t? $('[name=url]') : $('[name=text]')).closest('tr').show()
+        }
+      $('[name=category]').change(t)
+      t()
+      }})</script>")
     (authform "/dosubmit" user
       (tab
         (row "title"    (input "title" title 50))
