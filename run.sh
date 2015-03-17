@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
 
-# if no db, create an empty db
-[ -d arc ] || {
-	echo "creating empty db"
-	mkdir arc
-	echo "admin" > arc/admins
-	# hacky but works as long as you don't care about opening a repl
-	echo '(load "forum.arc") (create-acct "admin" "password") (quit)' | mzscheme -f as.scm
-}
+db="arc"
+
+[[ -f "$db/is_staging" ]] && git pull
 
 # if in test environment where node isn't 0.10, use nvm to switch to 0.10
 [[ $(node --version) != v0.10* ]] && { . ~/.bashrc; nvm use 0.10; }
+
+# if no db, create an empty db
+[ -d "$db" ] || {
+	echo "creating empty db"
+	mkdir "$db"
+	echo "admin" > "$db/admins"
+	# hacky but works as long as you don't care about opening a repl
+	echo '(load "forum.arc") (create-acct "admin" "password") (quit)' | mzscheme -f as.scm
+}
 
 [ -d fb-sdk/node_modules ] || { cd fb-sdk; npm install; cd ..; }
 
