@@ -343,12 +343,9 @@
     (< (len (itemlikes* i!id)) invisible-threshold*)))
 
 (def cansee (user i)
-  (if i!deleted
-       (admin user)
-      i!draft
-       (author user i)
-      (delayed i)
-       (author user i)
+  (if i!deleted (admin user)
+      i!draft (author user i)
+      (delayed i) (author user i)
       (no (full-member i!by))
        (or
          (author user i)
@@ -1020,8 +1017,8 @@
              (pr (,gc)))))))
 
 
-(newsop ||   () (newspage user))
-(newsop news () (newspage user)) ; deprecated link
+(newsop ||   () (newestpage user))
+(newsop news () (newestpage user)) ; deprecated link
 (newsop newest () (newestpage user)) ; deprecated link
 
 (def sb-links (user n) (retrieve n [and (cansee user _) (no _!draft) (is _!category 'Link)] stories*))

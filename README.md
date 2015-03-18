@@ -45,5 +45,3 @@ db format
 #### Terminal documentation
 
 production: `su forum; cd ~/research-forum; ./run.sh` -> https://agentfoundations.org/
-
-hack to fix urls to the wrong domain: `cd arc; cp -r news news.bak; cd news; find text story -type f -exec sed -r -i 's/https?:\/\/(malo2-8080\.terminal\.com|forum\.intelligence\.org)//g' {} +`
