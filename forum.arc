@@ -364,9 +364,10 @@
 (def visible (user is (o hide-drafts))
   (keep [and (cansee user _) (or (no hide-drafts) (no _!draft))] is))
 
-(def cansee-descendant (user c)
-  (or (cansee user c)
-      (some [cansee-descendant user _] (kids c))))
+; unused by forum
+; (def cansee-descendant (user c)
+;   (or (cansee user c)
+;       (some [cansee-descendant user _] (kids c))))
   
 (def editor (u) (and u (or (admin u) (> (uvar u auth) 0))))
 
@@ -385,9 +386,9 @@
 
 (def rand-id () (round (* (rand) 1e16)))
 
-(def gen-collapse-script(c identifier)
-  (let template "
-    <script type='text/javascript'>
+(def gen-collapse-script (c identifier)
+  (let template "<script>
+    //! should probably be $(function(){
     $(window).load(function() {
       $(\".toggle-{{1}}\").click(function() {
         var val = $(this).text();
