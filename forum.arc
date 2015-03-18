@@ -856,10 +856,8 @@
   ) (do
     (onlink "sign up / log in"
       (login-page 'login+fb nil
-                  (list (fn (u ip) 
-                          (ensure-news-user u)
-                          (newslog ip u 'top-login))
-                        whence)))
+        (list (fn (u ip) (ensure-news-user u) (newslog ip u 'top-login)) whence)
+        ))
   )))
 
 

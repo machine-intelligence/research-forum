@@ -261,7 +261,8 @@
   `(tag html 
      (tag (body bgcolor white alink linkblue) ,@body)))
 
-(def errpage args (whitepage (apply prn args)))
+; unused by forum
+; (def errpage args (whitepage (apply prn args)))
 
 (def blank-url () "s.gif")
 
