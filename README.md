@@ -25,13 +25,13 @@ part of arc
 * copyright
 * libs.arc: modified a tiny bit
 * pprint.arc
-* srv.arc
 * strings.arc
 * unused.tar.xz: archive of unused parts of arc
 
 part of arc but modified by us
 
 * html.arc
+* srv.arc
 * app.arc (heavily modified)
 * forum.arc (heavily modified)
 
