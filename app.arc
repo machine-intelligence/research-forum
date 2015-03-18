@@ -145,9 +145,11 @@
   (= (hpw->user* (+ "FBID::" fbid)) userid)
   (save-table hpasswords* hpwfile*))
 
-(def hello-page (user ip) (whitepage (prs "hello" user "at" ip)))
+; unused by forum
+; (def hello-page (user ip) (whitepage (prs "hello" user "at" ip)))
 
-(defop login req (login-page 'login+fb nil hello-page))
+; unused by forum
+; (defop login req (login-page 'login+fb nil hello-page))
 
 ; [original documentation:]
 ; switch is one of: register, login, both
@@ -335,12 +337,13 @@
            (pr "Logged out."))
        (pr "You were not logged in.")))
 
-(defop whoami req
-  (aif (get-user req)
-       (prs it 'at req!ip)
-       (do (pr "You are not logged in. ")
-           (w/link (login-page 'login+fb nil hello-page) (pr "Log in"))
-           (pr "."))))
+; unused by forum
+; (defop whoami req
+;   (aif (get-user req)
+;        (prs it 'at req!ip)
+;        (do (pr "You are not logged in. ")
+;            (w/link (login-page 'login+fb nil hello-page) (pr "Log in"))
+;            (pr "."))))
 
 
 (= formwid* 60 bigformwid* 80 numwid* 16 formatdoc-url* nil)
