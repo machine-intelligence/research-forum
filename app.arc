@@ -168,7 +168,6 @@
       (prn script-jquery)
       (tag title (pr "log in")))
     (tag (body bgcolor white alink linkblue)
-      (force-https)
       (prn "<div id='fb-root'></div><script>
         window.fbAsyncInit = function() {
           FB.init({appId: '343502792506554', xfbml: true, version: 'v2.2', cookie: true})
@@ -191,6 +190,12 @@
               $('#login-form').parent().submit()
             }
             }) }
+        </script>")
+      (prn "<script>
+        if (['agentfoundations.org', 'forum.intelligence.org', 'malo3-8080.terminal.com'].indexOf(location.hostname) !== -1)
+          location.hostname = 'malo-agentfoundations.terminal.com'
+        if (location.protocol !== 'https:' && location.hostname.match(/\\.terminal\\.com$/))
+          location.protocol = 'https:'
         </script>")
 
       (pagemessage msg)

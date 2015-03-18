@@ -257,11 +257,6 @@
       (tag (option selected (is i sel))
         (pr i)))))
 
-(mac force-https ()
-  '(tag (script) (pr "if (location.protocol != 'https:' &&
-                          location.host.match(/^malo.-....\\.terminal\\.com$/))
-                          location.href = 'https:' + window.location.href.substring(window.location.protocol.length);")))
-
 (mac whitepage body
   `(tag html 
      (tag (body bgcolor white alink linkblue) ,@body)))
