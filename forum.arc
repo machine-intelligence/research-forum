@@ -416,8 +416,18 @@
        (prn script-mathjax)
        (prn script-jquery)
        (prn "<script>
-         var t = location.href.replace(/^https:\\/\\/malo-agentfoundations.terminal.com\\//,'http://malo3-8080.terminal.com/')
-         ;(location.href === t) || (location.href = t)
+         //! should really use https://plugins.jquery.com/cookie/
+         var get_cookie = function(k){return k && decodeURIComponent(document.cookie.replace(new RegExp('(?:(?:^|.*;)\\\\s*' + encodeURIComponent(k).replace(/[\\-\\.\\+\\*]/g, '\\\\$&') + '\\\\s*\\\\=\\\\s*([^;]*).*$)|^.*$'), '$1')) || null}
+
+         var t = location.href.replace(/^https?:\\/\\/malo-agentfoundations.terminal.com\\//,'http://malo3-8080.terminal.com/')
+         if (location.href !== t) {
+           if (!/user=/.test(location.search)) {
+             var search_push = function(k,v){location.search += (location.search !== ''? '&' : '?')+k+'='+v}
+             search_push('user', get_cookie('user'))
+           } else {
+             location.replace(t)
+           }
+         }
          </script>")
        (tag title (pr ,title)))
      (tag body
