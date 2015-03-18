@@ -408,6 +408,7 @@
     </script>"
     (multisubst `(("{{1}}" ,identifier) ("{{2}}" ,(get-user-display-name c!by))) template)))
 
+(def hacky-site-url ((readfile "arc/site_url.arc") 0))
 (mac npage (notify title . body) ; alice@2015-03-16 note: 'notify gets ignored
   `(tag html 
      (tag head 
@@ -417,7 +418,7 @@
        (prn script-jquery)
        (prn "<script src='/jquery.cookie.js'></script>")
        (prn "<script>
-         var t = location.href.replace(/^https?:\\/\\/malo-agentfoundations.terminal.com\\//,'http://malo3-8080.terminal.com/')
+         var t = location.href.replace(/^https?:\\/\\/malo-agentfoundations.terminal.com\\//,'"hacky-site-url"')
          if (location.href !== t) {
            if (!/user=/.test(location.search)) {
              var search_push = function(k,v){location.search += (location.search !== ''? '&' : '?')+k+'='+v}
