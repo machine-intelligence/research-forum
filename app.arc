@@ -168,33 +168,31 @@
       (prn script-jquery)
       (tag title (pr "log in")))
     (tag (body bgcolor white alink linkblue)
-      (prn "
-        <div id='fb-root'></div>
-        <script>
-          window.fbAsyncInit = function() {
-            FB.init({appId: '343502792506554', xfbml: true, version: 'v2.2', cookie: true})
-          }
-          ;(function(d, s, id){
-             var js, fjs = d.getElementsByTagName(s)[0];
-             if (d.getElementById(id)) {return;}
-             js = d.createElement(s); js.id = id;
-             js.src = '//connect.facebook.net/en_US/sdk.js';
-             fjs.parentNode.insertBefore(js, fjs);
-           }(document, 'script', 'facebook-jssdk'));
-
-          window.login_button_cb = function() {
-            FB.getLoginStatus(function(v){
-              if (v.status !== 'connected') {
-                alert('oh no! could not connect to facebook - try again?')
-              } else {
-                $('input[name=\"fbid\"]').val(v.authResponse.userID)
-                $('input[name=\"fbtoken\"]').val(v.authResponse.accessToken)
-                $('#login-form').parent().submit()
-              }
-              }) }
-        </script>
-        ")
       (force-https)
+      (prn "<div id='fb-root'></div><script>
+        window.fbAsyncInit = function() {
+          FB.init({appId: '343502792506554', xfbml: true, version: 'v2.2', cookie: true})
+        }
+        ;(function(d, s, id){
+           var js, fjs = d.getElementsByTagName(s)[0];
+           if (d.getElementById(id)) {return;}
+           js = d.createElement(s); js.id = id;
+           js.src = '//connect.facebook.net/en_US/sdk.js';
+           fjs.parentNode.insertBefore(js, fjs);
+         }(document, 'script', 'facebook-jssdk'));
+
+        window.login_button_cb = function() {
+          FB.getLoginStatus(function(v){
+            if (v.status !== 'connected') {
+              alert('oh no! could not connect to facebook - try again?')
+            } else {
+              $('input[name=\"fbid\"]').val(v.authResponse.userID)
+              $('input[name=\"fbtoken\"]').val(v.authResponse.accessToken)
+              $('#login-form').parent().submit()
+            }
+            }) }
+        </script>")
+
       (pagemessage msg)
       ; login-form adapted for facebook
       (prbold "Log in with Facebook")
@@ -206,7 +204,7 @@
           (prn "<div id='login-form' style='display:none'>")
             (prn "<input type='hidden' name='fbtoken'>")
             (prn "<input type='hidden' name='fbid'>")
-            (submit "login")
+            (submit "log in")
           (prn "</div>")
           )
         (acons afterward))
@@ -265,7 +263,7 @@
       (flink (fn ignore (login-page switch msg afterward)))
       (do (prn) (login-page switch msg afterward))))
 
-(def pwfields ((o label "login"))
+(def pwfields ((o label "log in"))
   (inputs u username 20 nil
           p password 20 nil)
   (br)

@@ -833,7 +833,7 @@
         (logout-user user)
         whence))
   ) (do
-    (onlink "sign up / login"
+    (onlink "sign up / log in"
       (login-page 'login+fb nil
                   (list (fn (u ip) 
                           (ensure-news-user u)
