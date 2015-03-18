@@ -408,7 +408,7 @@
     </script>"
     (multisubst `(("{{1}}" ,identifier) ("{{2}}" ,(get-user-display-name c!by))) template)))
 
-(def hacky-site-url ((readfile "arc/site_url.arc") 0))
+(= hacky-site-url ((readfile "arc/site_url.arc") 0))
 (mac npage (notify title . body) ; alice@2015-03-16 note: 'notify gets ignored
   `(tag html 
      (tag head 
