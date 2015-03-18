@@ -147,21 +147,14 @@
 
 (def hello-page (user ip) (whitepage (prs "hello" user "at" ip)))
 
-(defop login req (login-page 'login+fb))
+(defop login req (login-page 'login+fb nil hello-page))
 
+; [original documentation:]
 ; switch is one of: register, login, both
-
-; afterward is either a function on the newly created username and
-; ip address, in which case it is called to generate the next page 
-; after a successful login, or a pair of (function url), which means 
-; call the function, then redirect to the url.
-
-; classic example of something that should just "return" a val
-; via a continuation rather than going to a new page.
-
-(def login-page (switch (o msg nil) (o afterward hello-page))
-  (when (no (in switch 'login+fb))
-    (err "research-forum only uses (login-page 'login+fb)"))
+; afterward is either a function on the newly created username and ip address, in which case it is called to generate the next page after a successful login, or a pair of (function url), which means call the function, then redirect to the url.
+; classic example of something that should just "return" a val via a continuation rather than going to a new page.
+(def login-page (switch msg afterward)
+  (when (no (in switch 'login+fb)) (err "research-forum only uses switch='login+fb"))
   (tag html
     (tag head
       (prn "<link rel=\"shortcut icon\" href=\"" favicon-url* "\">")
@@ -192,12 +185,12 @@
             }) }
         </script>")
       (prn "<script>
+        // location.replace()
         if (['agentfoundations.org', 'forum.intelligence.org', 'malo3-8080.terminal.com'].indexOf(location.hostname) !== -1)
           location.hostname = 'malo-agentfoundations.terminal.com'
         if (location.protocol !== 'https:' && location.hostname.match(/\\.terminal\\.com$/))
           location.protocol = 'https:'
         </script>")
-
       (pagemessage msg)
       ; login-form adapted for facebook
       (prbold "Log in with Facebook")
@@ -213,22 +206,24 @@
           (prn "</div>")
           )
         (acons afterward))
-      (login-form "Log in with password" switch login-handler afterward)
+      (login-form "Log in with password" 'login+fb login-handler afterward)
     )))
 
 
 (def login-form (label switch handler afterward)
+  (when (no (in switch 'login+fb)) (err "research-forum only uses switch='login+fb"))
   (prbold label)
   (br2)
-  (fnform (fn (req) (handler req switch afterward))
+  (fnform (fn (req) (handler req 'login+fb afterward))
           (fn () (pwfields))
           (acons afterward)))
 
 (def login-handler (req switch afterward)
+  (when (no (in switch 'login+fb)) (err "research-forum only uses switch='login+fb"))
   (logout-user (get-user req))
   (aif (good-login (arg req "u") (arg req "p") req!ip)
        (login it req!ip (user->cookie* it) afterward)
-       (failed-login switch "Bad login." afterward)))
+       (failed-login 'login+fb "Bad login." afterward)))
 
 (def loginfb-handler (req afterward)
   (logout-user (get-user req))
@@ -264,9 +259,10 @@
       (do (prn) (afterward user ip))))
 
 (def failed-login (switch msg afterward)
+  (when (no (in switch 'login+fb)) (err "research-forum only uses switch='login+fb"))
   (if (acons afterward)
-      (flink (fn ignore (login-page switch msg afterward)))
-      (do (prn) (login-page switch msg afterward))))
+      (flink (fn ignore (login-page 'login+fb msg afterward)))
+      (do (prn) (login-page 'login+fb msg afterward))))
 
 (def pwfields ((o label "log in"))
   (inputs u username 20 nil
@@ -343,7 +339,7 @@
   (aif (get-user req)
        (prs it 'at req!ip)
        (do (pr "You are not logged in. ")
-           (w/link (login-page 'login+fb) (pr "Log in"))
+           (w/link (login-page 'login+fb nil hello-page) (pr "Log in"))
            (pr "."))))
 
 
@@ -730,19 +726,14 @@
 
 ; To be correct needs to know days per month, and about leap years
 
-(def valid-date ((y m d))
-  (and y m d
-       (< 0 m 13)
-       (< 0 d 32)))
+(def valid-date ((y m d)) (and y m d (< 0 m 13) (< 0 d 32)))
 
 (mac defopl (name parm . body)
   `(defop ,name ,parm
      (if (get-user ,parm)
          (do ,@body) 
-         (login-page 'login+fb
-                     "You need to be logged in to do that."
-                     (list (fn (u ip))
-                           (string ',name (reassemble-args ,parm)))))))
+         (login-page 'login+fb "You need to be logged in to do that."
+           (list (fn (u ip)) (string ',name (reassemble-args ,parm)))))))
 
 (= script-mathjax "<script src='https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>")
 (= script-jquery "<script src='https://code.jquery.com/jquery-1.11.2.min.js'></script>")
