@@ -415,6 +415,10 @@
        (prn "<link rel=\"shortcut icon\" href=\"" favicon-url* "\">")
        (prn script-mathjax)
        (prn script-jquery)
+       (prn "<script>
+         var t = location.href.replace(/^https:\\/\\/malo-agentfoundations.terminal.com\\/,'http://malo3-8080.terminal.com')
+         ;(location.href === t) || (location.href = t)
+         </script>")
        (tag title (pr ,title)))
      (tag body
        (center
