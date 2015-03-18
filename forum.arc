@@ -1781,7 +1781,8 @@
 ; Comment Display
 
 (def display-comment-tree (c user whence (o indent 0) (o initialpar))
-  (when (cansee-descendant user c)
+  (when (cansee user c)
+  ; (when (cansee-descendant user c) ; we don't actually like the cansee-descendant behavior at all
     (let identifier c!id ; use (rand-id) if a comment can appear more than once on a page
       (when (should-collapse c user)
         (pr (gen-collapse-script c identifier))
