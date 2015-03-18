@@ -428,7 +428,7 @@
          } else {
            if (/user=/.test(location.search)) {
              var t = location.search.match(/user=([^&]+)/)
-             if (t && t[1] && !$.cookie('user')) {
+             if (t && t[1] && $.cookie('user') !== t[1]) {
                $.cookie('user',t[1])
                location.reload()
              }
