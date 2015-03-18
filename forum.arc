@@ -325,9 +325,12 @@
 
 ; Assumes 'cansee' check is performed elsewhere
 (def cancomment (user i)
-  (if
-    (astory i)
-     t
+  (if (astory i)
+    (no (and
+      (no (full-member i!by))
+      (is i!category 'Link)
+      (no (>= (len (itemlikes* i!id)) canreply-threshold*))
+      ))
     (canreply user i)))
 
 (def canreply (user i)
