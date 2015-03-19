@@ -187,9 +187,11 @@
             }) }
         </script>")
       (prn "<script>
-        // location.replace()
-        if (['agentfoundations.org', 'forum.intelligence.org', 'malo3-8080.terminal.com', 'staging.agentfoundations.org'].indexOf(location.hostname) !== -1)
+        //! should use location.replace()
+        if (['agentfoundations.org', 'forum.intelligence.org'].indexOf(location.hostname) !== -1)
           location.hostname = 'malo-agentfoundations.terminal.com'
+        else if (['malo3-8080.terminal.com', 'staging.agentfoundations.org'].indexOf(location.hostname) !== -1)
+          location.hostname = 'malo-staging.terminal.com'
         if (location.protocol !== 'https:' && location.hostname.match(/\\.terminal\\.com$/))
           location.protocol = 'https:'
         </script>")
