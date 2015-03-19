@@ -1,15 +1,47 @@
-To obtain a running instance:
+#### To obtain a running instance
 
-    mkdir arc
-    echo "admin" > arc/admins
-    mzscheme -f as.scm
+`./run.sh` -> <http://localhost:8080/>
 
-At the arc prompt:
+for the default blank test db, login as `admin` with password `password`
 
-    (load "forum.arc")
-    (create-acct "admin" "password")
-    (nsv)
+#### Dependencies
 
-Go to http://localhost:8080
+mzscheme: latest version of http://racket-lang.org/ with the appropriate folder added to `$PATH`
 
-Click on login, and login as "admin"
+passlib: `easy_install passlib` might work
+
+pandoc: `brew install pandoc` might work
+
+node v0.10 (optionally inside a `nvm` added to your `$PATH` in your `~/.bashrc`)
+
+#### What are files
+
+part of arc
+
+* ac.scm
+* arc.arc
+* as.scm: `./as.scm` gives an arc repl but is otherwise unused (& modified a tiny bit)
+* brackets.scm
+* copyright
+* libs.arc: modified a tiny bit
+* pprint.arc
+* strings.arc
+* unused.tar.xz: archive of unused parts of arc
+
+part of arc but modified by us
+
+* html.arc
+* srv.arc
+* app.arc (heavily modified)
+* forum.arc (heavily modified)
+
+other files are new entirely.
+
+db format
+
+* arc/admins: whitespace-separated list of admin usernames
+* arc/fb_auth.json: `{"id": "...", "secret": "..."}`
+
+#### Terminal documentation
+
+production: `su forum; cd ~/research-forum; ./run.sh` -> https://agentfoundations.org/

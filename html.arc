@@ -99,6 +99,7 @@
 (attribute button     onclick        opstring)
 (attribute button     type           opsym)
 (attribute button     value          opstring)
+(attribute div        class          opstring)
 (attribute font       color          opcolor)
 (attribute font       face           opstring)
 (attribute font       size           opnum)
@@ -256,16 +257,12 @@
       (tag (option selected (is i sel))
         (pr i)))))
 
-(mac force-https ()
-  '(tag (script) (pr "if (window.location.protocol != \"https:\" &&
-                          window.location.hostname == \"malo2-8080.terminal.com\")
-                          window.location.href = \"https:\" + window.location.href.substring(window.location.protocol.length);")))
-
 (mac whitepage body
   `(tag html 
      (tag (body bgcolor white alink linkblue) ,@body)))
 
-(def errpage args (whitepage (apply prn args)))
+; unused by forum
+; (def errpage args (whitepage (apply prn args)))
 
 (def blank-url () "s.gif")
 

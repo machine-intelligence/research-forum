@@ -151,10 +151,13 @@ Content-Type: "
      "
 Connection: close"))
 
+;! what
 (map (fn ((k v)) (= (type-header* k) (gen-type-header v)))
      '((gif       "image/gif")
        (jpg       "image/jpeg")
        (png       "image/png")
+       (image/x-icon "image/x-icon")
+       (application/javascript "application/javascript")
        (text/html "text/html; charset=utf-8")))
 
 (= rdheader* "HTTP/1.0 302 Moved")
@@ -237,6 +240,8 @@ Connection: close"))
            "jpg"  'jpg
            "jpeg" 'jpg
            "png"  'png
+           "js"   'application/javascript
+           "ico"  'image/x-icon
            "css"  'text/html
            "txt"  'text/html
            "htm"  'text/html

@@ -1,18 +1,14 @@
-; News.  2 Sep 06.
-
-; to run news: (nsv), then go to http://localhost:8080
-; put usernames of admins, separated by whitespace, in arc/admins
-
 ; bug: somehow (+ votedir* nil) is getting evaluated.
+;! (seconds) uses "platform-specific starting date" ?!
 
 (declare 'atstrings t)
 
 (= this-site*    "Intelligent Agent Foundations Forum"
-   site-url*     "http://forum.intelligence.org/" ; unfortunate, but necessary for rss feed
+   site-url*     "http://agentfoundations.org/" ; unfortunate, but necessary for rss feed
    parent-url*   ""
    favicon-url*  ""
-   site-desc*    "Intelligent Agent Foundations Forum"               ; for rss feed
-   site-color*   (color 40 50 120)
+   site-desc*    "Intelligent Agent Foundations Forum" ; for rss feed
+   ; site-color*   (color 40 50 120) ; not even used
    border-color* (color 180 180 180)
    prefer-url*   t)
 
@@ -30,6 +26,7 @@
   auth       0
   member     nil
   submitted  nil
+  contributor-only nil
   karma      1
   weight     .5
   email      nil
@@ -42,13 +39,14 @@
   version      0     ; incremented before first save
   draft        nil
   type         nil
-  category     nil   ; for stories: 'Main or 'Discussion
+  category     nil   ; for stories: 'Main, 'Discussion, or 'Link
   by           nil
   ip           nil
   time         nil   ; set on save
   publish-time nil   ; set on first publish
   title        nil
   text         nil
+  url          nil   ; for links (category 'Link) only
   deleted      nil
   parent       nil
   keys         nil)
@@ -115,12 +113,11 @@
       (aand (file-exists (+ votedir* u))
             (= (votes* u) (load-table it)))))
 
-(def vote (user item)
-  (votes.user item!id))
+(def vote (user item) (votes.user item!id))
 
 (def init-user (u)
   (= (votes* u) (table) 
-     (profs* u) (inst 'profile 'id u))
+     (profs* u) (inst 'profile 'id u 'contributor-only t))
   (save-votes u)
   (save-prof u)
   u)
@@ -130,8 +127,7 @@
 ; See the admin op in app.arc.  So all calls to login-page from the 
 ; news app need to call this in the after-login fn.
 
-(def ensure-news-user (u)
-  (if (profile u) u (init-user u)))
+(def ensure-news-user (u) (if (profile u) u (init-user u)))
 
 (def save-votes (u) (save-table (votes* u) (+ votedir* u)))
 
@@ -139,15 +135,16 @@
 
 (mac uvar (u k) `((profile ,u) ',k))
 
-(mac karma   (u) `(uvar ,u karma))
+(mac karma (u) `(uvar ,u karma))
+
+(def full-member (u)
+  (and u (no ((profile u) 'contributor-only))))
 
 ; Note that users will now only consider currently loaded users.
 
-(def users ((o f idfn)) 
-  (keep f (keys profs*)))
+(def users ((o f idfn)) (keep f (keys profs*)))
 
-(def check-key (u k)
-  (and u (mem k (uvar u keys))))
+(def check-key (u k) (and u (mem k (uvar u keys))))
 
 (def author (u i) (is u i!by))
 
@@ -203,11 +200,11 @@
         (= i!category 'Main))
     (= (items* id) i)))
 
-(def new-item-id ()
-  (evtil (++ maxid*) [~file-exists (+ storydir* _ "v1")]))
+(= newuserid* 0)
+(def new-user-id () (string (evtil (++ newuserid*) [no (profs* (string _))])))
+(def new-item-id () (evtil (++ maxid*) [~file-exists (+ storydir* _ "v1")]))
 
-(def item (id)
-  (or (items* id) (errsafe:load-item id)))
+(def item (id) (or (items* id) (errsafe:load-item id)))
 
 (def kids (i) (map item (itemkids* i!id)))
 
@@ -323,64 +320,143 @@
             ranked-stories*))
 
 (= max-delay* 10)
+(= canreply-threshold* 1)
+(= invisible-threshold* 2)
+
+; Assumes 'cansee' check is performed elsewhere
+(def cancomment (user i)
+  (if (astory i)
+    (no (and
+      (no (full-member i!by))
+      (is i!category 'Link)
+      (no (>= (len (itemlikes* i!id)) canreply-threshold*))
+      ))
+    (canreply user i)))
+
+(def canreply (user i)
+  (if (full-member i!by)
+       t
+      (or (full-member user) (author user i))
+       (>= (len (itemlikes* i!id)) canreply-threshold*)
+      t))
+
+(def invisible (i)
+  (and
+    (no (full-member i!by))
+    (< (len (itemlikes* i!id)) invisible-threshold*)))
 
 (def cansee (user i)
-  (if i!deleted   (admin user)
-      i!draft     (author user i)
+  (if i!deleted (admin user)
+      i!draft (author user i)
       (delayed i) (author user i)
+      (no (full-member i!by))
+       (or
+         (author user i)
+         (full-member user)
+         (>= (len (itemlikes* i!id)) invisible-threshold*))
       t))
 
 (let mature (table)
-  (def delayed (i)
-    (and (no (mature i!id))
-         (acomment i)
-         (or (< (item-age i) (min max-delay* (uvar i!by delay)))
-             (do (set (mature i!id))
-                 nil)))))
+(def delayed (i)
+  (and (no (mature i!id))
+       (acomment i)
+       (or (< (item-age i) (min max-delay* (uvar i!by delay)))
+           (do (set (mature i!id))
+               nil)))))
 
 (def visible (user is (o hide-drafts))
   (keep [and (cansee user _) (or (no hide-drafts) (no _!draft))] is))
 
-(def cansee-descendant (user c)
-  (or (cansee user c)
-      (some [cansee-descendant user _] (kids c))))
+; unused by forum
+; (def cansee-descendant (user c)
+;   (or (cansee user c)
+;       (some [cansee-descendant user _] (kids c))))
   
-(def editor (u) 
-  (and u (or (admin u) (> (uvar u auth) 0))))
+(def editor (u) (and u (or (admin u) (> (uvar u auth) 0))))
 
-(def member (u) 
-  (and u (or (admin u) (uvar u member))))
+(def member (u) (and u (or (admin u) (uvar u member))))
 
 
 ; Page Layout
 
 (= logo-url* "miri.png")
-(= favicon-url* "miri.ico")
-(defopr favicon.ico req favicon-url*)
+(= favicon-url* "favicon.png")
+; (defopr favicon.ico req favicon-url*)
 
 ; redefined later
 
-(def gen-css-url ()
-  (prn "<link rel=\"stylesheet\" type=\"text/css\" href=\"forum.css\">"))
+(def gen-css-url () (prn "<link rel=\"stylesheet\" type=\"text/css\" href=\"forum.css\">"))
 
-(mac npage (title . body)
+(def rand-id () (round (* (rand) 1e16)))
+
+(def gen-collapse-script (c identifier)
+  (let template "<script>
+    //! should probably be $(function(){
+    $(window).load(function() {
+      $(\".toggle-{{1}}\").click(function() {
+        var val = $(this).text();
+        if (val.indexOf('[+]') == 0) {
+          $(\"td.comment-{{1}}\").css('display', 'block');
+          $(this).text(\"[-] Collapse comment by {{2}}\");
+        } else {
+          $(\"td.comment-{{1}}\").css('display', 'none');
+          $(this).text(\"[+] Expand comment by {{2}}\");
+        }
+        return false;
+      });
+    });
+    </script>"
+    (multisubst `(("{{1}}" ,identifier) ("{{2}}" ,(get-user-display-name c!by))) template)))
+
+(= hacky-site-url ((readfile "arc/site_url.arc") 0))
+(mac npage (notify title . body) ; alice@2015-03-16 note: 'notify gets ignored
   `(tag html 
      (tag head 
        (gen-css-url)
        (prn "<link rel=\"shortcut icon\" href=\"" favicon-url* "\">")
-       (prn "<script src=\"https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML\" type=\"text/javascript\"></script>")
+       (prn script-mathjax)
+       (prn script-jquery)
+       (prn "<script src='/jquery.cookie.js'></script>")
+       (prn "<script>
+         var t = location.href.replace(/^https?:\\/\\/malo-agentfoundations.terminal.com\\//,'"hacky-site-url"')
+         if (location.href !== t) {
+           if (!/user=/.test(location.search)) {
+             var search_push = function(k,v){location.search += (location.search !== ''? '&' : '?')+k+'='+v}
+             search_push('user', $.cookie('user'))
+           } else {
+             location.replace(t)
+           }
+         } else {
+           if (/user=/.test(location.search)) {
+             var t = location.search.match(/user=([^&]+)/)
+             if (t && t[1] && $.cookie('user') !== t[1]) {
+               $.cookie('user',t[1])
+               location.reload()
+             }
+           }
+         }
+         </script>")
        (tag title (pr ,title)))
-     (tag body 
+     (tag body
        (center
+         ; (if ,notify
+         ;   (tag (table class "notify")
+         ;     (tr (td
+         ;       (pr "Welcome to the Intelligent Agent Foundations Forum!  New users, please ")
+         ;       (link "read this first" "welcome")
+         ;       (pr ".")))))
          (tag (table class "frame")
-           ,@body)))))
+           ,@body))
+       (prn "<script>$(function(){if (/^\\/(news|newest|)$/.test(location.pathname)) $('body > center > table > tbody > tr:nth-child(2) > td > table > tbody > tr > td.contents > table > tbody').prepend(\"<tr><td><table width='100%' style='width: 100%; background-color: #eaeaea;'><tbody><tr style='height:5px'></tr><tr><td><img src='s.gif' height='1' width='14'></td></tr><tr><td colspan='1'></td><td class='story' width='100%' style='text-align:left; font-size: 12pt; color: 254e7d;'><p>This is a publicly visible discussion forum for foundational mathematical research in \\\"robust and beneficial\\\" artificial intelligence, as discussed in the Future of Life Institute's <a href='http://futureoflife.org/misc/open_letter' class='continue' style='text-decoration: underline;'>research priorities letter</a> and the Machine Intelligence Research Institute's <a href='https://intelligence.org/technical-agenda/' class='continue' style='text-decoration: underline;'>technical agenda</a>.</p><p>If you'd like to participate in the conversations here, see our <a href='/how-to-contribute' class='continue' style='text-decoration: underline;'>How to Contribute page »</a></p></td></tr><tr style='height:12px'></tr></tbody></table></td></tr><tr style='height:10px'></tr>\")})</script>")
+       )))
 
 (= pagefns* nil)
 
 (mac fulltop (user lid label title whence . body)
   (w/uniq (gu gi gl gt gw)
     `(with (,gu ,user ,gi ,lid ,gl ,label ,gt ,title ,gw ,whence)
-       (npage (+ this-site* (if ,gt (+ bar* ,gt) ""))
+       (npage nil (+ this-site* (if ,gt (+ bar* ,gt) "")) ; alice@2015-03-16 we don't care about user-ness
+       ; (npage (no user) (+ this-site* (if ,gt (+ bar* ,gt) ""))
          (do (pagetop 'full ,gi ,gl ,gt ,gu ,gw)
              (hook 'page ,gu ,gl)
              ,@body)))))
@@ -404,10 +480,10 @@
   `(para (tag (h3) (pr ,title))))
 
 (mac format-sb-item (i)
-  `(tag (p) (tag (a href (item-url i!id) class 'sb)
+  `(tag (p) (tag (a href (item-url i!id) class (if (invisible i) 'sb-invisible 'sb))
               (tag (b) (pr (eschtml i!title))))
             (br)
-            (tab (tr (tag (td class 'sb-subtext)
+            (tab (tr (tag (td class (if (invisible i) 'sb-invisible-subtext 'sb-subtext))
               (pr "by ")
               (userlink user i!by)
               (pr bar*)
@@ -418,6 +494,8 @@
      (if (no ,show-comments) 
        (do ,@body)
        (add-sidebar (+
+         (format-sb-title (link "NEW LINKS" "links"))
+         (each i (sb-links ,user sb-link-count*) (format-sb-item i))
          (format-sb-title "NEW POSTS")
          (each i (sb-posts ,user sb-post-count*) (format-sb-item i))
          (format-sb-title "NEW DISCUSSION POSTS")
@@ -438,8 +516,7 @@
          (format-sb-title (link "RSS" "rss")))
          ,@body))))
 
-(def reverse (text)
-  (coerce (rev (coerce text 'cons)) 'string))
+(def reverse (text) (coerce (rev (coerce text 'cons)) 'string))
 
 (def word-boundary (text)
   (if (is (len (halve text)) 1) text
@@ -456,7 +533,7 @@
       (pr (len items*) "/" maxid* " loaded")
       (pr (round (/ (memory) 1000000)) " mb")
       (pr elapsed " msec")
-      (link "settings" "newsadmin")
+      (link "settings" "forum-admin")
       (hook 'admin-bar user whence))))
 
 (def color-stripe (c)
@@ -468,7 +545,7 @@
      (trtd ,@body)))
 
 (mac minipage (label . body)
-  `(npage (+ this-site* bar* ,label)
+  `(npage nil (+ this-site* bar* ,label)
      (pagetop nil nil ,label)
      (trtd ,@body)))
 
@@ -485,178 +562,204 @@
 ; turn off server caching via (= caching* 0) or won't see changes
 (= caching* 0)
 
-(defop forum.css req
-  (pr "
-/* forum.css generated version 1.2 */
+(defop forum.css req (pr "
+  /* forum.css generated version 1.2 */
 
-body {
-background: #eaeaea;
-background-color:#eaeaea !important;
-margin: 0px;
-}
+  body {
+  background: #eaeaea;
+  background-color:#eaeaea !important;
+  margin: 0px;
+  }
 
-table.frame
-{
-width: 85%; border-left: 1px solid #d2d2d2;
-border-right: 1px solid #d2d2d2; background-color: #ffffff;
--webkit-border-horizontal-spacing: 0px;
--webkit-border-vertical-spacing: 0px;
-}
+  table.notify
+  {
+  width: 100%; background-color: #eaeaea;
+  padding: 5px; text-align: center;
+  }
 
-table.topbar {
-width: 100%;
-padding: 2px;
-background-color: #254e7d;
-}
-.pagetop a:visited {
-color:#ffffff; 
-}
+  .notify td {
+      font-size: 12pt;
+      color: 254e7d;
+  }
 
-/*
- * begin dropdown menu css
- */
+  .notify a:link {
+      text-decoration: underline;
+  }
 
-ul.dropdown {
-  text-align: left;
-  display: inline;
-  margin: 0;
-  padding: 0 0 0 0;
-  list-style: none;
-}
+  table.frame
+  {
+  width: 85%; border-left: 1px solid #d2d2d2;
+  border-right: 1px solid #d2d2d2; background-color: #ffffff;
+  -webkit-border-horizontal-spacing: 0px;
+  -webkit-border-vertical-spacing: 0px;
+  }
 
-ul.dropdown li {
-  display: inline-block;
-  position: relative;
-  padding: 5px 0px;
-  background: #254e7d;
-}
 
-ul.dropdown li ul {
-  padding: 0;
-  position: absolute;
-  top: 25px;
-  left: -4px;
-  width: 125px;
-  box-shadow: none;
-  display: none;
-  opacity: 0;
-  visibility: hidden;
-}
+  table.topbar {
+  width: 100%;
+  padding: 2px;
+  background-color: #254e7d;
+  }
+  .pagetop a:visited {
+  color:#ffffff; 
+  }
 
-ul.dropdown li ul li {
-  display: block;
-  padding: 5px 4px;
-}
+  /*
+   * begin dropdown menu css
+   */
 
-ul.dropdown li:hover ul {
-  display: block;
-  opacity: 1;
-  visibility: visible;
-}
+  ul.dropdown {
+    text-align: left;
+    display: inline;
+    margin: 0;
+    padding: 0 0 0 0;
+    list-style: none;
+  }
 
-/*
- * end dropdown menu css
- */
+  ul.dropdown li {
+    display: inline-block;
+    position: relative;
+    padding: 5px 0px;
+    background: #254e7d;
+  }
 
-table td.sb {
-background-color: #f8f8f8;
-width: 300px;
-padding: 8px;
-font-size: 10pt;
-}
+  ul.dropdown li ul {
+    padding: 0;
+    position: absolute;
+    top: 25px;
+    left: -4px;
+    width: 125px;
+    box-shadow: none;
+    display: none;
+    opacity: 0;
+    visibility: hidden;
+  }
 
-table td.sb > h3 {
-font-family: Verdana;
-font-size: 12pt;
-font-weight: bold;
-color: #92b437 !important;
-}
+  ul.dropdown li ul li {
+    display: block;
+    padding: 5px 4px;
+  }
 
-table td.sb > h3 > a:link {
-font-family: Verdana;
-font-size: 12pt;
-font-weight: bold;
-color: #92b437;
-}
+  ul.dropdown li:hover ul {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+  }
 
-table td.sb > h3 > a:visited {
-font-family: Verdana;
-font-size: 12pt;
-font-weight: bold;
-color: #92b437;
-}
+  /*
+   * end dropdown menu css
+   */
 
-a:visited {
-color: #000000;
-}
+  table td.sb {
+  background-color: #f8f8f8;
+  width: 300px;
+  padding: 8px;
+  font-size: 10pt;
+  }
 
-td    { font-family:Verdana; font-size:13pt; color:#000000; }
+  table td.sb > h3 {
+  font-family: Verdana;
+  font-size: 12pt;
+  font-weight: bold;
+  color: #92b437 !important;
+  }
 
-hr       { border:0; text-align:center; }
-hr:after { content:\"*\"; }
+  table td.sb > h3 > a:link {
+  font-family: Verdana;
+  font-size: 12pt;
+  font-weight: bold;
+  color: #92b437;
+  }
 
-td > h1 { font-family:Verdana; font-size:14pt; color:#000000; font-weight:bold; }
+  table td.sb > h3 > a:visited {
+  font-family: Verdana;
+  font-size: 12pt;
+  font-weight: bold;
+  color: #92b437;
+  }
 
-img.logo { width:26; height:18; border:0px #@(hexrep border-color*) solid;}
+  a:visited {
+  color: #000000;
+  }
 
-table.mainsite { width:100%; cellpadding:0; cellspacing:0; border:0; padding:0px; }
-table tr.header   { background-color:#283278; font-color:#ffffff; font-weight:bold; border-radius:15px; }
-table td.contents { margin:0; padding-right:80; }
-table td.story    { line-height:135%; }
+  td    { font-family:Verdana; font-size:13pt; color:#000000; }
 
-.admin td   { font-family:Verdana; font-size:10.5pt; color:#000000; }
-.subtext td { font-family:Verdana; font-size:  10pt; color:#828282; }
-table td.sb > p { font-family:Verdana; font-size:10pt; font-weight:regular; color:#ffffff;}
+  hr       { border:0; text-align:center; }
+  hr:after { content:\"*\"; }
 
-button   { font-family:Verdana; font-size:11pt; color:#000000; }
-input    { font-family:Courier; font-size:13pt; color:#000000; }
-input[type=\"submit\"] { font-family:Verdana; }
-textarea { font-family:Courier; font-size:13pt; color:#000000; }
+  td > h1 { font-family:Verdana; font-size:14pt; color:#000000; font-weight:bold; }
 
-a:link    { color:#000000; text-decoration:none; } 
+  img.logo { width:26; height:18; border:0px #@(hexrep border-color*) solid;}
 
-.default     { font-family:Verdana; font-size:  13pt; color:#828282; }
-.admin       { font-family:Verdana; font-size:10.5pt; color:#000000; }
-.title       { font-family:Verdana; font-size:  16pt; color:#828282; font-weight:bold; }
-.discussion-title { font-family:Verdana; font-size:13pt; color:#828282; font-weight:bold; }
-.adtitle     { font-family:Verdana; font-size:  11pt; color:#828282; }
-.subtext     { font-family:Verdana; font-size:  10pt; color:#828282; }
-.sb-subtext  { font-family:Verdana; font-size:   8pt; color:#828282; }
-.yclinks     { font-family:Verdana; font-size:  10pt; color:#828282; }
-.pagetop     { font-family:Verdana; font-size:  11pt; color:#ffffff; }
-.comhead     { font-family:Verdana; font-size:  10pt; color:#828282; }
-.comment     { font-family:Verdana; font-size:  12pt; color:#000000; }
-.dead        { font-family:Verdana; font-size:  11pt; color:#dddddd; }
+  table.mainsite { width:100%; cellpadding:0; cellspacing:0; border:0; padding:0px; }
+  table tr.header   { background-color:#283278; font-color:#ffffff; font-weight:bold; border-radius:15px; }
+  table td.contents { margin:0; padding-right:80; }
+  table td.story    { line-height:135%; }
 
-.userlink, .you { font-weight:bold; }
+  .admin td   { font-family:Verdana; font-size:10.5pt; color:#000000; }
+  .subtext td { font-family:Verdana; font-size:  10pt; color:#828282; }
+  .subtext-invisible td { font-family:Verdana; font-size:  10pt; color:#bbbbbb; }
 
-.comment a:link, .comment a:visited, .story a:link, .story a:visited { text-decoration:underline; }
-.dead a:link, .dead a:visited { color:#dddddd; }
-.pagetop a:link { color:#ffffff; }
-.pagetop a:visited { color:#ffffff; }
-.topsel, .topsel a:link, .topsel a:visited { color:#ffc040; }
+  table td.sb > p { font-family:Verdana; font-size:10pt; font-weight:regular; color:#ffffff;}
 
-.subtext a:link, .subtext a:visited { color:#828282; }
-.subtext a:hover { text-decoration:underline; }
+  button   { font-family:Verdana; font-size:11pt; color:#000000; }
+  input    { font-family:Courier; font-size:13pt; color:#000000; }
+  input[type=\"submit\"] { font-family:Verdana; }
+  textarea { font-family:Courier; font-size:13pt; color:#000000; }
 
-.sb a:link, .sb a:visited { color:#828282; }
-.sb a:hover { text-decoration:underline; }
+  a:link    { color:#000000; text-decoration:none; } 
 
-.comhead a:link, .subtext a:visited { color:#828282; }
-.comhead a:hover { text-decoration:underline; }
+  .default     { font-family:Verdana; font-size:  13pt; color:#828282; }
+  .admin       { font-family:Verdana; font-size:10.5pt; color:#000000; }
+  .title       { font-family:Verdana; font-size:  16pt; color:#828282; font-weight:bold; }
+  .discussion-title { font-family:Verdana; font-size:13pt; color:#828282; font-weight:bold; }
+  .adtitle     { font-family:Verdana; font-size:  11pt; color:#828282; }
+  .subtext     { font-family:Verdana; font-size:  10pt; color:#828282; }
+  .subtext-invisible { font-family:Verdana; font-size: 10pt; color:#bbbbbb; }
+  .sb-subtext  { font-family:Verdana; font-size:   8pt; color:#828282; }
+  .sb-invisible-subtext  { font-family:Verdana; font-size: 8pt; color:#bbbbbb; }
+  .yclinks     { font-family:Verdana; font-size:  10pt; color:#828282; }
+  .pagetop     { font-family:Verdana; font-size:  11pt; color:#ffffff; }
+  .comhead     { font-family:Verdana; font-size:  10pt; color:#828282; }
+  .comment     { font-family:Verdana; font-size:  12pt; color:#000000; }
+  .dead        { font-family:Verdana; font-size:  11pt; color:#dddddd; }
 
-.continue a:link, .subtext a:visited { color:#828282; text-decoration:underline; }
-.doclink a:link { font-weight:bold; text-decoration:underline; }
+  .userlink, .you { font-weight:bold; }
 
-.default p { margin-top: 8px; margin-bottom: 0px; }
+  .comment a:link, .comment a:visited, .story a:link, .story a:visited { text-decoration:underline; }
+  .dead a:link, .dead a:visited { color:#dddddd; }
+  .pagetop a:link { color:#ffffff; }
+  .pagetop a:visited { color:#ffffff; }
+  .topsel, .topsel a:link, .topsel a:visited { color:#ffc040; }
 
-.example-raw      { margin:20px; background-color:white; }
-.example-rendered { margin:20px; }
+  .subtext a:link, .subtext a:visited { color:#828282; }
+  .subtext a:hover { text-decoration:underline; }
 
-.pagebreak {page-break-before:always}
+  .subtext-invisible a:link, .subtext-invisible a:visited { color:#bbbbbb; }
+  .subtext-invisible a:hover { text-decoration:underline; }
 
-pre { overflow: auto; padding: 2px; max-width:600px; }
-pre:hover {overflow:auto} "))
+  .sb a:link, .sb a:visited { color:#828282; }
+  .sb a:hover { text-decoration:underline; }
+
+  a.sb-invisible:link, a.sb-invisible:visited { color:#bbbbbb; }
+  .sb-invisible-subtext a:link, .sb-invisible-subtext a:visited {color:#bbbbbb; }
+
+  .comhead a:link, .subtext a:visited { color:#828282; }
+  .comhead a:hover { text-decoration:underline; }
+
+  .continue a:link, .subtext a:visited { color:#828282; text-decoration:underline; }
+  .doclink a:link { font-weight:bold; text-decoration:underline; }
+
+  .default p { margin-top: 8px; margin-bottom: 0px; }
+
+  .example-raw      { margin:20px; background-color:white; }
+  .example-rendered { margin:20px; }
+
+  .pagebreak {page-break-before:always}
+
+  pre { overflow: auto; padding: 2px; max-width:600px; }
+  pre:hover {overflow:auto}
+  "))
 
 ; only need pre padding because of a bug in Mac Firefox
 
@@ -686,7 +789,7 @@ pre:hover {overflow:auto} "))
               (when (is switch 'full)
                 (tag (td style "line-height:12pt; height:10px;")
                   (spanclass pagetop
-                    (tag b (link this-site* "news"))
+                    (tag b (link this-site* "/"))
                     (hspace 10)
                     (toprow user label))))
              (if (is switch 'full)
@@ -702,7 +805,7 @@ pre:hover {overflow:auto} "))
     (tag (a href parent-url*)
       (tag (img class "logo" src logo-url* )))))
 
-(= toplabels* '(nil "new" "comments" "members" 
+(= toplabels* '(nil "new" "comments" "links" "full members" "contributors"
                     "my posts" "my comments" "my drafts" "my likes" "*"))
 
 ; redefined later
@@ -710,9 +813,18 @@ pre:hover {overflow:auto} "))
 (def toprow (user label)
   (tag (ul class 'dropdown)
     (w/bars
-      (toplink "new" "newest" label)
+      (toplink "new" "/" label)
       (toplink "comments" "newcomments" label)
-      (toplink "members"  "members"     label)
+      (toplink "links" "links" label)
+      (tag li
+        (tag-if (or
+                  (is label "full members")
+                  (is label "contributors"))
+                (span class 'topsel)
+          (pr "members"))
+        (tag ul
+          (toplink "full members" "members" label)
+          (toplink "contributors" "contributors" label)))
       (when user
         (tag li
           (tag-if (and label (headmatch "my " label)) (span class 'topsel)
@@ -733,21 +845,20 @@ pre:hover {overflow:auto} "))
       (link name dest))))
 
 (def topright (user whence (o showkarma t))
-  (when user 
+  (if user (do
     (userlink user user)
     (when showkarma (pr  "&nbsp;(@(* karma-multiplier* (karma user)))"))
-    (pr "&nbsp;|&nbsp;"))
-  (if user
-      (rlinkf 'logout (req)
-        (when-umatch/r user req
-          (logout-user user)
-          whence))
-      (onlink "login"
-        (login-page 'login nil
-                    (list (fn (u ip) 
-                            (ensure-news-user u)
-                            (newslog ip u 'top-login))
-                          whence)))))
+    (pr "&nbsp;|&nbsp;")
+    (rlinkf 'logout (req)
+      (when-umatch/r user req
+        (logout-user user)
+        whence))
+  ) (do
+    (onlink "sign up / log in"
+      (login-page 'login+fb nil
+        (list (fn (u ip) (ensure-news-user u) (newslog ip u 'top-login)) whence)
+        ))
+  )))
 
 
 ; News-Specific Defop Variants
@@ -756,7 +867,7 @@ pre:hover {overflow:auto} "))
   `(defop ,name ,parm
      (if (,test (get-user ,parm))
          (do ,@body)
-         (login-page 'login (+ "Please log in" ,msg ".")
+         (login-page 'login+fb (+ "Please log in" ,msg ".")
                      (list (fn (u ip) (ensure-news-user u))
                            (string ',name (reassemble-args ,parm)))))))
 
@@ -801,10 +912,10 @@ pre:hover {overflow:auto} "))
 
 ; News Admin
 
-(defopa newsadmin req 
+(defopa forum-admin req 
   (let user (get-user req)
-    (newslog req!ip user 'newsadmin)
-    (newsadmin-page user)))
+    (newslog req!ip user 'forumadmin)
+    (forumadmin-page user)))
 
 ; Note that caching* is reset to val in source when restart server.
 
@@ -814,8 +925,8 @@ pre:hover {overflow:auto} "))
 ; Need a util like vars-form for a collection of variables.
 ; Or could generalize vars-form to think of places (in the setf sense).
 
-(def newsadmin-page (user)
-  (shortpage user nil nil "newsadmin" "newsadmin"
+(def forumadmin-page (user)
+  (shortpage user nil nil "forum-admin" "forum-admin"
     (para (onlink "Create Account" (admin-page user)))
     (vars-form user 
                (nad-fields)
@@ -823,8 +934,24 @@ pre:hover {overflow:auto} "))
                  (case name
                    caching            (= caching* val)
                    ))
-               (fn () (newsadmin-page user)))))
+               (fn () (forumadmin-page user)))))
 
+
+(newsop how-to-contribute ()
+  (longpage-sb user (msec) nil nil "How to contribute" "how-to-contribute" t
+    (pr "<div class='story' style='padding:20px;'>")
+    (pr "<h2 style='margin-top:0;'>How to contribute</h2>")
+    (pr "
+      This is a publicly visible discussion forum for foundational mathematical research in artificial intelligence. The goal of this forum is to move toward a more formal and general understanding of \"robust and beneficial\" AI systems, as discussed in the Future of Life Institute's <a href='http://futureoflife.org/misc/open_letter'>research priorities letter</a> and the Machine Intelligence Research Institute's <a href='https://intelligence.org/technical-agenda/'>technical agenda</a>.
+      <br><br>
+      Like <a href='http://mathoverflow.net/help/privileges'>Math Overflow</a>, the Intelligent Agent Foundations Forum has a tiered system for becoming a full contributor. If you make an account with a Facebook login, you can post a link to an off-site contribution, e.g., on <a href='http://medium.com/'>Medium.com</a> or on a personal blog. These links will be visible to full forum contributors. If your link acquires enough Likes from full contributors, it will get promoted to visibility by all site visitors.
+      <br><br>
+      If you link to some good original content that you have written, the administrators will give you permissions to make posts and comments, and to Like others' contributions. The details of this system are still being worked out, and will change as we get a larger community of users.
+      <br><br>
+      Contact us at <a href='mailto:forum&#64;intelligence.org'>forum&#64;intelligence.org</a> with any questions.
+      ")
+    (pr "</div>")
+    ))
 
 ; Users
 
@@ -868,10 +995,10 @@ pre:hover {overflow:auto} "))
       (string  password   ,(resetpw-link)                          ,w   nil)
       (string  saved      ,(saved-link user subject)               ,u   nil)
       (int     auth       ,(p 'auth)                               ,e  ,a)
-      (yesno   member     ,(p 'member)                             ,a  ,a)
+      (yesno   contributor-only ,(p 'contributor-only)             ,a  ,a)
       (posint  karma      ,(* karma-multiplier* (p 'karma))         t  ,a)
       (num     weight     ,(p 'weight)                             ,a  ,a)
-      (mdtext  about      ,(p 'about)                               t  ,u)
+      (pandoc  about      ,(p 'about)                               t  ,u)
       (string  email      ,(p 'email)                              ,u  ,u)
       (sexpr   keys       ,(p 'keys)                               ,a  ,a)
       (int     delay      ,(p 'delay)                              ,u  ,u))))
@@ -883,8 +1010,7 @@ pre:hover {overflow:auto} "))
     (tostring (underlink (+ (string n) " liked " (if (is n 1) "story" "stories"))
                          (saved-url subject)))))
 
-(def resetpw-link ()
-  (tostring (underlink "reset password" "resetpw")))
+(def resetpw-link () (tostring (underlink "reset password" "resetpw")))
 
 
 ; Main Operators
@@ -894,7 +1020,8 @@ pre:hover {overflow:auto} "))
 (= caching* 1 perpage* 25 threads-perpage* 10 maxend* 500
    preview-maxlen* 1000 karma-multiplier* 5)
 
-(= sb-post-count* 5
+(= sb-link-count* 5
+   sb-post-count* 5
    sb-discussion-post-count* 5
    sb-comment-count* 15
    sb-comment-maxlen* 30)
@@ -913,11 +1040,11 @@ pre:hover {overflow:auto} "))
              (pr (,gc)))))))
 
 
-(newsop news () (newspage user))
+(newsop ||   () (newestpage user))
+(newsop news () (newestpage user)) ; deprecated link
+(newsop newest () (newestpage user)) ; deprecated link
 
-(newsop ||   () (newspage user))
-
-;(newsop index.html () (newspage user))
+(def sb-links (user n) (retrieve n [and (cansee user _) (no _!draft) (is _!category 'Link)] stories*))
 
 (def sb-posts (user n) (retrieve n [and (cansee user _) (no _!draft) (is _!category 'Main)] stories*))
 
@@ -925,37 +1052,39 @@ pre:hover {overflow:auto} "))
 
 (def sb-comments (user n) (retrieve n [and (cansee user _) (no _!draft)] comments*))
 
-(def newspage (user) (newestpage user))
-
-(def listpage (user t1 items label title 
-               (o url label) (o number t) (o show-comments t) (o preview-only t) (o show-immediate-parent))
+(def listpage (user t1 items label title (o url label) (o number t) (o show-comments t) (o preview-only t) (o show-immediate-parent))
   (hook 'listpage user)
   (longpage-sb user t1 nil label title url show-comments
     (display-items user items label title url 0 perpage* number preview-only show-immediate-parent)))
 
-
-(newsop newest () (newestpage user))
-
 ; Note: deleted items will persist for the remaining life of the 
 ; cached page.  If this were a prob, could make deletion clear caches.
 
+(newsop links () (linkspage user))
+
+(newscache linkspage user 40
+  (listpage user (msec) (newlinks user maxend*) "links" "New Links" "links"
+            nil t))
+
+(def newlinks (user n)
+  (retrieve n [and (cansee user _) (is _!category 'Link) (no _!draft)] stories*))
+
 (newscache newestpage user 40
-  (listpage user (msec) (newstories user maxend*) "new" "New Links" "newest" 
+  (listpage user (msec) (newstories user maxend*) "new" "New Stories" "/"
             nil t))
 
 (def newstories (user n)
-  (retrieve n [and (cansee user _) (no _!draft)] stories*))
+  (retrieve n [and (cansee user _) (no (is _!category 'Link)) (no _!draft)] stories*))
 
 
 (newsop best () (bestpage user))
 
 (newscache bestpage user 1000
-  (listpage user (msec) (beststories user maxend*) "best" "Top Links"))
+  (listpage user (msec) (beststories user maxend*) "best" "Top Stories"))
 
 ; As no of stories gets huge, could test visibility in fn sent to best.
 
-(def beststories (user n)
-  (bestn n (compare > realscore) (visible user stories*)))
+(def beststories (user n) (bestn n (compare > realscore) (visible user stories*)))
 
 
 (newsop bestcomments () (bestcpage user))
@@ -1000,7 +1129,7 @@ pre:hover {overflow:auto} "))
 
 (newsop drafts ()
   (if user (draftspage user)
-    (login-page 'login "You have to be logged in to view your drafts."
+    (login-page 'login+fb "You have to be logged in to view your drafts."
                 (fn (user ip)
                   (ensure-news-user user)
                   (newslog ip user 'submit-login)
@@ -1009,8 +1138,7 @@ pre:hover {overflow:auto} "))
 (def draftspage (user)
   (listpage user (msec) (drafts user) "my drafts" "My Drafts" "drafts" nil t t t))
 
-(def drafts (user)
-  (keep [and (cansee user _) _!draft] (submissions user)))
+(def drafts (user) (keep [and (cansee user _) _!draft] (submissions user)))
 
 ; Story Display
 
@@ -1060,7 +1188,7 @@ pre:hover {overflow:auto} "))
         (titleline s user whence))
     (tr (when (no commentpage)
           (tag (td colspan (if i 2 1))))
-        (tag (td class 'subtext)
+        (tag (td class (if (invisible s) 'subtext-invisible 'subtext))
           (hook 'itemline s user)
           (itemline s user whence)
           (when (astory s) (commentlink s user))
@@ -1083,14 +1211,18 @@ pre:hover {overflow:auto} "))
   (when i (tag (td align 'right valign 'top class 'title)
             (pr i "."))))
 
+; TODO: add a td class for the 'Link category?
 (def titleline (s user whence)
-  (tag (td class (if (is s!category 'Main) 'title 'discussion-title))
+  (tag (td class (if (is s!category 'Main) 'title
+                     (or (is s!category 'Discussion) (is s!category 'Link)) 'discussion-title))
     (if (cansee user s)
         (do (deadmark s user)
             (if s!draft (tag (a href (item-url s!id)
                                 style 'font-style:italic)
                           (pr (+ "[draft] " s!title)))
-                (link s!title (item-url s!id))))
+                (if (is s!category 'Link)
+                  (if (invisible s) (tag (a href s!url style 'color:#bbbbbb) (pr s!title)) (link s!title s!url))
+                  (link s!title (item-url s!id)))))
         (pr "[deleted]"))))
 
 (def deadmark (i user)
@@ -1113,6 +1245,7 @@ pre:hover {overflow:auto} "))
 
 (def canvote (user i dir)
   (and user
+       (full-member user)
        (news-type&live i)
        (~author user i)
        (in dir 'like nil)
@@ -1125,7 +1258,7 @@ pre:hover {overflow:auto} "))
 (newsop vote (by for dir auth whence)
   (with (i      (safe-item for)
          dir    (saferead dir)
-         whence (if whence (urldecode whence) "news"))
+         whence (if whence (urldecode whence) "/"))
     (if (no i)
          (pr "No such item.")
         (no (in dir 'like nil))
@@ -1135,7 +1268,7 @@ pre:hover {overflow:auto} "))
         (and by (or (isnt by user) (isnt (sym auth) (user->cookie* user))))
          (pr "User mismatch.")
         (no user)
-         (login-page 'login "You have to be logged in to vote."
+         (login-page 'login+fb "You have to be logged in as a full member to vote."
                      (list (fn (u ip)
                              (ensure-news-user u)
                              (newslog ip u 'vote-login)
@@ -1164,6 +1297,7 @@ pre:hover {overflow:auto} "))
 (def itemline (i user whence)
   (when (cansee user i) 
     (if (is i!category 'Discussion) (pr " discussion post")
+        (is i!category 'Link) (pr " link")
         (is i!type 'story) (pr " post"))
     (byline i user)
     (and-list [userlink-or-you user _] (likes i user) (pr)
@@ -1187,15 +1321,15 @@ pre:hover {overflow:auto} "))
     (pr (plural (len (likes i user)) "like")))
   (hook 'itemscore i user))
 
-(def byline (i user)
-  (pr " by @(tostring (userlink user i!by)) @(text-age:item-age i) "))
+(def byline (i user) (pr " by @(tostring (userlink user i!by)) @(text-age:item-age i) "))
 
-(def strip-underscore (text) (subst " " "_" text))
+(def get-user-display-name (userid)
+  (let t (uvar userid name) (if (blank t) (subst " " "_" userid) t)))
 
 (def user-url (user) (+ "user?id=" user))
 
-(def userlink (user subject)
-  (clink userlink (strip-underscore subject) (user-url subject)))
+(def userlink (user subject) ; user: authenticated user, subject: target user id
+  (clink userlink (get-user-display-name subject) (user-url subject)))
 
 (def userlink-or-you (user subject)
   (if (is user subject) (spanclass you (pr "You")) (userlink user subject)))
@@ -1300,83 +1434,110 @@ pre:hover {overflow:auto} "))
 
 (newsop submit ()
   (if user
-      (submit-page user "")
-      (submit-login-warning "")))
-
-(def submit-login-warning ((o title) (o text))
-  (login-page 'login "You have to be logged in to submit."
-              (fn (user ip) 
-                (ensure-news-user user)
-                (newslog ip user 'submit-login)
-                (submit-page user title text))))
+      (submit-page user)
+      (login-page 'login+fb "You have to be logged in to submit."
+                  (fn (user ip)
+                    (ensure-news-user user)
+                    (newslog ip user 'submit-login)
+                    (submit-page user)))))
 
 (defop dosubmit req
-  (with (title (striptags (or (arg req "title") ""))
-         text (or (arg req "text") "") user (get-user req)
+  (with (user (get-user req)
+         url (or (arg req "url") "")
+         title (striptags (or (arg req "title") ""))
+         text (or (arg req "text") "")
          draft (isnt (arg req "draft") nil)
-         category (if (is (arg req "category") "Discussion")
-                      'Discussion 'Main))
+         category (if (is (arg req "category") "Main") 'Main
+                      (is (arg req "category") "Discussion") 'Discussion
+                      'Link))
     (if (~arg req "auth")
          (pr "Nothing here.")
+        (and (no (full-member user)) (no (is category 'Link)))
+         (pr "Contributors can only submit links.")
+        (and (is category 'Link) (isnt draft nil))
+         (submit-page user url title text category nolinkdraft*)
         (~check-auth req)
          (authentication-failure-msg req)
-        (or (blank title) (blank text))
-         (submit-page user title text blanktext*)
+        (or (blank title) (and (is category 'Link) (blank url)))
+         (submit-page user url title text category blankurl*)
+        (or (blank title) (and (no (is category 'Link)) (blank text)))
+         (submit-page user url title text category blanktext*)
         (len> title title-limit*)
-         (submit-page user title text toolong*)
-      (atlet s (create-story title text user req!ip category draft)
+         (submit-page user url title text category toolong*)
+      (atlet s (create-story title url text user req!ip category draft)
         (submit-item user s)
         (if draft (edit-page user s)
-                  (pr "<meta http-equiv='refresh' content='0; url=/newest'>"))))))
+            (is category 'Link) (pr "<meta http-equiv='refresh' content='0; url=/links'>")
+            (pr "<meta http-equiv='refresh' content='0; url=/'>"))))))
 
-(def submit-page (user (o title) (o text "") (o msg))
+(def submit-page (user (o url "") (o title "") (o text "") (o category) (o msg))
   (shortpage user nil nil "Submit" "submit"
     (pagemessage msg)
+    (pr "<script>$(function(){if ($('[name=category]').length) {
+      var t = function(){
+        var t = $('[name=category]').val() === 'Link'
+        ;(t? $('[name=text]') : $('[name=url]')).closest('tr').hide()
+        ;(t? $('[name=url]') : $('[name=text]')).closest('tr').show()
+        }
+      $('[name=category]').change(t)
+      t()
+      }})</script>")
     (authform "/dosubmit" user
       (tab
         (row "title"    (input "title" title 50))
-        (row "category" (do (menu "category" '(Main Discussion) 'Main)
-                            (pr " &nbsp; ")
-                            (underlink "What's this?" "/item?id=52")))
+        (if (full-member user)
+          (row "category" (do (menu "category" '(Main Discussion Link) (or category 'Main))
+                              (pr " &nbsp; ")
+                              (underlink "What's this?" "/item?id=52"))))
         (tr
-          (td "text")
-          (td 
-            (textarea "text" 16 50 (only.pr text))
-            (pr " ")
-            (tag (font size -2)
-              (tag (a href formatdoc-url* target '_blank)
-                (tag (font color (gray 175)) (pr "formatting help"))))))
-        (row "" (do
-                  (tag (button type 'submit
-                               name "draft"
-                               value "t"
-                               onclick "needToConfirm = false;")
-                    (pr "save draft & preview"))
-                  (protected-submit "publish post")))))))
+          (td "url")
+          (td (input "url" url 50)))
+        (if (full-member user)
+          (tr
+            (td "text")
+            (td
+              (textarea "text" 16 50 (only.pr text))
+              (pr " ")
+              (tag (font size -2)
+                (tag (a href formatdoc-url* target '_blank)
+                  (tag (font color (gray 175)) (pr "formatting help")))))))
+        (row "" (if (full-member user)
+                  (do
+                    (tag (button type 'submit
+                                 name "draft"
+                                 value "t"
+                                 onclick "needToConfirm = false;")
+                      (pr "save draft & preview"))
+                    (protected-submit "publish post"))
+                  (protected-submit "submit link")))))))
 
 ; For use by outside code like bookmarklet.
 ; http://news.domain.com/submitlink?u=http://foo.com&t=Foo
 ; Added a confirm step to avoid xss hacks.
 
-(newsop submitlink (u t)
-  (if user 
-      (submit-page user u)
-      (submit-login-warning u)))
+; (newsop submitlink (u t)
+;  (if user
+;      (submit-page user u)
+;      (submit-login-warning u)))
 
 (= title-limit* 160
    retry*       "Please try again."
    toolong*     "Please make title < @title-limit* characters."
-   blanktext*   "Please fill in the title and the body.")
-
+   blanktext*   "Please fill in the title and the body."
+   blankurl*    "Please fill in the title and the URL."
+   nolinkdraft* "Link submissions cannot be saved as drafts.")
 (def submit-item (user i)
   (push i!id (uvar user submitted))
   (save-prof user)
   (astory&adjust-rank i))
 
-(def create-story (title text user ip category draft)
+(def create-story (title url text user ip category draft)
   (newslog ip user 'create (list title))
+  (if (is category 'Link) (= text "")
+      (= url ""))
+  (if (and url (no (begins url "http"))) (= url (+ "http://" url)))
   (let s (inst 'item 'type 'story 'id (new-item-id) 'category category
-                     'title title 'text text 'by user 'ip ip 'draft draft)
+                     'title title 'url url 'text text 'by user 'ip ip 'draft draft)
     (save-item s)
     (= (items* s!id) s)
     (push s stories*)
@@ -1475,12 +1636,15 @@ pre:hover {overflow:auto} "))
       (+ (until-token text "</p>") "</p>"))))
 
 (def display-item-text (s user preview-only)
-  (when (and (cansee user s))
-    (if (no preview-only)
-         (item-text s)
-        (is s!category 'Main)
-         (preview (item-text s))
-         "")))
+  (if
+    (no (cansee user s)) nil
+    (is s!category 'Main) (if
+                            preview-only (preview (item-text s))
+                            (item-text s))
+    (is s!category 'Discussion) (if
+                                  preview-only ""
+                                  (item-text s))
+    (is s!category 'Link) ""))
 
 
 ; Edit Item
@@ -1525,20 +1689,21 @@ pre:hover {overflow:auto} "))
 
 (= (fieldfn* 'story)
    (fn (user s)
-     (with (a (admin user)  e (editor user)  x (canedit user s)
-            cat '(choice sym Main Discussion))
+     (with (a (admin user)  e (editor user)  x (canedit user s) m (full-member user)
+            cat '(choice sym Main Discussion Link))
        `((string2 title     ,s!title        t ,x)
-         (pandoc  text      ,s!text         t ,x)
-         (,cat    category  ,s!category     t ,x)
-         ,@(standard-item-fields s a e x)))))
+         (string2 url       ,s!url          ,(or m (is s!category 'Link)) ,x)
+         (pandoc  text      ,s!text         ,m ,(and x m))
+         (,cat    category  ,s!category     ,m ,(and x m))
+         ,@(standard-item-fields s a e x m)))))
 
 (= (fieldfn* 'comment)
    (fn (user c)
-     (with (a (admin user)  e (editor user)  x (canedit user c))
+     (with (a (admin user)  e (editor user)  x (canedit user c) m (full-member user))
        `((pandoc  text      ,c!text         t ,x)
-         ,@(standard-item-fields c a e x)))))
+         ,@(standard-item-fields c a e x m)))))
 
-(def standard-item-fields (i a e x)
+(def standard-item-fields (i a e x m)
   (let fields `((int     likes     ,(len (itemlikes* i!id)) ,a  nil)
                 (yesno   deleted   ,i!deleted               ,a ,a)
                 (sexpr   keys      ,i!keys                  ,a ,a)
@@ -1565,7 +1730,7 @@ pre:hover {overflow:auto} "))
 ; Comment Submission
 
 (def comment-login-warning (parent whence (o text))
-  (login-page 'login "You have to be logged in to comment."
+  (login-page 'login+fb "You have to be logged in to comment."
               (fn (u ip)
                 (ensure-news-user u)
                 (newslog ip u 'comment-login)
@@ -1605,7 +1770,7 @@ pre:hover {overflow:auto} "))
                  (esc-tags (arg req "whence")) "' />")))))
 
 (def comment-form (parent user whence (o text))
-  (when user
+  (when (and user (cancomment user parent))
     (authform "/submitcomment" user
       (hidden 'parent parent!id)
       (hidden 'whence whence)
@@ -1639,9 +1804,19 @@ pre:hover {overflow:auto} "))
 ; Comment Display
 
 (def display-comment-tree (c user whence (o indent 0) (o initialpar))
-  (when (cansee-descendant user c)
-    (display-1comment c user whence indent initialpar t)
-    (display-subcomments c user whence (+ indent 1))))
+  (when (cansee user c)
+  ; (when (cansee-descendant user c) ; we don't actually like the cansee-descendant behavior at all
+    (let identifier c!id ; use (rand-id) if a comment can appear more than once on a page
+      (when (should-collapse c user)
+        (pr (gen-collapse-script c identifier))
+        (tr (td (hspace (+ 27 (* indent 40)))
+          (tag (a href "" class (+ "toggle-" identifier) style "font-size:11pt; color:#828282")
+            (pr (+ "[+] Expand comment by " (get-user-display-name c!by)))))))
+      (tr (tag (td class (+ "comment-" identifier)
+                   style (if (should-collapse c user) "display:none" ""))
+                 (tab
+                   (display-1comment c user whence indent initialpar t)
+                   (display-subcomments c user whence (+ indent 1))))))))
 
 (def display-1comment (c user whence indent showpar (o hide-drafts))
   (if (or (no hide-drafts) (no c!draft))
@@ -1723,6 +1898,9 @@ pre:hover {overflow:auto} "))
                (* (+ (trunc (/ age  3600)) 1)  3600)
                (* (+ (trunc (/ age 86400)) 1) 86400)))))
 
+(def should-collapse (c user)
+  (and (no (author user c)) (no (cansee nil c))))
+
 (def gen-comment-body (c user whence astree indent showpar showon)
   (tag (td class 'default)
     (let parent (and (or (no astree) showpar) (c 'parent))
@@ -1745,15 +1923,15 @@ pre:hover {overflow:auto} "))
       (spanclass comment
         (if (~cansee user c)               (pr "[deleted]")
             (nor (live c) (author user c)) (spanclass dead (pr (item-text c)))
-                                           (pr (item-text c))))
-      (when (and astree (cansee user c) (live c) (no c!draft))
-        (para)
-        (tag (font size 1)
-          (if (and (~mem 'neutered c!keys)
-                   (replyable c indent)
-                   (comments-active c))
-              (underline (replylink c whence))
-              (fontcolor sand (pr "-----"))))))))
+                                           (pr (item-text c)))))
+    (when (and astree (cansee user c) (live c) (no c!draft))
+      (para)
+      (tag (font size 1)
+        (if (and (~mem 'neutered c!keys)
+                 (replyable c indent)
+                 (comments-active c))
+          (if (canreply user c) (underline (replylink c whence)))
+            (fontcolor sand (pr "-----")))))))
 
 ; For really deeply nested comments, caching could add another reply 
 ; delay, but that's ok.
@@ -1772,11 +1950,11 @@ pre:hover {overflow:auto} "))
 
 (newsop reply (id whence)
   (with (i      (safe-item id)
-         whence (or (only.urldecode whence) "news"))
-    (if (and (only.comments-active i) (no i!draft))
+         whence (or (only.urldecode whence) "/"))
+    (if (and (only.comments-active i) (no i!draft) (canreply user i))
         (if user
             (addcomment-page i user whence)
-            (login-page 'login "You have to be logged in to comment."
+            (login-page 'login+fb "You have to be logged in to comment."
                         (fn (u ip)
                           (ensure-news-user u)
                           (newslog ip u 'comment-login)
@@ -1862,8 +2040,8 @@ pre:hover {overflow:auto} "))
 
 (newsop rss ()
   (rss-feed (sort (compare > [if (no _!publish-time) _!time _!publish-time])
-              (+ (retrieve perpage* [and live (no _!draft)] stories*)
-                 (retrieve perpage* [and live (no _!draft)] comments*)))))
+              (+ (retrieve perpage* [and live (no _!draft) (no (invisible _))] stories*)
+                 (retrieve perpage* [and live (no _!draft) (no (invisible _))] comments*)))))
 
 (def rss-feed (items)
   (tag (rss version "2.0")
@@ -1877,7 +2055,7 @@ pre:hover {overflow:auto} "))
                          (let s (superparent i)
                            (pr (+ "Comment on " (eschtml s!title))))))
           (tag link (pr (+ site-url* (item-url i!id))))
-          (tag author (pr (strip-underscore i!by)))
+          (tag author (pr (get-user-display-name i!by)))
           (tag description (pr (display-item-text i nil t))))))))
 
 
@@ -1886,11 +2064,26 @@ pre:hover {overflow:auto} "))
 (newsop members () (memberspage user))
 
 (newscache memberspage user 1000
-  (longpage-sb user (msec) nil "members" "members" "members" t
+  (longpage-sb user (msec) nil "full members" "members" "members" t
     (sptab
       (let i 0
-        (each u (sort (compare > [karma _])
-                      (keep [pos [cansee nil _] (submissions _)] (users)))
+        (each u (keep [full-member _]
+                  (sort (compare > [karma _])
+                    (keep [pos [cansee nil _] (submissions _)] (users))))
+          (tr (tdr:pr (++ i) ".")
+              (td (userlink user u))
+              (tdr:pr (* karma-multiplier* (karma u))))
+          (if (is i 10) (spacerow 30)))))))
+
+(newsop contributors () (contributorspage user))
+
+(newscache contributorspage user 1000
+  (longpage-sb user (msec) nil "contributors" "contributors" "contributors" t
+    (sptab
+      (let i 0
+        (each u (keep [no (full-member _)]
+                  (sort (compare > [karma _])
+                    (keep [pos [cansee user _] (submissions _)] (users))))
           (tr (tdr:pr (++ i) ".")
               (td (userlink user u))
               (tdr:pr (* karma-multiplier* (karma u))))
@@ -2074,7 +2267,7 @@ Pandoc markdown documentation</a></span> for additional formatting options.</p>"
       (resetpw-page user "Passwords should be a least 4 characters long.  
                           Please choose another.")
       (do (set-pw user newpw)
-          (newspage user))))
+          (newestpage user))))
 
 
 
@@ -2093,3 +2286,22 @@ Pandoc markdown documentation</a></span> for additional formatting options.</p>"
               (tdr:prt n)
               (tdr:prt (and n (round (/ (* n ms) 1000))))))))))
 
+;! need to make the how-to-contribute message less crazy
+; <tr><td>
+;   <table width='100%' style='width: 100%; background-color: #eaeaea;'><tbody>
+;     <tr style='height:5px'></tr>
+;     <tr><td><img src='s.gif' height='1' width='14'></td></tr>
+;     <tr>
+;       <td colspan='1'></td>
+;       <td class='story' width='100%' style='text-align:left; font-size: 12pt; color: 254e7d;'>
+;         <p>
+;           This is a publicly visible discussion forum for foundational mathematical research in \"robust and beneficial\" artificial intelligence, as discussed in the Future of Life Institute's <a href='http://futureoflife.org/misc/open_letter' class='continue' style='text-decoration: underline;'>research priorities letter</a> and the Machine Intelligence Research Institute's <a href='https://intelligence.org/technical-agenda/' class='continue' style='text-decoration: underline;'>technical agenda</a>.
+;         </p><p>
+;           If you'd like to participate in the conversations here, see our <a href='/how-to-contribute' class='continue' style='text-decoration: underline;'>How to Contribute page »</a>
+;         </p>
+;       </td>
+;     </tr>
+;     <tr style='height:12px'></tr>
+;   </tbody></table>
+; </td></tr>
+; <tr style='height:10px'></tr>
