@@ -297,9 +297,9 @@
             nil)))))
 
 (def hash-password (pw)
-  (tostring (system (+ "passlib-shim.py encrypt '" (urlencode pw) "'"))) )
+  (tostring (system (+ "python passlib-shim.py encrypt '" (urlencode pw) "'"))) )
 (def verify-password (pw hash)
-  (is "True" (tostring (system (+ "passlib-shim.py verify '" (urlencode pw) "' '" hash "'")))) )
+  (is "True" (tostring (system (+ "python passlib-shim.py verify '" (urlencode pw) "' '" hash "'")))) )
 (def verify-token (token id)
   (no (is (tostring (system (+ "fb-sdk/index.js verify " token " " id))) "ERROR")) )
 (def generate-fb-display-name (id token)
