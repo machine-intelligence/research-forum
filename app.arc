@@ -193,7 +193,7 @@
         else if (['malo3-8080.terminal.com', 'staging.agentfoundations.org'].indexOf(location.hostname) !== -1)
           location.hostname = 'malo-staging.terminal.com'
         if (location.protocol !== 'https:' && location.hostname.match(/\\.terminal\\.com$/))
-          location.protocol = 'https:'
+          location.replace(location.href.replace(/^http:/,'https:'))
         </script>")
       (pagemessage msg)
       ; login-form adapted for facebook
