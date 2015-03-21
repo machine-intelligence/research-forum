@@ -944,9 +944,9 @@
     (pr "
       This is a publicly visible discussion forum for foundational mathematical research in artificial intelligence. The goal of this forum is to move toward a more formal and general understanding of \"robust and beneficial\" AI systems, as discussed in the Future of Life Institute's <a href='http://futureoflife.org/misc/open_letter'>research priorities letter</a> and the Machine Intelligence Research Institute's <a href='https://intelligence.org/technical-agenda/'>technical agenda</a>.
       <br><br>
-      Like <a href='http://mathoverflow.net/help/privileges'>Math Overflow</a>, the Intelligent Agent Foundations Forum has a tiered system for becoming a full contributor. If you make an account with a Facebook login, you can post a link to an off-site contribution, e.g., on <a href='http://medium.com/'>Medium.com</a> or on a personal blog. These links will be visible to full forum contributors. If your link acquires enough Likes from full contributors, it will get promoted to visibility by all site visitors.
+      Like <a href='http://mathoverflow.net/help/privileges'>Math Overflow</a>, the Intelligent Agent Foundations Forum has a tiered system for becoming a member. If you make an account with a Facebook login, you can contribute comments and links, e.g. to an external post on <a href='http://medium.com/'>Medium.com</a> or on a personal blog. These comments and links will initially be visible to forum members; if your contribution acquires a few Likes from members, it will become visible to all site visitors.
       <br><br>
-      If you link to some good original content that you have written, the administrators will give you permissions to make posts and comments, and to Like others' contributions. The details of this system are still being worked out, and will change as we get a larger community of users.
+      If you frequently link to some good original content that you have written, the administrators will invite you to become a full member. The details of this system are still being worked out, and will change as we get a larger community of users.
       <br><br>
       Contact us at <a href='mailto:forum&#64;intelligence.org'>forum&#64;intelligence.org</a> with any questions.
       ")
