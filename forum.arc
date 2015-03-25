@@ -349,11 +349,11 @@
   (if i!deleted (admin user)
       i!draft (author user i)
       (delayed i) (author user i)
-      (no (full-member i!by))
-       (or
-         (author user i)
-         (full-member user)
-         (>= (len (itemlikes* i!id)) invisible-threshold*))
+      (no (full-member i!by)) (or
+       (author user i)
+       (full-member user)
+       (>= (len (itemlikes* i!id)) invisible-threshold*)
+       (and (author i!by (superparent i)) (cansee user (superparent i))))
       t))
 
 (let mature (table)
