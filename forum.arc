@@ -1992,7 +1992,7 @@
 
 (def threads-page (user subject)
   (if (profile subject)
-      (withs (title (+ subject "'s comments")
+      (withs (title (+ (get-user-display-name subject) "'s comments")
               label (if (is user subject) "my comments" title)
               here  (threads-url subject))
         (longpage-sb user (msec) nil label title here t
