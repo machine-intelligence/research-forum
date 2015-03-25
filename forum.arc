@@ -465,15 +465,14 @@
 (mac format-sb-title (title)
   `(para (tag (h3) (pr ,title))))
 
-(mac format-sb-item (i)
-  `(tag (p) (tag (a href (item-url i!id) class (if (invisible i) 'sb-invisible 'sb))
-              (tag (b) (pr (eschtml i!title))))
-            (br)
-            (tab (tr (tag (td class (if (invisible i) 'sb-invisible-subtext 'sb-subtext))
-              (pr "by ")
-              (userlink user i!by)
-              (pr bar*)
-              (itemscore i))))))
+(mac format-sb-item (i) `(do (pr
+  "<div style='margin: 1em 0;'>"
+    "<a href='"(if (is i!category 'Link) i!url (item-url i!id))"' class='"(if (invisible i) 'sb-invisible 'sb)"'>"
+      "<b>"(eschtml i!title)"</b></a>"
+    "<br>"
+    "<div class='"(if (invisible i) 'sb-invisible-subtext 'sb-subtext)"' style='margin:3px;'>"
+      ;! (commentlink i nil) instead of (commentlink i user) may display the wrong number of comments
+      "by ") (userlink user i!by) (pr bar*) (itemscore i) (if (is i!category 'Link) (commentlink nil i)) (pr "</div></div>")))
 
 (mac longpage-sb (user t1 lid label title whence show-comments . body)
   `(longpage ,user ,t1 ,lid ,label ,title ,whence
