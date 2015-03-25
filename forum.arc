@@ -342,6 +342,8 @@
        (and (author i!by (superparent i)) (cansee user (superparent i))))
       t))
 
+(def cansee_d (user i) (and (cansee user i) (no i!draft)))
+
 (let mature (table)
 (def delayed (i)
   (and (no (mature i!id))
@@ -1047,13 +1049,13 @@
 (newsop news () (newestpage user)) ; deprecated link
 (newsop newest () (newestpage user)) ; deprecated link
 
-(def sb-links (user n) (retrieve n [and (cansee user _) (no _!draft) (is _!category 'Link)] stories*))
+(def sb-links (user n) (retrieve n [and (cansee_d user _) (is _!category 'Link)] stories*))
 
-(def sb-posts (user n) (retrieve n [and (cansee user _) (no _!draft) (is _!category 'Main)] stories*))
+(def sb-posts (user n) (retrieve n [and (cansee_d user _) (is _!category 'Main)] stories*))
 
-(def sb-discussion-posts (user n) (retrieve n [and (cansee user _) (no _!draft) (is _!category 'Discussion)] stories*))
+(def sb-discussion-posts (user n) (retrieve n [and (cansee_d user _) (is _!category 'Discussion)] stories*))
 
-(def sb-comments (user n) (retrieve n [and (cansee user _) (no _!draft)] comments*))
+(def sb-comments (user n) (retrieve n [and (cansee_d user _)] comments*))
 
 (def listpage (user t1 items label title (o url label) (o number t) (o show-comments t) (o preview-only t) (o show-immediate-parent))
   (hook 'listpage user)
@@ -1069,13 +1071,13 @@
   (listpage user (msec) (newlinks user maxend*) "links" "New Links" "links"
             nil t))
 
-(def newlinks (user n) (retrieve n [and (cansee user _) (is _!category 'Link) (no _!draft)] stories*))
+(def newlinks (user n) (retrieve n [and (cansee_d user _) (is _!category 'Link)] stories*))
 
 (newscache newestpage user 40
   (listpage user (msec) (newstories user maxend*) "new" "New Stories" "/" nil t))
 
 (def newstories (user n)
-  (retrieve n [and (cansee user _) (no (is _!category 'Link)) (no _!draft)] stories*))
+  (retrieve n [and (cansee_d user _) (no (is _!category 'Link))] stories*))
 
 
 (newsop best () (bestpage user))
@@ -1189,7 +1191,7 @@
         (tag (td class (if (invisible s) 'subtext-invisible 'subtext))
           (hook 'itemline s user)
           (itemline s user whence)
-          (when (astory s) (commentlink s user))
+          (when (astory s) (when (cansee_d user s) (commentlink user s)))
           (editlink s user)
           (deletelink s user whence)))
     (spacerow 10)
@@ -1332,17 +1334,16 @@
 (def userlink-or-you (user subject)
   (if (is user subject) (spanclass you (pr "You")) (userlink user subject)))
 
-(def commentlink (i user)
-  (when (and (cansee user i) (no i!draft))
-    (pr bar*)
-    (tag (a href (+ (item-url i!id) "#comments"))
-      (let n (- (visible-family user i) 1)
-        (if (> n 0)
-            (pr (plural n "comment"))
-            (pr "discuss"))))))
+(def commentlink (user i)
+  (pr bar*)
+  (tag (a href (+ (item-url i!id) "#comments"))
+    (let n (- (visible-family user i) 1)
+      (if (> n 0)
+          (pr (plural n "comment"))
+          (pr "discuss")))))
 
 (def visible-family (user i)
-  (+ (if (and (cansee user i) (no i!draft)) 1 0)
+  (+ (if (cansee_d user i) 1 0)
      (sum [visible-family user (item _)] (itemkids* i!id))))
 
 ;(= user-changetime* 120 editor-changetime* 1440)
@@ -1567,7 +1568,7 @@
          here (item-url i!id))
     (longpage-sb user (msec) nil nil title here t
       (tab (display-item nil i user here)
-           (when (and (cansee user i) (comments-active i) (no i!draft))
+           (when (and (cansee_d user i) (comments-active i))
              (spacerow 10)
              (row "" (comment-form i user here))))
       (br2) 
@@ -1900,7 +1901,7 @@
         (if (~cansee user c)               (pr "[deleted]")
             (nor (live c) (author user c)) (spanclass dead (pr (item-text c)))
                                            (pr (item-text c)))))
-    (when (and astree (cansee user c) (live c) (no c!draft))
+    (when (and astree (cansee_d user c) (live c))
       (para)
       (tag (font size 1)
         (if (and (~mem 'neutered c!keys)
@@ -1953,7 +1954,7 @@
               label (if (is user subject) "my comments" title)
               here  (threads-url subject))
         (longpage-sb user (msec) nil label title here t
-          (awhen (keep [and (cansee user _) (~subcomment _) (no _!draft)]
+          (awhen (keep [and (cansee_d user _) (~subcomment _)]
                        (comments subject maxend*))
             (display-threads user it label title here))))
       (prn "No such user.")))
@@ -2006,7 +2007,7 @@
               label (if (is user subject) "my posts" title)
               here  (submitted-url subject))
         (longpage-sb user (msec) nil label label here t
-          (aif (keep [and (astory _) (cansee user _) (no _!draft)]
+          (aif (keep [and (astory _) (cansee_d user _)]
                      (submissions subject))
                (display-items user it label label here 0 perpage* t t))))
       (pr "No such user.")))
