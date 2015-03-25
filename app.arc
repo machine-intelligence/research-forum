@@ -630,7 +630,6 @@
                                   (and indelim (no (closedelim c)))))))))
 
 (def opendelim (c)  (in c #\< #\( #\[ #\{))
- 
 (def closedelim (c) (in c #\> #\) #\] #\}))
 
 

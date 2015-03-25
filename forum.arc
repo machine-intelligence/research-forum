@@ -211,14 +211,11 @@
 ; For use on external item references (from urls).  Checks id is int 
 ; because people try e.g. item?id=363/blank.php
 
-(def safe-item (id)
-  (ok-id&item (if (isa id 'string) (saferead id) id)))
+(def safe-item (id) (ok-id&item (if (isa id 'string) (saferead id) id)))
 
-(def ok-id (id) 
-  (and (exact id) (<= 1 id maxid*)))
+(def ok-id (id) (and (exact id) (<= 1 id maxid*)))
 
-(def arg->item (req key)
-  (safe-item:saferead (arg req key)))
+(def arg->item (req key) (safe-item:saferead (arg req key)))
 
 (def live (i) (no i!deleted))
 
@@ -242,8 +239,7 @@
          (whenlet ,var (items* ,g)
            ,@body)))))
 
-(def loaded-items (test)
-  (accum a (each-loaded-item i (test&a i))))
+(def loaded-items (test) (accum a (each-loaded-item i (test&a i))))
 
 (def newslog args (apply srvlog 'news args))
 
@@ -261,29 +257,20 @@
         (expt (/ (+ (item-age s) timebase*) 60) gravity))
      (if (~astory s)  .5
                       (contro-factor s))))
-
-(def contro-factor (s)
+(def contro-factor (s) ; internal to frontpage-rank
   (aif (check (visible-family nil s) [> _ 20])
        (min 1 (expt (/ (realscore s) it) 2))
        1))
 
 (def realscore (i) (+ 1 (len (itemlikes* i!id))))
 
-(def item-age (i) (if (no i!publish-time)
-                        (minutes-since i!time)
-                        (minutes-since i!publish-time)))
-
+(def item-age (i) (if (no i!publish-time) (minutes-since i!time) (minutes-since i!publish-time)))
 (def user-age (u) (minutes-since (uvar u created)))
 
-(def gen-topstories ()
-  (= ranked-stories* (rank-stories 180 1000 (memo frontpage-rank))))
+(def gen-topstories () (= ranked-stories* (rank-stories 180 1000 (memo frontpage-rank))))
+(def save-topstories () (writefile (map !id (firstn 180 ranked-stories*)) (+ newsdir* "topstories")))
 
-(def save-topstories ()
-  (writefile (map !id (firstn 180 ranked-stories*))
-             (+ newsdir* "topstories")))
- 
-(def rank-stories (n consider scorefn)
-  (bestn n (compare > scorefn) (latest-items astory nil consider)))
+(def rank-stories (n consider scorefn) (bestn n (compare > scorefn) (latest-items astory nil consider)))
 
 ; With virtual lists the above call to latest-items could be simply:
 ; (map item (retrieve consider astory:item (gen maxid* [- _ 1])))
@@ -309,8 +296,7 @@
 ; the rank of a random top story.
 
 (defbg rerank-random 30 (rerank-random))
-
-(def rerank-random ()
+(def rerank-random () ; internal to defbg rerank-random
   (when ranked-stories*
     (adjust-rank (ranked-stories* (rand (min 50 (len ranked-stories*)))))))
 
@@ -373,9 +359,7 @@
 ;       (some [cansee-descendant user _] (kids c))))
   
 (def editor (u) (and u (or (admin u) (> (uvar u auth) 0))))
-
 (def member (u) (and u (or (admin u) (uvar u member))))
-
 
 ; Page Layout
 
@@ -1085,12 +1069,10 @@
   (listpage user (msec) (newlinks user maxend*) "links" "New Links" "links"
             nil t))
 
-(def newlinks (user n)
-  (retrieve n [and (cansee user _) (is _!category 'Link) (no _!draft)] stories*))
+(def newlinks (user n) (retrieve n [and (cansee user _) (is _!category 'Link) (no _!draft)] stories*))
 
 (newscache newestpage user 40
-  (listpage user (msec) (newstories user maxend*) "new" "New Stories" "/"
-            nil t))
+  (listpage user (msec) (newstories user maxend*) "new" "New Stories" "/" nil t))
 
 (def newstories (user n)
   (retrieve n [and (cansee user _) (no (is _!category 'Link)) (no _!draft)] stories*))
@@ -1098,8 +1080,7 @@
 
 (newsop best () (bestpage user))
 
-(newscache bestpage user 1000
-  (listpage user (msec) (beststories user maxend*) "best" "Top Stories"))
+(newscache bestpage user 1000 (listpage user (msec) (beststories user maxend*) "best" "Top Stories"))
 
 ; As no of stories gets huge, could test visibility in fn sent to best.
 
@@ -1109,11 +1090,9 @@
 (newsop bestcomments () (bestcpage user))
 
 (newscache bestcpage user 1000
-  (listpage user (msec) (bestcomments user maxend*) 
-            "best comments" "Best Comments" "bestcomments" nil))
+  (listpage user (msec) (bestcomments user maxend*) "best comments" "Best Comments" "bestcomments" nil))
 
-(def bestcomments (user n)
-  (bestn n (compare > realscore) (visible user comments*)))
+(def bestcomments (user n) (bestn n (compare > realscore) (visible user comments*)))
 
 
 (newsop lists () 
@@ -1530,15 +1509,6 @@
                     (protected-submit "publish post"))
                   (protected-submit "submit link")))))))
 
-; For use by outside code like bookmarklet.
-; http://news.domain.com/submitlink?u=http://foo.com&t=Foo
-; Added a confirm step to avoid xss hacks.
-
-; (newsop submitlink (u t)
-;  (if user
-;      (submit-page user u)
-;      (submit-login-warning u)))
-
 (= title-limit* 160
    retry*       "Please try again."
    toolong*     "Please make title < @title-limit* characters."
@@ -1587,8 +1557,6 @@
        (when (and (> r 500) (> (/ b r) baditem-threshold*))
          (set (throttle-ips* ip))))))
 
-; redefined later
-
 (def news-type (i) (and i (in i!type 'story 'comment)))
 
 (def item-page (user i)
@@ -1610,19 +1578,13 @@
 
 (def commentable (i) (in i!type 'story 'comment))
 
-; By default the ability to comment on an item is turned off after 
-; 45 days, but this can be overriden with commentable key.
-
-; Removing the time limit for now (we may revisit this once
-; the forum is no longer post-by-invitation)
-; (= commentable-threshold* (* 60 24 45))
-
+; By default the ability to comment on an item is turned off after 45 days, but this can be overriden with commentable key.
+; (= commentable-threshold* (* 60 24 45)) ; removed for now but may revisit later
 (def comments-active (i)
   (and (live&commentable i)
        (live (superparent i))))
        ;(or (< (item-age i) commentable-threshold*)
        ;    (mem 'commentable i!keys))))
-
 
 (= displayfn* (table))
 
@@ -1635,13 +1597,9 @@
 (def display-item (n i user here (o inlist) (o preview-only) (o show-immediate-parent))
   ((displayfn* (i 'type)) n i user here inlist preview-only show-immediate-parent))
 
-(def superparent (i)
-  (aif i!parent (superparent:item it) i))
+(def superparent (i) (aif i!parent (superparent:item it) i))
 
-(def until-token (text token)
-  (let index (posmatch token text)
-    (if (no index) text
-      (cut text 0 index))))
+(def until-token (text token) (let idx (posmatch token text) (if (no idx) text (cut text 0 idx))))
 
 (def preview (text)
   (withs (idx-hr (posmatch "<hr" text) idx-h1 (posmatch "<h1" text))
@@ -1917,8 +1875,7 @@
                (* (+ (trunc (/ age  3600)) 1)  3600)
                (* (+ (trunc (/ age 86400)) 1) 86400)))))
 
-(def should-collapse (c user)
-  (and (no (author user c)) (no (cansee nil c))))
+(def should-collapse (c user) (and (no (author user c)) (no (cansee nil c))))
 
 (def gen-comment-body (c user whence astree indent showpar showon)
   (tag (td class 'default)
