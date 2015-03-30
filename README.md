@@ -12,7 +12,7 @@ passlib: `easy_install passlib` might work
 
 pandoc: `brew install pandoc` might work
 
-node v0.10 (optionally inside a `nvm` added to your `$PATH` in your `~/.bashrc`)
+node v0.12
 
 #### What are files
 

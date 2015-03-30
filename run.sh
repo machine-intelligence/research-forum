@@ -4,9 +4,6 @@ db="arc"
 
 [[ -f "$db/is_staging" ]] && git pull
 
-# if in test environment where node isn't 0.10, use nvm to switch to 0.10
-[[ $(node --version) != v0.10* ]] && { . ~/.bashrc; nvm use 0.10; }
-
 # if no db, create an empty db
 [ -d "$db" ] || {
 	echo "creating empty db"
