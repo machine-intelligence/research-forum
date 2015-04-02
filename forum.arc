@@ -463,6 +463,7 @@
             (hook 'longfoot)
             (admin-bar ,gu (- (msec) ,gt) ,whence)))
         )
+        (pr "<center><div class='sb' style='margin: 3px 0;'><a title='Read our Privacy Policy' href='https://intelligence.org/files/PrivacyandTerms-Agentfoundations.org.pdf'>Privacy &amp; Terms <font color='red' size='2'><strong>(NEW 04/01/15)</strong></font></a></div></center>")
         )))
 (mac longpage-sb (user t1 lid label title whence show-comments . body)
   `(longpage ,user ,t1 ,lid ,label ,title ,whence
