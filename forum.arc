@@ -284,7 +284,7 @@
        (author user i)
        (full-member user)
        (>= (len (itemlikes* i!id)) invisible-threshold*)
-       (and (author i!by (superparent i)) (cansee user (superparent i))))
+       (and (no (is i (superparent i))) (author i!by (superparent i)) (cansee user (superparent i))))
       t))
 
 (def cansee_d (user i) (and (cansee user i) (no i!draft)))

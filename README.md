@@ -53,6 +53,7 @@ db format
 
 * arc/admins: whitespace-separated list of admin usernames
 * arc/fb_auth.json: `{"id": "...", "secret": "..."}`
+* arc/topstories: dead @ 2015-04-01 - remove it if you see it
 
 #### Misc
 
