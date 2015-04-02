@@ -12,8 +12,7 @@
    border-color* (color 180 180 180)
    prefer-url*   t)
 
-
-; Structures
+; -------------------------------- Structures -------------------------------- ;
 
 ; Could add (html) types like choice, yesno to profile fields.  But not 
 ; as part of deftem, which is defstruct.  Need another mac on top of 
@@ -51,8 +50,7 @@
   parent       nil
   keys         nil)
 
-
-; Load and Save
+; ------------------------------- Load and Save ------------------------------ ;
 
 (= newsdir*  "arc/news/"
    storydir* "arc/news/story/"
@@ -243,8 +241,7 @@
 
 (def newslog args (apply srvlog 'news args))
 
-
-; Ranking
+; ---------------------------------- Ranking --------------------------------- ;
 
 ; Votes divided by the age in hours to the gravityth power.
 ; Would be interesting to scale gravity in a slider.
@@ -267,15 +264,15 @@
 (def item-age (i) (if (no i!publish-time) (minutes-since i!time) (minutes-since i!publish-time)))
 (def user-age (u) (minutes-since (uvar u created)))
 
-(def gen-topstories () (= ranked-stories* (rank-stories 180 1000 (memo frontpage-rank))))
-(def save-topstories () (writefile (map !id (firstn 180 ranked-stories*)) (+ newsdir* "topstories")))
+(def gen-topstories () (= ranked-stories* (rank-stories 180 1000 (memo frontpage-rank)))) ; internal to ensure-topstories
+(def save-topstories () (writefile (map !id (firstn 180 ranked-stories*)) (+ newsdir* "topstories"))) ; internal to adjust-rank
 
 (def rank-stories (n consider scorefn) (bestn n (compare > scorefn) (latest-items astory nil consider)))
 
 ; With virtual lists the above call to latest-items could be simply:
 ; (map item (retrieve consider astory:item (gen maxid* [- _ 1])))
 
-(def latest-items (test (o stop) (o n))
+(def latest-items (test (o stop) (o n)) ; internal to rank-stories
   (accum a
     (catch 
       (down id maxid* 1
@@ -295,7 +292,7 @@
 ; thus get stuck in front of it. I avoid this by regularly adjusting 
 ; the rank of a random top story.
 
-(defbg rerank-random 30 (rerank-random))
+(defbg rerank-random 30 (rerank-random)) ; is a thread - not referenced anywhere
 (def rerank-random () ; internal to defbg rerank-random
   (when ranked-stories*
     (adjust-rank (ranked-stories* (rand (min 50 (len ranked-stories*)))))))
@@ -363,7 +360,7 @@
 (def editor (u) (and u (or (admin u) (> (uvar u auth) 0))))
 (def member (u) (and u (or (admin u) (uvar u member))))
 
-; Page Layout
+; -------------------------------- Page Layout ------------------------------- ;
 
 (= logo-url* "miri.png")
 (= favicon-url* "favicon.png")
@@ -753,8 +750,7 @@
 ;.vote IMG { border:0; margin: 3px 2px 3px 2px; }
 ;.reply { font-size:smaller; text-decoration:underline !important; }
 
-
-; Page top
+; --------------------------------- Page top --------------------------------- ;
 
 (= sand (color 240 246 255) textgray (gray 130))
 
@@ -836,8 +832,7 @@
         ))
   )))
 
-
-; News-Specific Defop Variants
+; ----------------------- News-Specific Defop Variants ----------------------- ;
 
 (mac defopt (name parm test msg . body)
   `(defop ,name ,parm
@@ -847,14 +842,9 @@
                      (list (fn (u ip) (ensure-news-user u))
                            (string ',name (reassemble-args ,parm)))))))
 
-(mac defopg (name parm . body)
-  `(defopt ,name ,parm idfn "" ,@body))
-
-(mac defope (name parm . body)
-  `(defopt ,name ,parm editor " as an editor" ,@body))
-
-(mac defopa (name parm . body)
-  `(defopt ,name ,parm admin " as an administrator" ,@body))
+(mac defopg (name parm . body) `(defopt ,name ,parm idfn "" ,@body))
+(mac defope (name parm . body) `(defopt ,name ,parm editor " as an editor" ,@body))
+(mac defopa (name parm . body) `(defopt ,name ,parm admin " as an administrator" ,@body))
 
 (mac opexpand (definer name parms . body)
   (w/uniq gr
@@ -867,9 +857,7 @@
 
 (= newsop-names* nil)
 
-(mac newsop args
-  `(do (pushnew ',(car args) newsop-names*)
-       (opexpand defop ,@args)))
+(mac newsop args `(do (pushnew ',(car args) newsop-names*) (opexpand defop ,@args)))
 
 (mac adop (name parms . body)
   (w/uniq g
@@ -877,7 +865,6 @@
        (let ,g (string ',name)
          (shortpage user nil ,g ,g ,g
            ,@body)))))
-
 (mac edop (name parms . body)
   (w/uniq g
     `(opexpand defope ,name ,parms 
@@ -885,8 +872,7 @@
          (shortpage user nil ,g ,g ,g
            ,@body)))))
 
-
-; News Admin
+; -------------------------------- News Admin -------------------------------- ;
 
 (defopa forum-admin req 
   (let user (get-user req)
@@ -948,7 +934,7 @@
     (pr "</div>")
     ))
 
-; Users
+; ----------------------------------- Users ---------------------------------- ;
 
 (newsop user (id)
   (if (only.profile id)
@@ -1007,8 +993,7 @@
 
 (def resetpw-link () (tostring (underlink "reset password" "resetpw")))
 
-
-; Main Operators
+; ------------------------------ Main Operators ------------------------------ ;
 
 ; remember to set caching to 0 when testing non-logged-in 
 
@@ -1130,7 +1115,7 @@
 
 (def drafts (user) (keep [and (cansee user _) _!draft] (submissions user)))
 
-; Story Display
+; ------------------------------- Story Display ------------------------------ ;
 
 (def display-items (user items label title whence 
                     (o start 0) (o end perpage*) (o number) (o preview-only) (o show-immediate-parent))
@@ -1402,8 +1387,7 @@
         (>= a   60) (pr (plural (trunc (/ a 60))   "hour")   " ago")
                     (pr (plural (trunc a)          "minute") " ago"))))
 
-
-; Voting
+; ---------------------------------- Voting ---------------------------------- ;
 
 (def vote-for (user i (o dir 'like))
   (unless (or (is (vote user i) dir)
@@ -1418,8 +1402,7 @@
     (= ((votes* user) i!id) dir)
     (save-votes user)))
 
-
-; Story Submission
+; ----------------------------- Story Submission ----------------------------- ;
 
 (newsop submit ()
   (if user
@@ -1523,8 +1506,7 @@
     (push s stories*)
     s))
 
-
-; Individual Item Page (= Comments Page of Stories)
+; ------------- Individual Item Page (= Comments Page of Stories) ------------ ;
 
 (defmemo item-url (id) (+ "item?id=" id))
 
@@ -1614,8 +1596,7 @@
                                   (item-text s))
     (is s!category 'Link) ""))
 
-
-; Edit Item
+; --------------------------------- Edit Item -------------------------------- ;
 
 (def edit-url (i) (+ "edit?id=" i!id))
 
@@ -1694,8 +1675,7 @@
                  (tab (display-item nil i user here)))))
       (hook 'edit user i))))
 
- 
-; Comment Submission
+; ---------------------------- Comment Submission ---------------------------- ;
 
 (def comment-login-warning (parent whence (o text))
   (login-page 'login+fb "You have to be logged in to comment."
@@ -1768,8 +1748,7 @@
     (push c comments*)
     c))
 
-
-; Comment Display
+; ------------------------------ Comment Display ----------------------------- ;
 
 (def display-comment-tree (c user whence (o indent 0) (o initialpar))
   (when (cansee user c)
@@ -1928,8 +1907,7 @@
                           (addcomment-page i u whence))))
         (pr "No such item."))))
 
-
-; Threads
+; ---------------------------------- Threads --------------------------------- ;
 
 (def threads-url (user) (+ "threads?id=" user))
 
@@ -1981,8 +1959,7 @@
 (def ancestors (i)
   (accum a (trav i!parent a:item self:!parent:item)))
 
-
-; Submitted
+; --------------------------------- Submitted -------------------------------- ;
 
 (def submitted-url (user) (+ "submitted?id=" user))
        
@@ -2002,8 +1979,7 @@
                (display-items user it label label here 0 perpage* t t))))
       (pr "No such user.")))
 
-
-; RSS
+; ------------------------------------ RSS ----------------------------------- ;
 
 (newsop rss ()
   (rss-feed (sort (compare > [if (no _!publish-time) _!time _!publish-time])
@@ -2025,8 +2001,7 @@
           (tag author (pr (get-user-display-name i!by)))
           (tag description (pr (display-item-text i nil t))))))))
 
-
-; User Stats
+; -------------------------------- User Stats -------------------------------- ;
 
 (newsop members () (memberspage user))
 
@@ -2068,8 +2043,7 @@
        (avg (cdr (sort > (map realscore (rem !deleted it)))))
        nil))
 
-
-; Comment Analysis
+; ----------------------------- Comment Analysis ----------------------------- ;
 
 ; Instead of a separate active op, should probably display this info 
 ; implicitly by e.g. changing color of commentlink or by showing the 
@@ -2098,8 +2072,7 @@
   (listpage user (msec) (visible user (firstn maxend* comments*) t)
             "comments" "New Comments" "newcomments" nil t t t))
 
-
-; Doc
+; ------------------------------------ Doc ----------------------------------- ;
 
 (defop formatdoc req
   (msgpage (get-user req) formatdoc* "Formatting Options"))
@@ -2204,8 +2177,7 @@ print sum</code></pre>
 <a href=\"http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html\">
 Pandoc markdown documentation</a></span> for additional formatting options.</p>")
 
-
-; Reset PW
+; --------------------------------- Reset PW --------------------------------- ;
 
 (defopg resetpw req (resetpw-page (get-user req)))
 
@@ -2236,9 +2208,7 @@ Pandoc markdown documentation</a></span> for additional formatting options.</p>"
       (do (set-pw user newpw)
           (newestpage user))))
 
-
-
-; Stats
+; ----------------------------------- Stats ---------------------------------- ;
 
 (adop optimes ()
   (sptab
@@ -2252,6 +2222,8 @@ Pandoc markdown documentation</a></span> for additional formatting options.</p>"
             (let n (opcounts* name)
               (tdr:prt n)
               (tdr:prt (and n (round (/ (* n ms) 1000))))))))))
+
+; ---------------------------------- <edge> ---------------------------------- ;
 
 ;! need to make the how-to-contribute message less crazy
 ; <tr><td>
