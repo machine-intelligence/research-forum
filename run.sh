@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 db="arc"
+port="${1:-8080}"
 
 [[ -f "$db/is_staging" ]] && git pull
 
@@ -24,7 +25,7 @@ read -r -d '' t <<EOF
 (aload "arc.arc")
 (aload "libs.arc")
 #| load and serve the forum, then open the arc repl |#
-(arc-eval '(do (load "forum.arc") (thread (nsv ${1:-8080}))))
+(arc-eval '(do (load "forum.arc") (thread (nsv $port))))
 (tl)
 ))
 EOF
