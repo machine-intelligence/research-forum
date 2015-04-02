@@ -173,15 +173,7 @@
           (push i (items i!type)))))
     (= stories*  (rev items!story)
        comments* (rev items!comment))
-    (hook 'initload items))
-  (ensure-topstories))
-
-(def ensure-topstories ()
-  (aif (errsafe (readfile1 (+ newsdir* "topstories")))
-       (= ranked-stories* (map item it))
-       (do (prn "ranking stories.") 
-           (flushout)
-           (gen-topstories))))
+    (hook 'initload items)))
 
 (def astory   (i) (and i (is i!type 'story)))
 (def acomment (i) (and i (is i!type 'comment)))
@@ -241,66 +233,22 @@
 
 (def newslog args (apply srvlog 'news args))
 
-; ---------------------------------- Ranking --------------------------------- ;
+; ---------------------------------- ?misc? ---------------------------------- ;
 
-; Votes divided by the age in hours to the gravityth power.
-; Would be interesting to scale gravity in a slider.
-
-(= gravity* 1.8 timebase* 120 front-threshold* 1)
-
-(def frontpage-rank (s (o scorefn realscore) (o gravity gravity*))
-  (* (/ (let base (- (scorefn s) 1)
-          (if (> base 0) (expt base .8) base))
-        (expt (/ (+ (item-age s) timebase*) 60) gravity))
-     (if (~astory s)  .5
-                      (contro-factor s))))
-(def contro-factor (s) ; internal to frontpage-rank
-  (aif (check (visible-family nil s) [> _ 20])
-       (min 1 (expt (/ (realscore s) it) 2))
-       1))
+(def user-age (u) (minutes-since (uvar u created)))
+(def item-age (i) (if (no i!publish-time) (minutes-since i!time) (minutes-since i!publish-time)))
 
 (def realscore (i) (+ 1 (len (itemlikes* i!id))))
 
-(def item-age (i) (if (no i!publish-time) (minutes-since i!time) (minutes-since i!publish-time)))
-(def user-age (u) (minutes-since (uvar u created)))
-
-(def gen-topstories () (= ranked-stories* (rank-stories 180 1000 (memo frontpage-rank)))) ; internal to ensure-topstories
-(def save-topstories () (writefile (map !id (firstn 180 ranked-stories*)) (+ newsdir* "topstories"))) ; internal to adjust-rank
-
+; With virtual lists the call to latest-items could be simply: (map item (retrieve consider astory:item (gen maxid* [- _ 1])))
 (def rank-stories (n consider scorefn) (bestn n (compare > scorefn) (latest-items astory nil consider)))
-
-; With virtual lists the above call to latest-items could be simply:
-; (map item (retrieve consider astory:item (gen maxid* [- _ 1])))
-
 (def latest-items (test (o stop) (o n)) ; internal to rank-stories
-  (accum a
-    (catch 
-      (down id maxid* 1
-        (let i (item id)
-          (if (or (and stop (stop i)) (and n (<= n 0))) 
-              (throw))
-          (when (test i) 
-            (a i) 
-            (if n (-- n))))))))
+  (accum a (catch (down id maxid* 1
+    (let i (item id)
+      (if (or (and stop (stop i)) (and n (<= n 0))) (throw))
+      (when (test i) (a i) (if n (-- n))))))))
 
-(def adjust-rank (s (o scorefn frontpage-rank))
-  (insortnew (compare > (memo scorefn)) s ranked-stories*)
-  (save-topstories))
-
-; If something rose high then stopped getting votes, its score would
-; decline but it would stay near the top.  Newly inserted stories would
-; thus get stuck in front of it. I avoid this by regularly adjusting 
-; the rank of a random top story.
-
-(defbg rerank-random 30 (rerank-random)) ; is a thread - not referenced anywhere
-(def rerank-random () ; internal to defbg rerank-random
-  (when ranked-stories*
-    (adjust-rank (ranked-stories* (rand (min 50 (len ranked-stories*)))))))
-
-(def topstories (user n (o threshold front-threshold*))
-  (retrieve n 
-            [and (>= (realscore _) threshold) (cansee user _)]
-            ranked-stories*))
+; -------------------------------- Permissions ------------------------------- ;
 
 (= max-delay* 10)
 (= canreply-threshold* 1)
@@ -1392,7 +1340,6 @@
   (unless (or (is (vote user i) dir)
               (author user i)
               (~live i))
-    (astory&adjust-rank i)
     (++ (karma i!by) (case dir like 1 nil -1))
     (save-prof i!by)
     (wipe (comment-cache* i!id))
@@ -1488,10 +1435,7 @@
    blanktext*   "Please fill in the title and the body."
    blankurl*    "Please fill in the title and the URL."
    nolinkdraft* "Link submissions cannot be saved as drafts.")
-(def submit-item (user i)
-  (push i!id (uvar user submitted))
-  (save-prof user)
-  (astory&adjust-rank i))
+(def submit-item (user i) (push i!id (uvar user submitted)) (save-prof user))
 
 (def create-story (title url text user ip category draft)
   (newslog ip user 'create (list title))
@@ -1621,7 +1565,6 @@
                    (unless (and (is name 'title) (len> val title-limit*))
                      (= (i name) val)))
                (fn () (save-item i)
-                      (astory&adjust-rank i)
                       (wipe (comment-cache* i!id))
                       (edit-page user i))
                (fn () (authentication-failure-msg req)))
@@ -1768,7 +1711,9 @@
     (row (tab (display-comment nil c user whence t indent showpar showpar)))))
 
 (def display-subcomments (c user whence (o indent 0))
-  (each k (sort (compare > frontpage-rank) (kids c))
+  ; changed frontpage-rank to realscore, but am unsure if this was correct:
+  (each k (sort (compare > realscore) (kids c))
+  ; (each k (sort (compare > frontpage-rank) (kids c))
     (display-comment-tree k user whence indent)))
 
 (def display-comment (n c user whence (o astree) (o indent 0) 
