@@ -373,24 +373,18 @@
 
 (def gen-css-url () (prn "<link rel=\"stylesheet\" type=\"text/css\" href=\"forum.css\">"))
 
-(def rand-id () (round (* (rand) 1e16)))
+; unused by forum
+; (def rand-id () (round (* (rand) 1e16)))
 
 (def gen-collapse-script (c identifier)
   (let template "<script>
     //! should probably be $(function(){
-    $(window).load(function() {
-      $(\".toggle-{{1}}\").click(function() {
-        var val = $(this).text();
-        if (val.indexOf('[+]') == 0) {
-          $(\"td.comment-{{1}}\").css('display', 'block');
-          $(this).text(\"[-] Collapse comment by {{2}}\");
-        } else {
-          $(\"td.comment-{{1}}\").css('display', 'none');
-          $(this).text(\"[+] Expand comment by {{2}}\");
-        }
-        return false;
-      });
-    });
+    $(window).load(function(){
+      $('.toggle-{{1}}').click(function(){
+        var was_expand = $(this).text().indexOf('[+]') === 0
+        $('td.comment-{{1}}').css('display', was_expand? 'block' : 'none')
+        $(this).text((was_expand? '[-] Collapse' : '[+] Expand')+' comment by {{2}}')
+        return false }) })
     </script>"
     (multisubst `(("{{1}}" ,identifier) ("{{2}}" ,(get-user-display-name c!by))) template)))
 
@@ -437,7 +431,7 @@
 
 (= pagefns* nil)
 
-(mac fulltop (user lid label title whence . body)
+(mac fulltop (user lid label title whence . body) ; used by: longpage, shortpage
   (w/uniq (gu gi gl gt gw)
     `(with (,gu ,user ,gi ,lid ,gl ,label ,gt ,title ,gw ,whence)
        (npage nil (+ this-site* (if ,gt (+ bar* ,gt) "")) ; alice@2015-03-16 we don't care about user-ness
@@ -446,25 +440,8 @@
              (hook 'page ,gu ,gl)
              ,@body)))))
 
-(mac longpage (user t1 lid label title whence . body)
-  (w/uniq (gu gt gi)
-    `(with (,gu ,user ,gt ,t1 ,gi ,lid)
-       (fulltop ,gu ,gi ,label ,title ,whence
-         (trtd ,@body)
-         (trtd 
-               (center
-                 (hook 'longfoot)
-                 (admin-bar ,gu (- (msec) ,gt) ,whence)))))))
-
-(mac add-sidebar (sidebar-contents . body)
-  `(tag (table style 'border-collapse:collapse width '100%)
-        (tr (tag (td valign 'top class 'contents) ,@body)
-            (tag (td valign 'top class 'sb) ,sidebar-contents))))
-
-(mac format-sb-title (title)
-  `(para (tag (h3) (pr ,title))))
-
-(mac format-sb-item (i) `(do (pr
+(mac format-sb-title (title) `(para (tag (h3) (pr ,title)))) ; internal to longpage-sb
+(mac format-sb-item (i) `(do (pr ; internal to longpage-sb
   "<div style='margin: 1em 0;'>"
     "<a href='"(if (is i!category 'Link) i!url (item-url i!id))"' class='"(if (invisible i) 'sb-invisible 'sb)"'>"
       "<b>"(eschtml i!title)"</b></a>"
@@ -472,7 +449,21 @@
     "<div class='"(if (invisible i) 'sb-invisible-subtext 'sb-subtext)"' style='margin:3px;'>"
       ;! (commentlink i nil) instead of (commentlink i user) may display the wrong number of comments
       "by ") (userlink user i!by) (pr bar*) (itemscore i) (if (is i!category 'Link) (commentlink nil i)) (pr "</div></div>")))
-
+(mac add-sidebar (sidebar-contents . body) ; internal to longpage-sb
+  `(tag (table style 'border-collapse:collapse width '100%)
+        (tr (tag (td valign 'top class 'contents) ,@body)
+            (tag (td valign 'top class 'sb) ,sidebar-contents))))
+(mac longpage (user t1 lid label title whence . body) ; internal to longpage-sb
+  (w/uniq (gu gt gi)
+    `(with (,gu ,user ,gt ,t1 ,gi ,lid)
+      (fulltop ,gu ,gi ,label ,title ,whence
+        (trtd ,@body)
+        (trtd 
+          (center
+            (hook 'longfoot)
+            (admin-bar ,gu (- (msec) ,gt) ,whence)))
+        )
+        )))
 (mac longpage-sb (user t1 lid label title whence show-comments . body)
   `(longpage ,user ,t1 ,lid ,label ,title ,whence
      (if (no ,show-comments) 
