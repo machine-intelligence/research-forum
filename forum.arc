@@ -1332,12 +1332,11 @@
            ;(< (item-age i) editor-changetime*))
       (own-changeable-item user i)))
 
-(def own-changeable-item (user i)
-  (and (author user i)
-       (~mem 'locked i!keys)
-       (no i!deleted)))
-       ;(or (everchange* i!type)
-       ;    (< (item-age i) user-changetime*))))
+(def own-changeable-item (user i) (and (author user i) (no i!deleted)))
+  ; not used but may want to use in the future: (and
+  ; (~mem 'locked i!keys)
+  ; (or (everchange* i!type)
+  ;     (< (item-age i) user-changetime*))))
 
 (def editlink (i user)
   (when (canedit user i)
@@ -1621,8 +1620,7 @@
                (fn (name val)
                    (unless (and (is name 'title) (len> val title-limit*))
                      (= (i name) val)))
-               (fn () (if (admin user) (pushnew 'locked i!keys))
-                      (save-item i)
+               (fn () (save-item i)
                       (astory&adjust-rank i)
                       (wipe (comment-cache* i!id))
                       (edit-page user i))
