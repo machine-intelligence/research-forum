@@ -20,7 +20,7 @@
 
 (deftem profile
   id         nil
-  name       nil
+  name       nil ; @2015-04-05 secure but may not stay so always
   created    (seconds)
   auth       0
   member     nil
@@ -28,7 +28,7 @@
   contributor-only nil
   karma      1
   weight     .5
-  email      nil
+  email      nil ; @2015-04-05 unused
   about      nil
   keys       nil
   delay      0)
@@ -1361,7 +1361,7 @@
 
 (defop dosubmit req
   (with (user (get-user req)
-         url (or (arg req "url") "")
+         url (readvar 'url (or (arg req "url") "") "") ;! hacky use of readvar as a quick security patch
          title (striptags (or (arg req "title") ""))
          text (or (arg req "text") "")
          draft (isnt (arg req "draft") nil)
