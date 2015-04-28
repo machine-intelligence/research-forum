@@ -102,7 +102,18 @@
                       (admin-page user "User already exists: " u)
                       (do (create-acct u p)
                           (admin-page user))))))
-      (pwfields "create (server) account"))))
+      (pwfields "create (server) account"))
+    (br2)
+    (aform (fn (req)   ; XXX[benja 2015-04-28] get rid of this code duplication
+             (when-umatch user req
+               (with (u (arg req "u") p (arg req "p"))
+                 (if (or (no u) (no p) (is u "") (is p ""))
+                      (pr "Bad data.")
+                     (~user-exists u)
+                      (admin-page user "User doesn't exist: " u)
+                      (do (set-pw u p)
+                          (admin-page user))))))
+      (pwfields "change user's password"))))
 
 (def cook-user (user)
   (let id (new-user-cookie)
