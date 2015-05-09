@@ -88,9 +88,14 @@
 ; Which unfortunately means all lists written to disk are probably
 ; vulnerable to it, since that's all save-table does.
 
+(def profile-file (u)
+  (if (is u "János_Kramár")  "J?nos_Kram?r"
+      (is u "Mihály_Bárász") "Mih?ly_B?r?sz"
+                             u))
+
 (def load-user (u)
-  (= (votes* u) (load-table (+ votedir* u))
-     (profs* u) (temload 'profile (+ profdir* u)))
+  (= (votes* u) (load-table (+ votedir* (profile-file u)))
+     (profs* u) (temload 'profile (+ profdir* (profile-file u))))
   (each (id dir) (tablist (votes* u))
     (when (is dir 'like) (push u (itemlikes* id))))
   u)
@@ -136,7 +141,7 @@
 (mac karma (u) `(uvar ,u karma))
 
 (def full-member (u)
-  (aand u (profile u) (no (it 'contributor-only))))
+  (aand u (no ((profile u) 'contributor-only))))
 
 ; Note that users will now only consider currently loaded users.
 
