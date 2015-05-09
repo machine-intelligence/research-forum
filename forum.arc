@@ -79,8 +79,11 @@
 
 (def load-users ()
   (pr "load users: ")
+  (load-user "János_Kramár")
+  (load-user "Mihály_Bárász")
   (noisy-each 100 id (dir profdir*)
-    (load-user id)))
+    (if (and (~mem id '("János_Kramár" "Mihály_Bárász")))
+      (load-user id))))
 
 ; For some reason vote files occasionally get written out in a 
 ; broken way.  The nature of the errors (random missing or extra
