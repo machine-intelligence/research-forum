@@ -136,7 +136,7 @@
 (mac karma (u) `(uvar ,u karma))
 
 (def full-member (u)
-  (and u (no ((profile u) 'contributor-only))))
+  (aand u (profile u) (no (it 'contributor-only))))
 
 ; Note that users will now only consider currently loaded users.
 
