@@ -197,15 +197,15 @@
             }
             }) }
         </script>")
-      (prn "<script>
-        //! should use location.replace()
-        if (['agentfoundations.org', 'forum.intelligence.org'].indexOf(location.hostname) !== -1)
-          location.hostname = 'malo-agentfoundations.terminal.com'
-        else if (['malo3-8080.terminal.com', 'staging.agentfoundations.org'].indexOf(location.hostname) !== -1)
-          location.hostname = 'malo-staging.terminal.com'
-        if (location.protocol !== 'https:' && location.hostname.match(/\\.terminal\\.com$/))
-          location.replace(location.href.replace(/^http:/,'https:'))
-        </script>")
+    //  (prn "<script>
+    //    //! should use location.replace()
+    //    if (['agentfoundations.org', 'forum.intelligence.org'].indexOf(location.hostname) !== -1)
+    //      location.hostname = 'malo-agentfoundations.terminal.com'
+    //    else if (['malo3-8080.terminal.com', 'staging.agentfoundations.org'].indexOf(location.hostname) !== -1)
+    //      location.hostname = 'malo-staging.terminal.com'
+    //    if (location.protocol !== 'https:' && location.hostname.match(/\\.terminal\\.com$/))
+    //      location.replace(location.href.replace(/^http:/,'https:'))
+    //    </script>")
       (pagemessage msg)
       ; login-form adapted for facebook
       (prbold "Log in with Facebook")
@@ -222,7 +222,6 @@
           )
         (acons afterward))
       (login-form "Log in with password" 'login+fb login-handler afterward)
-      (prn "<div style='font-size:12px;'>If you're wondering why we redirected you to malo-agentfoundations.terminal.com - we hit a snag on configuring ssl with our hosting service, so this is a short-term hack to keep everything secure while we work with them to fix this!</div>")
     )))
 
 
