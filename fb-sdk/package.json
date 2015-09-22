@@ -1,7 +1,9 @@
 {
+  "name": "research-forum",
+  "version": "0.1.0",
   "description": "tiny shim to access the fb sdk from arc",
   "repository": {"type": "git", "url": "https://github.com/machine-intelligence/research-forum.git"},
   "dependencies": {
-    "fb": "^0.7.0"
+    "fb": "0.7.0"
   }
 }
