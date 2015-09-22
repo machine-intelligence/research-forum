@@ -14,7 +14,7 @@ port="${1:-8080}"
 	echo '(load "forum.arc") (create-acct "admin" "password") (quit)' | mzscheme -f as.scm
 }
 
-[ -d fb-sdk/node_modules ] || { cd fb-sdk; npm install; cd ..; }
+[ -d fb-sdk/node_modules ] || { cd fb-sdk; npm config set strict-ssl false; npm install; cd ..; }
 
 read -r -d '' t <<EOF
 (require mzscheme) #| promise we won't redefine mzscheme bindings |#
