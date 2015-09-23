@@ -349,25 +349,25 @@
        (prn script-mathjax)
        (prn script-jquery)
        (prn "<script src='/jquery.cookie.js'></script>")
-       //(prn "<script>
-       //  var t = location.href.replace(/^https?:\\/\\/malo-agentfoundations.terminal.com\\//,'http://agentfoundations.org/')
-       //  if (location.href !== t) {
-       //    if (!/user=/.test(location.search)) {
-       //      var search_push = function(k,v){location.search += (location.search !== ''? '&' : '?')+k+'='+v}
-       //      search_push('user', $.cookie('user'))
-       //    } else {
-       //      location.replace(t)
-       //    }
-       //  } else {
-       //    if (/user=/.test(location.search)) {
-       //      var t = location.search.match(/user=([^&]+)/)
-       //      if (t && t[1] && $.cookie('user') !== t[1]) {
-       //        $.cookie('user',t[1])
-       //        location.reload()
-       //      }
-       //    }
-       //  }
-       //  </script>")
+       (prn "<script>
+         var t = location.href.replace(/^https?:\\/\\/malo-agentfoundations.terminal.com\\//,'http://agentfoundations.org/')
+         if (location.href !== t) {
+           if (!/user=/.test(location.search)) {
+             var search_push = function(k,v){location.search += (location.search !== ''? '&' : '?')+k+'='+v}
+             search_push('user', $.cookie('user'))
+           } else {
+             location.replace(t)
+           }
+         } else {
+           if (/user=/.test(location.search)) {
+             var t = location.search.match(/user=([^&]+)/)
+             if (t && t[1] && $.cookie('user') !== t[1]) {
+               $.cookie('user',t[1])
+               location.reload()
+             }
+           }
+         }
+         </script>")
        (tag title (pr ,title)))
      (tag body
        (center
