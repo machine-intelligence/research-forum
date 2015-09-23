@@ -197,15 +197,10 @@
             }
             }) }
         </script>")
-    //  (prn "<script>
-    //    //! should use location.replace()
-    //    if (['agentfoundations.org', 'forum.intelligence.org'].indexOf(location.hostname) !== -1)
-    //      location.hostname = 'malo-agentfoundations.terminal.com'
-    //    else if (['malo3-8080.terminal.com', 'staging.agentfoundations.org'].indexOf(location.hostname) !== -1)
-    //      location.hostname = 'malo-staging.terminal.com'
-    //    if (location.protocol !== 'https:' && location.hostname.match(/\\.terminal\\.com$/))
-    //      location.replace(location.href.replace(/^http:/,'https:'))
-    //    </script>")
+      (prn "<script>
+        if (location.protocol !== 'https:' && location.hostname.match(/\\.terminal\\.com$/))
+          location.replace(location.href.replace(/^http:/,'https:'))
+        </script>")
       (pagemessage msg)
       ; login-form adapted for facebook
       (prbold "Log in with Facebook")
