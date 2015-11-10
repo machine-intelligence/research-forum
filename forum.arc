@@ -245,7 +245,7 @@
 
 (def user-age (u) (minutes-since (uvar u created)))
 (def item-time (i) (if (no i!publish-time) i!time i!publish-time))
-(def item-age (i) (minutes-since i!item-time))
+(def item-age (i) (minutes-since (item-time i)))
 
 (def realscore (i) (+ 1 (len (itemlikes* i!id))))
 
