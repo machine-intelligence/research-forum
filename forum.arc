@@ -244,7 +244,8 @@
 ; ---------------------------------- ?misc? ---------------------------------- ;
 
 (def user-age (u) (minutes-since (uvar u created)))
-(def item-age (i) (if (no i!publish-time) (minutes-since i!time) (minutes-since i!publish-time)))
+(def item-time (i) (if (no i!publish-time) i!time i!publish-time))
+(def item-age (i) (minutes-since i!item-time))
 
 (def realscore (i) (+ 1 (len (itemlikes* i!id))))
 
@@ -954,7 +955,8 @@
 ; remember to set caching to 0 when testing non-logged-in 
 
 (= caching* 1 perpage* 25 threads-perpage* 10 maxend* 500
-   preview-maxlen* 1000 karma-multiplier* 5)
+   preview-maxlen* 1000 karma-multiplier* 5
+   load-to-sort* 200)
 
 (= sb-link-count* 5
    sb-post-count* 5
@@ -982,7 +984,8 @@
 
 (def sb-links (user n) (retrieve n [and (cansee_d user _) (is _!category 'Link)] stories*))
 
-(def sb-posts (user n) (retrieve n [and (cansee_d user _) (is _!category 'Main)] stories*))
+(def sb-posts (user n)
+  (bestn n (compare > item-time) (retrieve load-to-sort* [and (cansee_d user _) (is _!category 'Main)] stories*)))
 
 (def sb-discussion-posts (user n) (retrieve n [and (cansee_d user _) (is _!category 'Discussion)] stories*))
 
@@ -1933,7 +1936,7 @@
 ; ------------------------------------ RSS ----------------------------------- ;
 
 (newsop rss ()
-  (rss-feed (sort (compare > [if (no _!publish-time) _!time _!publish-time])
+  (rss-feed (sort (compare > item-time)
               (+ (retrieve perpage* [and live (no _!draft) (no (invisible _))] stories*)
                  (retrieve perpage* [and live (no _!draft) (no (invisible _))] comments*)))))
 
