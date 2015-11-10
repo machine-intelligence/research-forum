@@ -987,7 +987,8 @@
 (def sb-posts (user n)
   (bestn n (compare > item-time) (retrieve load-to-sort* [and (cansee_d user _) (is _!category 'Main)] stories*)))
 
-(def sb-discussion-posts (user n) (retrieve n [and (cansee_d user _) (is _!category 'Discussion)] stories*))
+(def sb-discussion-posts (user n)
+  (bestn n (compare > item-time) (retrieve load-to-sort* [and (cansee_d user _) (is _!category 'Discussion)] stories*)))
 
 (def sb-comments (user n) (retrieve n [and (cansee_d user _)] comments*))
 
@@ -1011,7 +1012,7 @@
   (listpage user (msec) (newstories user maxend*) "new" "New Stories" "/" nil t))
 
 (def newstories (user n)
-  (retrieve n [and (cansee_d user _) (no (is _!category 'Link))] stories*))
+  (bestn n (compare > item-time) (retrieve load-to-sort* [and (cansee_d user _) (no (is _!category 'Link))] stories*)))
 
 
 (newsop best () (bestpage user))
