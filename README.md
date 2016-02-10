@@ -58,3 +58,6 @@ db format
 #### Misc
 
 production: `su forum; cd ~/research-forum; ./run.sh` → https://agentfoundations.org/
+
+
+(This site was developed using [Arc](http://www.arclanguage.org), a lisp dialect writtend by Paul Graham, upon which Hacker News was built.)
