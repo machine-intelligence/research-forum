@@ -2129,7 +2129,7 @@ print sum</code></pre>
 </div>
 
 <p>See the <span class=\"doclink\">
-<a href=\"http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html\">
+<a href=\"http://pandoc.org/README.html#pandocs-markdown\">
 Pandoc markdown documentation</a></span> for additional formatting options.</p>")
 
 ; --------------------------------- Reset PW --------------------------------- ;
