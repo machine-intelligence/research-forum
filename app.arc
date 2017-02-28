@@ -176,7 +176,7 @@
     (tag (body bgcolor white alink linkblue)
       (prn "<div id='fb-root'></div><script>
         window.fbAsyncInit = function() {
-          FB.init({appId: '343502792506554', xfbml: true, version: 'v2.8', cookie: true})
+          FB.init({appId: '343502792506554', xfbml: true, version: 'v2.2', cookie: true})
         }
         ;(function(d, s, id){
            var js, fjs = d.getElementsByTagName(s)[0];
