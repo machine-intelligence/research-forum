@@ -745,5 +745,5 @@
          (login-page 'login+fb "You need to be logged in to do that."
            (list (fn (u ip)) (string ',name (reassemble-args ,parm)))))))
 
-(= script-mathjax "<script src='https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>")
+(= script-mathjax "<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>")
 (= script-jquery "<script src='https://code.jquery.com/jquery-1.11.2.min.js'></script>")
